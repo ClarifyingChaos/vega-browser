@@ -116,15 +116,18 @@ struct ProfileCreationDialog: DialogProtocol {
                         keyboardShortcut: .escape
                     )
                     
-                    VegaButton.animatedCreateButton(
-                        text: "Create Profile",
+                    VegaButton(
+                        text: "Create Profile  ",
                         iconName: "plus",
                         variant: .primary,
                         action: {
-                            print("🔘 Dialog Create button onSave called")
+                            print("Custom button tapped")
                             handleSave()
                         },
-                        keyboardShortcut: .return
+                        keyboardShortcut: .space,
+                        animationType: .custom("checkmark"),
+                        shadowStyle: .subtle,
+                        customColors: VegaButton.CustomColors(backgroundColor: Color.accentColor, textColor: Color.primary, borderColor: Color.white, shadowColor: Color.gray, shadowOffset: CGSize(width: 0, height: 5)),
                     )
                 }
             }
