@@ -2,7 +2,7 @@
 //  ForceArrowCursorView.swift
 //  Vega
 //
-//  Created by Codex on 2025-09-15.
+//  Created by Jonathan Caudill on 2025-09-15.
 //
 
 import AppKit
