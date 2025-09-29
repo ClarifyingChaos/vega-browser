@@ -183,6 +183,27 @@ struct GeneralSettingsView: View {
                             }
                         }
                     }
+                    
+                    SettingsSectionCard(
+                        title: "Vega",
+                        subtitle: "General Vega settings"
+                    ) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Toggle(
+                                isOn: $browserManager.settingsManager
+                                    .askBeforeQuit
+                            ) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Ask Before Quitting")
+                                    Text(
+                                        "Warn before quitting Vega"
+                                    )
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                }
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
 
                     SettingsSectionCard(
                         title: "Search",
