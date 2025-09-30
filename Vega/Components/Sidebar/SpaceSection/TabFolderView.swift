@@ -2,7 +2,7 @@
 //  TabFolderView.swift
 //  Vega
 //
-//  Created by Claude on 2025-09-24.
+//  Created by Jonathan Caudill on 2025-09-24.
 //
 
 import SwiftUI
