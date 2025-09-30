@@ -223,7 +223,10 @@ struct VegaCommands: Commands {
                 appDelegate.updaterController.checkForUpdates(nil)
             }
             .keyboardShortcut("u", modifiers: [.command, .shift])
-
+            
+            Button("Import from Arc") {
+                browserManager.importArcData()
+            }
             Divider()
 
             Button("New Tab") {
