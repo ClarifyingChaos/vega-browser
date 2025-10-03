@@ -2,7 +2,7 @@
 //  TabClosureToast.swift
 //  Vega
 //
-//  Created by Claude on 02/10/2025.
+//  Created by Jonathan Caudill on 02/10/2025.
 //
 
 import SwiftUI
