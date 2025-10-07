@@ -259,6 +259,13 @@ struct VegaCommands: Commands {
         CommandGroup(replacing: .windowList) {}
         // Use the native Settings menu (no replacement of .appSettings)
 
+        // App Menu Section (under Vega)
+        CommandGroup(after: .appInfo) {
+            Button("Make Vega Default Browser") {
+                browserManager.setAsDefaultBrowser()
+            }
+        }
+
         // Edit Section
         CommandGroup(replacing: .undoRedo) {
             Button("Undo Close Tab") {
