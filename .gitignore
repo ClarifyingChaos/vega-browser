@@ -103,3 +103,4 @@ iOSInjectionProject/
 DerivedData/
 *.xcresult
 *.log
+*.profraw
