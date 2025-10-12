@@ -15,13 +15,13 @@ struct VegaButtonStyle: ButtonStyle {
 
     let variant: Variant
     let shadowStyle: ShadowStyle
+    let role: ButtonRole?
 
     @State private var isHovering: Bool = false
 
     enum Variant {
-        case primary
-        case secondary
-        case destructive
+        case secondary  // Regular button
+        case primary    // Prominent button
     }
 
     enum ShadowStyle {
@@ -33,7 +33,8 @@ struct VegaButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         ZStack {
             // Main button content
-            let contrastingShade = ((try? backgroundColor().contrastingShade()) ?? textColor)
+            let contrastingShade = ((try? Garnish.contrastingShade(of: backgroundColor(), direction: .preferLight)) ?? textColor)
+            let shadow = ((try? Garnish.contrastingShade(of: backgroundColor(), targetRatio: 3.5, direction: .forceDark)) ?? textColor)
             configuration.label
                 .font(.body.weight(.semibold))
                 .foregroundStyle(contrastingShade)
@@ -42,14 +43,14 @@ struct VegaButtonStyle: ButtonStyle {
                 .background{
                     RoundedRectangle(cornerRadius: 14)
                         .fill(((backgroundColor().mix(with: contrastingShade, by: isHovering ? 0.2 : 0))
-                            .shadow(.inner(color: ((try? Garnish.contrastingShade(of: backgroundColor(), targetRatio: 2.5)) ?? textColor), radius: 2, y: -2))
+                            .shadow(.inner(color: ((try? Garnish.contrastingShade(of: backgroundColor(), targetRatio: 2.5, direction: .forceDark)) ?? textColor), radius: 2, y: -2))
                             .shadow(.inner(color: .white.opacity(0.4), radius: 2, y: 2))
                         )
                         )
                 }
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke((((try? Garnish.contrastingShade(of: backgroundColor(), targetRatio: 4)) ?? textColor)), lineWidth: 1)
+                        .stroke((((try? Garnish.contrastingShade(of: backgroundColor(), targetRatio: 4, direction: .forceDark)) ?? textColor)), lineWidth: 1)
                 )
                 .overlay(
                     // Top and left borders (highlight)
@@ -75,7 +76,7 @@ struct VegaButtonStyle: ButtonStyle {
                     if shadowStyle != .none {
                         ZStack{
                             RoundedRectangle(cornerRadius: 14)
-                                .foregroundStyle(((try? Garnish.contrastingShade(of: backgroundColor(), targetRatio: 3.5)) ?? textColor))
+                                .foregroundStyle(shadow)
                         }
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .offset(y: 2)
@@ -91,23 +92,23 @@ struct VegaButtonStyle: ButtonStyle {
     }
 
     private func backgroundColor() -> Color {
+        if role == .destructive {
+            return Color.red
+        }
+
         switch variant {
-        case .primary:
-            return gradientColorManager.primaryColor
         case .secondary:
             return Color.white.mix(with: .black, by: 0.8)
-        case .destructive:
-            return Color.red
+        case .primary:
+            return gradientColorManager.primaryColor
         }
     }
 
     private var textColor: Color {
         switch variant {
-        case .primary:
-            return Color.white
         case .secondary:
             return Color.primary
-        case .destructive:
+        case .primary:
             return Color.white
         }
     }
@@ -149,58 +150,92 @@ struct VegaButtonStyle: ButtonStyle {
 // MARK: - Convenience Extensions
 
 extension ButtonStyle where Self == VegaButtonStyle {
-    static var vegaPrimary: VegaButtonStyle {
-        VegaButtonStyle(variant: .primary, shadowStyle: .subtle)
+    static var vegaButton: VegaButtonStyle {
+        VegaButtonStyle(variant: .secondary, shadowStyle: .subtle, role: nil)
     }
 
-    static var vegaSecondary: VegaButtonStyle {
-        VegaButtonStyle(variant: .secondary, shadowStyle: .subtle)
+    static func vegaButton(role: ButtonRole?) -> VegaButtonStyle {
+        VegaButtonStyle(variant: .secondary, shadowStyle: .subtle, role: role)
     }
 
-    static var vegaDestructive: VegaButtonStyle {
-        VegaButtonStyle(variant: .destructive, shadowStyle: .subtle)
+    static var vegaButtonProminent: VegaButtonStyle {
+        VegaButtonStyle(variant: .primary, shadowStyle: .prominent, role: nil)
     }
 
-    static var vegaProminent: VegaButtonStyle {
-        VegaButtonStyle(variant: .primary, shadowStyle: .prominent)
+    static func vegaButtonProminent(role: ButtonRole?) -> VegaButtonStyle {
+        VegaButtonStyle(variant: .primary, shadowStyle: .prominent, role: role)
     }
 }
 
 #Preview {
-    VStack(spacing: 20) {
-        // Primary
-        Button("Save", systemImage: "checkmark") {
-            print("Save")
-        }
-        .buttonStyle(.vegaPrimary)
+    let colors = [Color.blue, Color.purple, Color.green, Color.orange, Color.pink, Color.red]
 
-        // Secondary
-        Button("Cancel") {
-            print("Cancel")
+    return ScrollView {
+        VStack(spacing: 40) {
+            ForEach(colors, id: \.self) { color in
+                ButtonPreviewSection(color: color)
+            }
         }
-        .buttonStyle(.vegaSecondary)
-
-        // Destructive
-        Button("Delete", systemImage: "trash") {
-            print("Delete")
-        }
-        .buttonStyle(.vegaDestructive)
-
-        // Prominent (create button)
-        Button("Create Space", systemImage: "plus") {
-            print("Create")
-        }
-        .buttonStyle(.vegaProminent)
-
-        // Disabled
-        Button("Disabled") {
-            print("Disabled")
-        }
-        .buttonStyle(.vegaPrimary)
-        .disabled(true)
+        .padding()
     }
-    .padding()
-    .scaleEffect(3)
     .frame(width: 390, height: 1000)
-    .environmentObject(GradientColorManager())
+}
+
+private struct ButtonPreviewSection: View {
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(colorName)
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            buttonStack
+        }
+        .padding()
+        .background(.background.opacity(0.5))
+        .cornerRadius(12)
+        .environmentObject(makeColorManager())
+    }
+
+    private var colorName: String {
+        color.description.capitalized
+    }
+
+    private func makeColorManager() -> GradientColorManager {
+        let manager = GradientColorManager()
+        let gradient = SpaceGradient(id: UUID(), name: "Preview", primaryColor: color, nodes: [])
+        manager.setImmediate(gradient)
+        return manager
+    }
+
+    private var buttonStack: some View {
+        VStack(spacing: 20) {
+            Button("Create Space", systemImage: "plus") {
+                print("Create")
+            }
+            .buttonStyle(.vegaButtonProminent)
+
+            Button("Cancel") {
+                print("Cancel")
+            }
+            .buttonStyle(.vegaButton)
+
+            Button("Delete", systemImage: "trash") {
+                print("Delete")
+            }
+            .buttonStyle(.vegaButton(role: .destructive))
+
+            Button("Erase Everything", systemImage: "flame") {
+                print("Erase")
+            }
+            .buttonStyle(.vegaButtonProminent(role: .destructive))
+
+            Button("Disabled") {
+                print("Disabled")
+            }
+            .buttonStyle(.vegaButtonProminent)
+            .disabled(true)
+        }
+    }
 }
