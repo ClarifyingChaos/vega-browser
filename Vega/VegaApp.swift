@@ -14,7 +14,7 @@ import Sparkle
 
 @main
 struct VegaApp: App {
-    @State private var browserManager = BrowserManager()
+    @StateObject private var browserManager = BrowserManager()
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
@@ -22,7 +22,7 @@ struct VegaApp: App {
             ContentView()
                 .background(BackgroundWindowModifier())
                 .ignoresSafeArea(.all)
-                .environment(browserManager)
+                .environmentObject(browserManager)
                 .onAppear {
                     // Connect browser manager to app delegate for cleanup and Sparkle integration
                     appDelegate.browserManager = browserManager
@@ -40,8 +40,8 @@ struct VegaApp: App {
         // Native macOS Settings window
         Settings {
             SettingsView()
-                .environment(browserManager)
-                .environment(browserManager.gradientColorManager)
+                .environmentObject(browserManager)
+                .environmentObject(browserManager.gradientColorManager)
         }
     }
 }
@@ -293,7 +293,7 @@ struct VegaCommands: Commands {
                 newWindow.contentView = NSHostingView(rootView: ContentView()
                     .background(BackgroundWindowModifier())
                     .ignoresSafeArea(.all)
-                    .environment(browserManager))
+                    .environmentObject(browserManager))
                 newWindow.title = "Vega"
                 newWindow.minSize = NSSize(width: 470, height: 382)
                 newWindow.contentMinSize = NSSize(width: 470, height: 382)
