@@ -273,8 +273,14 @@ struct VegaCommands: Commands {
             }
             .keyboardShortcut("u", modifiers: [.command, .shift])
             
-            Button("Import from Arc") {
-                browserManager.importArcData()
+            Button("Import from another Browser") {
+                browserManager.dialogManager.showDialog(
+                    BrowserImportDialog(
+                        onCancel: {
+                            browserManager.dialogManager.closeDialog()
+                        }
+                    )
+                )
             }
             Divider()
 
