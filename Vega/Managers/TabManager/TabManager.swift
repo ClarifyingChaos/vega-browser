@@ -415,6 +415,7 @@ class TabManager: ObservableObject {
         }
     }
     weak var browserManager: BrowserManager?
+    weak var vegaSettings: VegaSettingsService?
     private let context: ModelContext
     private let persistence: PersistenceActor
 
@@ -530,7 +531,7 @@ class TabManager: ObservableObject {
 
     private func attach(_ tab: Tab) {
         tab.browserManager = browserManager
-        tab.vegaSettings = browserManager?.vegaSettings
+        tab.vegaSettings = vegaSettings
     }
 
     private func allTabsAllSpaces() -> [Tab] {
@@ -1140,7 +1141,7 @@ class TabManager: ObservableObject {
         url: String = "https://www.google.com",
         in space: Space? = nil
     ) -> Tab {
-        let engine = browserManager?.vegaSettings.searchEngine ?? .google
+        let engine = vegaSettings?.searchEngine ?? .google
         let normalizedUrl = normalizeURL(url, provider: engine)
         guard let validURL = URL(string: normalizedUrl)
         else {

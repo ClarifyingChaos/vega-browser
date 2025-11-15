@@ -79,6 +79,7 @@ struct VegaApp: App {
         browserManager.webViewCoordinator = webViewCoordinator
         browserManager.windowRegistry = windowRegistry
         browserManager.vegaSettings = settingsManager
+        browserManager.tabManager.vegaSettings = settingsManager
 
         // Configure managers that depend on settings
         browserManager.compositorManager.setUnloadTimeout(settingsManager.tabUnloadTimeout)
