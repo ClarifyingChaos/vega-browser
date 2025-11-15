@@ -150,6 +150,7 @@ struct WindowView: View {
         .onAppear {
             hoverSidebarManager.attach(browserManager: browserManager)
             hoverSidebarManager.windowRegistry = windowRegistry
+            hoverSidebarManager.vegaSettings = vegaSettings
             hoverSidebarManager.start()
         }
         .onDisappear {

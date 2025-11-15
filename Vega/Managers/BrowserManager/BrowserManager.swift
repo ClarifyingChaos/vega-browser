@@ -581,7 +581,7 @@ class BrowserManager: ObservableObject {
     // MARK: - OAuth Assist Controls
     func maybeShowOAuthAssist(for url: URL, in tab: Tab) {
         // Only when protection is enabled and not already disabled for this tab
-        guard settingsManager?.blockCrossSiteTracking == true, trackingProtectionManager.isEnabled else {
+        guard vegaSettings?.blockCrossSiteTracking == true, trackingProtectionManager.isEnabled else {
             return
         }
         guard !trackingProtectionManager.isTemporarilyDisabled(tabId: tab.id) else { return }
@@ -791,14 +791,14 @@ class BrowserManager: ObservableObject {
     }
 
     func toggleAISidebar() {
-        guard settingsManager?.showAIAssistant == true else { return }
+        guard vegaSettings?.showAIAssistant == true else { return }
         if let windowState = windowRegistry?.activeWindow {
             toggleAISidebar(for: windowState)
         }
     }
 
     func toggleAISidebar(for windowState: BrowserWindowState) {
-        guard settingsManager?.showAIAssistant == true else { return }
+        guard vegaSettings?.showAIAssistant == true else { return }
 
         withAnimation(.easeInOut(duration: 0.2)) {
             if windowState.isSidebarAIChatVisible {
@@ -825,7 +825,7 @@ class BrowserManager: ObservableObject {
 
     func toggleTopBarAddressView() {
         withAnimation(.easeInOut(duration: 0.2)) {
-            settingsManager?.topBarAddressView.toggle()
+            vegaSettings?.topBarAddressView.toggle()
         }
     }
 
@@ -929,7 +929,7 @@ class BrowserManager: ObservableObject {
     // MARK: - Dialog Methods
 
     func showQuitDialog() {
-        if self.settingsManager?.askBeforeQuit == true {
+        if self.vegaSettings?.askBeforeQuit == true {
             dialogManager.showQuitDialog(
                 onAlwaysQuit: {
                     self.quitApplication()

@@ -530,7 +530,7 @@ class TabManager: ObservableObject {
 
     private func attach(_ tab: Tab) {
         tab.browserManager = browserManager
-        tab.settingsManager = browserManager?.settingsManager
+        tab.vegaSettings = browserManager?.vegaSettings
     }
 
     private func allTabsAllSpaces() -> [Tab] {
@@ -1140,7 +1140,7 @@ class TabManager: ObservableObject {
         url: String = "https://www.google.com",
         in space: Space? = nil
     ) -> Tab {
-        let engine = browserManager?.settingsManager.searchEngine ?? .google
+        let engine = browserManager?.vegaSettings.searchEngine ?? .google
         let normalizedUrl = normalizeURL(url, provider: engine)
         guard let validURL = URL(string: normalizedUrl)
         else {
