@@ -36,7 +36,7 @@ struct VegaApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .commands {
-            VegaCommands(browserManager: browserManager)
+            VegaCommands(browserManager: browserManager, windowRegistry: windowRegistry)
         }
 
         // Native macOS Settings window
@@ -68,6 +68,7 @@ struct VegaApp: App {
     private func setupApplicationLifecycle() {
         // Connect AppDelegate for termination and updates
         appDelegate.browserManager = browserManager
+        appDelegate.windowRegistry = windowRegistry
         browserManager.appDelegate = appDelegate
 
         // TEMPORARY: Wire coordinators to BrowserManager
