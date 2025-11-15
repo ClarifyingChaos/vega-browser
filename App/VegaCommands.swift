@@ -14,6 +14,7 @@ struct VegaCommands: Commands {
     let windowRegistry: WindowRegistry
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.vegaSettings) var vegaSettings
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init(browserManager: BrowserManager, windowRegistry: WindowRegistry) {
@@ -99,7 +100,7 @@ struct VegaCommands: Commands {
                 browserManager.toggleAISidebar()
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
-            .disabled(!browserManager.settingsManager.showAIAssistant)
+            .disabled(!vegaSettings.showAIAssistant)
 
             Button("Toggle Picture in Picture") {
                 browserManager.requestPiPForCurrentTabInActiveWindow()
@@ -270,7 +271,7 @@ struct VegaCommands: Commands {
         }
 
         // Extensions Commands
-        if browserManager.settingsManager.experimentalExtensions {
+        if vegaSettings.experimentalExtensions {
             CommandMenu("Extensions") {
                 Button("Install Extension...") {
                     browserManager.showExtensionInstallDialog()
@@ -280,7 +281,7 @@ struct VegaCommands: Commands {
                 Button("Manage Extensions...") {
                     // Open native Settings to Extensions pane
                     openSettings()
-                    browserManager.settingsManager.currentSettingsTab = .extensions
+                    vegaSettings.currentSettingsTab = .extensions
                 }
 
                 if #available(macOS 15.5, *) {

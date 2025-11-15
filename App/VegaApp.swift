@@ -16,6 +16,7 @@ import WebKit
 struct VegaApp: App {
     @State private var windowRegistry = WindowRegistry()
     @State private var webViewCoordinator = WebViewCoordinator()
+    @State private var settingsManager = SettingsManager()
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     // TEMPORARY: BrowserManager will be phased out as a global singleton.
@@ -30,6 +31,7 @@ struct VegaApp: App {
                 .environmentObject(browserManager)
                 .environment(windowRegistry)
                 .environment(webViewCoordinator)
+                .environment(\.vegaSettings, settingsManager)
                 .onAppear {
                     setupApplicationLifecycle()
                 }
@@ -44,6 +46,7 @@ struct VegaApp: App {
             SettingsView()
                 .environmentObject(browserManager)
                 .environmentObject(browserManager.gradientColorManager)
+                .environment(\.vegaSettings, settingsManager)
         }
     }
 
@@ -75,9 +78,10 @@ struct VegaApp: App {
         // TODO: Remove these connections - coordinators should be independent
         browserManager.webViewCoordinator = webViewCoordinator
         browserManager.windowRegistry = windowRegistry
+        vegaSettings = settingsManager
 
         // Initialize keyboard shortcut manager
-        browserManager.settingsManager.keyboardShortcutManager.setBrowserManager(browserManager)
+        settingsManager.keyboardShortcutManager.setBrowserManager(browserManager)
 
         // Set up window lifecycle callbacks
         windowRegistry.onWindowRegister = { [weak browserManager] windowState in

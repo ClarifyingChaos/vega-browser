@@ -10,12 +10,13 @@ import WebKit
 
 struct PrivacySettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
+    @Environment(\.vegaSettings) var vegaSettings
     @StateObject private var cookieManager = CookieManager()
     @StateObject private var cacheManager = CacheManager()
     @State private var showingCookieManager = false
     @State private var showingCacheManager = false
     @State private var isClearing = false
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Cookie Management Section
@@ -143,8 +144,8 @@ struct PrivacySettingsView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     // Activated: Block cross‑site tracking via content rules + iframe cookie shim
-                    Toggle("Block Cross-Site Tracking", isOn: $browserManager.settingsManager.blockCrossSiteTracking)
-                        .onChange(of: browserManager.settingsManager.blockCrossSiteTracking) { _, enabled in
+                    Toggle("Block Cross-Site Tracking", isOn: $vegaSettings.blockCrossSiteTracking)
+                        .onChange(of: vegaSettings.blockCrossSiteTracking) { _, enabled in
                             browserManager.trackingProtectionManager.setEnabled(enabled)
                         }
 

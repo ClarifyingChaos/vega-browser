@@ -10,6 +10,7 @@ import SwiftUI
 struct SidebarResizeView: View {
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(BrowserWindowState.self) private var windowState
+    @Environment(\.vegaSettings) var vegaSettings
     @State private var isResizing = false
     @State private var isHovering = false
     @State private var startingWidth: CGFloat = 0
@@ -23,7 +24,7 @@ struct SidebarResizeView: View {
     private let maxWidth: CGFloat = 520
 
     private var sitsOnRight: Bool {
-        browserManager.settingsManager.sidebarPosition == .right
+        vegaSettings.sidebarPosition == .right
     }
 
     private var indicatorOffset: CGFloat {

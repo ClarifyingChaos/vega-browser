@@ -8,6 +8,7 @@ struct SidebarView: View {
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(WindowRegistry.self) private var windowRegistry
     @Environment(\.tabDragManager) private var dragManager
+    @Environment(\.vegaSettings) var vegaSettings
     @State private var activeSpaceIndex: Int = 0
     @State private var currentScrollID: Int? = nil
     @State private var hasTriggeredHaptic = false
@@ -110,15 +111,15 @@ struct SidebarView: View {
                         ForEach(SidebarPosition.allCases) { position in
                             
                             Toggle(isOn: Binding(get: {
-                                return browserManager.settingsManager.sidebarPosition == position
+                                return vegaSettings.sidebarPosition == position
                             }, set: { Value in
-                                browserManager.settingsManager.sidebarPosition = position
+                                vegaSettings.sidebarPosition = position
                             })) {
                                 Label(position.displayName, systemImage: position.icon)
                             }
                         }
                     } label: {
-                        Label("Sidebar Position", systemImage: browserManager.settingsManager.sidebarPosition.icon)
+                        Label("Sidebar Position", systemImage: vegaSettings.sidebarPosition.icon)
                     }
                     
                     Divider()
@@ -168,7 +169,7 @@ struct SidebarView: View {
         && !browserManager.isTransitioningProfile
         
         let content = VStack(spacing: 8) {
-            if browserManager.settingsManager.topBarAddressView {
+            if vegaSettings.topBarAddressView {
                 SidebarWindowControlsView()
                     .environmentObject(browserManager)
                     .environment(windowState)
@@ -176,7 +177,7 @@ struct SidebarView: View {
             }
             
             // Only show navigation buttons if top bar address view is disabled
-            if !browserManager.settingsManager.topBarAddressView {
+            if !vegaSettings.topBarAddressView {
                 HStack(spacing: 2) {
                     NavButtonsView(effectiveSidebarWidth: effectiveWidth)
                 }
@@ -185,7 +186,7 @@ struct SidebarView: View {
             }
             
             // Only show URL bar in sidebar if top bar address view is disabled
-            if !browserManager.settingsManager.topBarAddressView {
+            if !vegaSettings.topBarAddressView {
                 URLBarView(isSidebarHovered: isSidebarHovered)
                     .padding(.horizontal, 8)
             }
@@ -233,7 +234,7 @@ struct SidebarView: View {
             SidebarUpdateNotification(downloadsMenuVisible: showDownloadsMenu)
                 .environmentObject(browserManager)
                 .environment(windowState)
-                .environment(browserManager.settingsManager)
+                .environment(vegaSettings)
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
 
@@ -308,7 +309,7 @@ struct SidebarView: View {
             if windowState.isSidebarMenuVisible {
                 SidebarMenu()
                     .transition(
-                        .move(edge: browserManager.settingsManager.sidebarPosition == .left ? .leading : .trailing)
+                        .move(edge: vegaSettings.sidebarPosition == .left ? .leading : .trailing)
                         .combined(with: .opacity)
                     )
             } else {
@@ -551,8 +552,8 @@ struct SidebarView: View {
     }
     
     private func updateSidebarPosition(_ position: SidebarPosition) {
-        guard browserManager.settingsManager.sidebarPosition != position else { return }
-        browserManager.settingsManager.sidebarPosition = position
+        guard vegaSettings.sidebarPosition != position else { return }
+        vegaSettings.sidebarPosition = position
     }
 }
 
@@ -560,20 +561,21 @@ struct SidebarView: View {
 private struct SidebarWindowControlsView: View {
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(BrowserWindowState.self) private var windowState
-    
+    @Environment(\.vegaSettings) var vegaSettings
+
     var body: some View {
         HStack(spacing: 8) {
             MacButtonsView()
                 .frame(width: 70)
             
-            Button("Toggle Sidebar", systemImage: browserManager.settingsManager.sidebarPosition == .left ? "sidebar.left" : "sidebar.right") {
+            Button("Toggle Sidebar", systemImage: vegaSettings.sidebarPosition == .left ? "sidebar.left" : "sidebar.right") {
                 browserManager.toggleSidebar(for: windowState)
             }
             .labelStyle(.iconOnly)
             .buttonStyle(NavButtonStyle())
             .foregroundStyle(Color.primary)
             
-            if browserManager.settingsManager.showAIAssistant {
+            if vegaSettings.showAIAssistant {
                 Button("Toggle AI Assistant", systemImage: "sparkle") {
                     browserManager.toggleAISidebar(for: windowState)
                 }

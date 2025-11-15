@@ -12,13 +12,14 @@ struct WindowView: View {
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(CommandPalette.self) private var commandPalette
     @Environment(WindowRegistry.self) private var windowRegistry
+    @Environment(\.vegaSettings) var vegaSettings
     @StateObject private var hoverSidebarManager = HoverSidebarManager()
     @Environment(\.colorScheme) var colorScheme
-    
+
     // Calculate webview Y offset (where the web content starts)
     private var webViewYOffset: CGFloat {
         // Approximate Y offset for web content start (nav bar + URL bar + padding)
-        if browserManager.settingsManager.topBarAddressView {
+        if vegaSettings.topBarAddressView {
             return TopBarMetrics.height  // Top bar height
         } else {
             return 20  // Accounts for navigation area height
@@ -179,7 +180,7 @@ struct WindowView: View {
     @ViewBuilder
     func SidebarWebViewStack() -> some View{
         let aiVisible = windowState.isSidebarAIChatVisible
-        let aiAppearsOnTrailingEdge = browserManager.settingsManager.sidebarPosition == .left
+        let aiAppearsOnTrailingEdge = vegaSettings.sidebarPosition == .left
         
         HStack(spacing: 0) {
             if aiAppearsOnTrailingEdge {
@@ -196,14 +197,14 @@ struct WindowView: View {
                 SpacesSidebar()
             }
         }
-        .padding(.trailing, windowState.isSidebarVisible && browserManager.settingsManager.sidebarPosition == .right ? 0 : aiVisible ? 0 : 8)
-        .padding(.leading, windowState.isSidebarVisible && browserManager.settingsManager.sidebarPosition == .left ? 0 : aiVisible ? 0 : 8)
+        .padding(.trailing, windowState.isSidebarVisible && vegaSettings.sidebarPosition == .right ? 0 : aiVisible ? 0 : 8)
+        .padding(.leading, windowState.isSidebarVisible && vegaSettings.sidebarPosition == .left ? 0 : aiVisible ? 0 : 8)
     }
     
     @ViewBuilder
     func SpacesSidebar() -> some View{
         SidebarView()
-            .overlay(alignment: browserManager.settingsManager.sidebarPosition == .left ? .trailing : .leading) {
+            .overlay(alignment: vegaSettings.sidebarPosition == .left ? .trailing : .leading) {
                 if windowState.isSidebarVisible {
                     SidebarResizeView()
                         .frame(maxHeight: .infinity)
@@ -227,7 +228,7 @@ struct WindowView: View {
             }
         }()
         
-        let hasTopBar = browserManager.settingsManager.topBarAddressView
+        let hasTopBar = vegaSettings.topBarAddressView
         
         VStack(spacing: 0) {
             if hasTopBar {
@@ -252,7 +253,7 @@ struct WindowView: View {
     
     @ViewBuilder
     func AISidebar() -> some View{
-        let handleAlignment: Alignment = browserManager.settingsManager.sidebarPosition == .left ? .leading : .trailing
+        let handleAlignment: Alignment = vegaSettings.sidebarPosition == .left ? .leading : .trailing
         
         SidebarAIChat()
             .frame(width: windowState.aiSidebarWidth)
@@ -263,12 +264,12 @@ struct WindowView: View {
                     .environment(windowState)
             }
             .transition(
-                .move(edge: browserManager.settingsManager.sidebarPosition == .left ? .trailing : .leading)
+                .move(edge: vegaSettings.sidebarPosition == .left ? .trailing : .leading)
                 .combined(with: .opacity)
             )
             .environmentObject(browserManager)
             .environment(windowState)
-            .environment(browserManager.settingsManager)
+            .environment(vegaSettings)
     }
     
     private func websiteColumnClipShape(cornerRadius: CGFloat, hasTopBar: Bool) -> AnyShape {
