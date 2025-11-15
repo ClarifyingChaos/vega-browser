@@ -15,6 +15,16 @@ struct SettingsView: View {
     @Environment(\.vegaSettings) var vegaSettings
 
     var body: some View {
+        SettingsContent(vegaSettings: vegaSettings, browserManager: browserManager, gradientColorManager: gradientColorManager)
+    }
+}
+
+private struct SettingsContent: View {
+    @Bindable var vegaSettings: VegaSettingsService
+    @ObservedObject var browserManager: BrowserManager
+    @ObservedObject var gradientColorManager: GradientColorManager
+
+    var body: some View {
         TabView(selection: $vegaSettings.currentSettingsTab) {
             SettingsPane {
                 GeneralSettingsView()
@@ -148,8 +158,11 @@ struct SettingsTabItem: View {
 
 struct GeneralSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
+    @Environment(\.vegaSettings) var vegaSettings
 
     var body: some View {
+        @Bindable var settings = vegaSettings
+
         HStack(alignment: .top, spacing: 16) {
             // Hero card
             SettingsHeroCard()
@@ -167,7 +180,7 @@ struct GeneralSettingsView: View {
                             Spacer()
                             Picker(
                                 "Background Material",
-                                selection: $vegaSettings
+                                selection: $settings
                                     .currentMaterialRaw
                             ) {
                                 ForEach(materials, id: \.value.rawValue) {
@@ -190,7 +203,7 @@ struct GeneralSettingsView: View {
                     ) {
                         VStack(alignment: .leading, spacing: 16) {
                             Toggle(
-                                isOn: $vegaSettings
+                                isOn: $settings
                                     .askBeforeQuit
                             ) {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -207,7 +220,7 @@ struct GeneralSettingsView: View {
                                 Spacer()
                                 Picker(
                                     "Sidebar Position",
-                                    selection: $vegaSettings
+                                    selection: $settings
                                         .sidebarPosition
                                 ) {
                                     ForEach(SidebarPosition.allCases) { provider in
@@ -220,7 +233,7 @@ struct GeneralSettingsView: View {
                             }
                             
                             Toggle(
-                                isOn: $vegaSettings
+                                isOn: $settings
                                     .topBarAddressView
                             ) {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -236,7 +249,7 @@ struct GeneralSettingsView: View {
                             Divider().opacity(0.4)
                             
                             Toggle(
-                                isOn: $vegaSettings
+                                isOn: $settings
                                     .showLinkStatusBar
                             ) {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -260,7 +273,7 @@ struct GeneralSettingsView: View {
                             Spacer()
                             Picker(
                                 "Search Engine",
-                                selection: $vegaSettings
+                                selection: $settings
                                     .searchEngine
                             ) {
                                 ForEach(SearchProvider.allCases) { provider in
@@ -281,7 +294,7 @@ struct GeneralSettingsView: View {
                             HStack(alignment: .firstTextBaseline) {
                                 Text("Enable AI Assistant")
                                 Spacer()
-                                Toggle("", isOn: $vegaSettings.showAIAssistant)
+                                Toggle("", isOn: $settings.showAIAssistant)
                                     .labelsHidden()
                             }
                             
@@ -291,7 +304,7 @@ struct GeneralSettingsView: View {
                                 HStack(alignment: .firstTextBaseline) {
                                     Text("Gemini API Key")
                                     Spacer()
-                                    SecureField("Enter API Key", text: $vegaSettings.geminiApiKey)
+                                    SecureField("Enter API Key", text: $settings.geminiApiKey)
                                         .textFieldStyle(.roundedBorder)
                                         .frame(width: 220)
                                 }
@@ -310,7 +323,7 @@ struct GeneralSettingsView: View {
                                     Spacer()
                                     Picker(
                                         "Model",
-                                        selection: $vegaSettings.geminiModel
+                                        selection: $settings.geminiModel
                                     ) {
                                         ForEach(GeminiModel.allCases) { model in
                                             VStack(alignment: .leading) {
@@ -347,8 +360,7 @@ struct GeneralSettingsView: View {
                                     selection: Binding<TimeInterval>(
                                         get: {
                                             nearestTimeoutOption(
-                                                to: browserManager
-                                                    .vegaSettings
+                                                to: vegaSettings
                                                     .tabUnloadTimeout
                                             )
                                         },
@@ -1012,6 +1024,7 @@ private struct MigrationControls: View {
 
 struct ShortcutsSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
+    @Environment(\.vegaSettings) var vegaSettings
     @State private var searchText = ""
     @State private var selectedCategory: ShortcutCategory? = nil
 
@@ -1403,8 +1416,11 @@ struct ExtensionRowView: View {
 
 struct AdvancedSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
+    @Environment(\.vegaSettings) var vegaSettings
 
     var body: some View {
+        @Bindable var settings = vegaSettings
+        return
         VStack(alignment: .leading, spacing: 16) {
             if #available(macOS 15.5, *) {
                 SettingsSectionCard(
@@ -1412,7 +1428,7 @@ struct AdvancedSettingsView: View {
                     subtitle: "Features in development"
                 ) {
                     Toggle(
-                        isOn: $vegaSettings.experimentalExtensions
+                        isOn: $settings.experimentalExtensions
                     ) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("EXPERIMENTAL: Enable Extension Support")
@@ -1432,7 +1448,7 @@ struct AdvancedSettingsView: View {
                 subtitle: "Development and debugging features"
             ) {
                 Toggle(
-                    isOn: $vegaSettings.debugToggleUpdateNotification
+                    isOn: $settings.debugToggleUpdateNotification
                 ) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Show Update Notification")

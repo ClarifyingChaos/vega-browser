@@ -339,7 +339,12 @@ extension Notification.Name {
 
 // MARK: - Environment Key
 private struct VegaSettingsServiceKey: EnvironmentKey {
-    static let defaultValue = VegaSettingsService()
+    @MainActor
+    static var defaultValue: VegaSettingsService {
+        // This should never be called since we always inject from VegaApp
+        // But EnvironmentKey protocol requires a default value
+        return VegaSettingsService()
+    }
 }
 
 extension EnvironmentValues {
