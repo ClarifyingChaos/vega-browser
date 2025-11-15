@@ -3,6 +3,7 @@
 //  Vega
 //
 //  Created by Maciek Bagiński on 30/07/2025.
+//  Updated by Aether Aurelia on 15/11/2025.
 //
 
 import SwiftUI
