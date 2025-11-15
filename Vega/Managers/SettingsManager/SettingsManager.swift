@@ -1,8 +1,9 @@
 //
-//  SettingsManager.swift
+//  VegaSettingsService.swift
 //  Vega
 //
 //  Created by Maciek Bagiński on 03/08/2025.
+//  Updated by Aether Aurelia on 15/11/2025.
 //
 
 import AppKit
@@ -10,7 +11,7 @@ import SwiftUI
 
 @MainActor
 @Observable
-class SettingsManager {
+class VegaSettingsService {
     let keyboardShortcutManager = KeyboardShortcutManager()
     private let userDefaults = UserDefaults.standard
     private let materialKey = "settings.currentMaterialRaw"
@@ -337,14 +338,14 @@ extension Notification.Name {
 }
 
 // MARK: - Environment Key
-private struct SettingsManagerKey: EnvironmentKey {
-    static let defaultValue = SettingsManager()
+private struct VegaSettingsServiceKey: EnvironmentKey {
+    static let defaultValue = VegaSettingsService()
 }
 
 extension EnvironmentValues {
-    var vegaSettings: SettingsManager {
-        get { self[SettingsManagerKey.self] }
-        set { self[SettingsManagerKey.self] = newValue }
+    var vegaSettings: VegaSettingsService {
+        get { self[VegaSettingsServiceKey.self] }
+        set { self[VegaSettingsServiceKey.self] = newValue }
     }
 }
 
