@@ -119,7 +119,7 @@ struct OllamaModel: Identifiable, Equatable {
 struct SidebarAIChat: View {
     @Environment(BrowserWindowState.self) private var windowState
     @EnvironmentObject var browserManager: BrowserManager
-    @Environment(VegaSettingsService.self) var vegaSettings
+    @Environment(\.vegaSettings) var vegaSettings
     
     @State private var messageText: String = ""
     @State private var messages: [ChatMessage] = []
