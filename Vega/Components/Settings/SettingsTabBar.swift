@@ -8,18 +8,19 @@ import SwiftUI
 
 struct SettingsTabBar: View {
     @EnvironmentObject var browserManager: BrowserManager
+    @Environment(\.vegaSettings) var vegaSettings
 
     var body: some View {
         ZStack {
             BlurEffectView(
-                material: browserManager.settingsManager.currentMaterial,
+                material: vegaSettings.currentMaterial,
                 state: .active
             )
             HStack {
                 MacButtonsView()
                     .frame(width: 70, height: 32)
                 Spacer()
-                Text(browserManager.settingsManager.currentSettingsTab.name)
+                Text(vegaSettings.currentSettingsTab.name)
                     .font(.headline)
                 Spacer()
             }
