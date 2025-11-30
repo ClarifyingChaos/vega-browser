@@ -270,6 +270,23 @@ struct VegaCommands: Commands {
             }
         }
 
+        // Appearance Commands
+        CommandMenu("Appearance") {
+            Button("Customize Space Gradient...") {
+                browserManager.showGradientEditor()
+            }
+            .keyboardShortcut("g", modifiers: [.command, .shift])
+            .disabled(browserManager.tabManager.currentSpace == nil)
+
+            Divider()
+
+            Button("Create Boosts") {
+                browserManager.showBoostsDialog()
+            }
+            .keyboardShortcut("b", modifiers: [.command, .shift])
+            .disabled(browserManager.currentTabForActiveWindow() == nil)
+        }
+
         // Extensions Commands
         if vegaSettings.experimentalExtensions {
             CommandMenu("Extensions") {
@@ -291,23 +308,6 @@ struct VegaCommands: Commands {
                     }
                 }
             }
-        }
-
-        // Appearance Commands
-        CommandMenu("Appearance") {
-            Button("Customize Space Gradient...") {
-                browserManager.showGradientEditor()
-            }
-            .keyboardShortcut("g", modifiers: [.command, .shift])
-            .disabled(browserManager.tabManager.currentSpace == nil)
-
-            Divider()
-
-            Button("Create Boosts") {
-                browserManager.showBoostsDialog()
-            }
-            .keyboardShortcut("b", modifiers: [.command, .shift])
-            .disabled(browserManager.currentTabForActiveWindow() == nil)
         }
     }
 }
