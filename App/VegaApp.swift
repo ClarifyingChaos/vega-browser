@@ -41,7 +41,11 @@ struct VegaApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .commands {
-            VegaCommands(browserManager: browserManager, windowRegistry: windowRegistry)
+            VegaCommands(
+                browserManager: browserManager,
+                windowRegistry: windowRegistry,
+                shortcutManager: keyboardShortcutManager
+            )
         }
 
         // Native macOS Settings window
