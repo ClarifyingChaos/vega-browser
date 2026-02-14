@@ -4,6 +4,9 @@
 sessions-config.json
 .crush
 /sessions
+.xcodebuildmcp/
+package.json
+package-lock.json
 
 ## User settings
 xcuserdata/
@@ -41,6 +44,8 @@ DerivedData/
 ## Playgrounds
 'timeline.xctimeline'
 playground.xcworkspace
+*.playground
+UIPlayground/
 
 # Swift Package Manager
 #
