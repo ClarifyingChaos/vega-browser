@@ -408,6 +408,8 @@ class BrowserManager: ObservableObject {
     var boostsManager = BoostsManager()
     var keyboardShortcutManager: KeyboardShortcutManager?
     weak var vegaSettings: VegaSettingsService?
+    weak var aiService: AIService?
+    weak var aiConfigService: AIConfigService?
 
     var externalMiniWindowManager = ExternalMiniWindowManager()
     @Published var peekManager = PeekManager()
@@ -2413,6 +2415,9 @@ class BrowserManager: ObservableObject {
             .environment(windowRegistry)
             .environment(webViewCoordinator)
             .environmentObject(gradientColorManager)
+            .environment(\.vegaSettings, vegaSettings)
+            .environment(aiService)
+            .environment(aiConfigService)
 
         newWindow.contentView = NSHostingView(rootView: contentView)
         newWindow.title = "Vega"
@@ -2472,6 +2477,9 @@ class BrowserManager: ObservableObject {
             .environment(windowRegistry)
             .environment(webViewCoordinator)
             .environmentObject(gradientColorManager)
+            .environment(\.vegaSettings, vegaSettings)
+            .environment(aiService)
+            .environment(aiConfigService)
 
         newWindow.contentView = NSHostingView(rootView: contentView)
         newWindow.title = "Incognito - Vega"
