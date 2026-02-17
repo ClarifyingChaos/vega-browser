@@ -331,6 +331,14 @@ struct VegaCommands: Commands {
                         vegaSettings.currentSettingsTab = .extensions
                     }
 
+                    Divider()
+
+                    Button("Chrome Web Store") {
+                        if let tab = browserManager.currentTabForActiveWindow() {
+                            tab.loadURL("https://chromewebstore.google.com")
+                        }
+                    }
+
                     #if DEBUG
                     Divider()
                     Button("Open Popup Console") {
