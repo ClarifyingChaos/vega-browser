@@ -2415,7 +2415,7 @@ class BrowserManager: ObservableObject {
             .environment(windowRegistry)
             .environment(webViewCoordinator)
             .environmentObject(gradientColorManager)
-            .environment(\.vegaSettings, vegaSettings)
+            .environment(\.vegaSettings, vegaSettings ?? VegaSettingsService())
             .environment(aiService)
             .environment(aiConfigService)
 
@@ -2477,7 +2477,7 @@ class BrowserManager: ObservableObject {
             .environment(windowRegistry)
             .environment(webViewCoordinator)
             .environmentObject(gradientColorManager)
-            .environment(\.vegaSettings, vegaSettings)
+            .environment(\.vegaSettings, vegaSettings ?? VegaSettingsService())
             .environment(aiService)
             .environment(aiConfigService)
 
