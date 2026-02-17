@@ -116,6 +116,8 @@ struct VegaApp: App {
         browserManager.windowRegistry = windowRegistry
         browserManager.vegaSettings = settingsManager
         browserManager.tabManager.vegaSettings = settingsManager
+        browserManager.aiService = aiService
+        browserManager.aiConfigService = aiConfigService
 
         // Configure managers that depend on settings
         browserManager.compositorManager.setUnloadTimeout(settingsManager.tabUnloadTimeout)
