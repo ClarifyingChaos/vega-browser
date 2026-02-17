@@ -393,6 +393,7 @@ class WebViewCoordinator {
             "backgroundColor_\(tabId.uuidString)",
             "historyStateDidChange",
             "VegaIdentity",
+            "vegaShortcutDetect",
         ]
 
         for handlerName in allMessageHandlers {
