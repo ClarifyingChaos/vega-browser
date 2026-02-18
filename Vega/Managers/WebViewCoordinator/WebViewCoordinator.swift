@@ -199,6 +199,7 @@ class WebViewCoordinator {
         newWebView.configuration.userContentController.add(tab, name: "backgroundColor_\(tabId.uuidString)")
         newWebView.configuration.userContentController.add(tab, name: "historyStateDidChange")
         newWebView.configuration.userContentController.add(tab, name: "VegaIdentity")
+        newWebView.configuration.userContentController.add(tab, name: "vegaShortcutDetect")
         
         tab.setupThemeColorObserver(for: newWebView)
         
