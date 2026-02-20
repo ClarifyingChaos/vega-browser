@@ -168,6 +168,7 @@ struct SettingsTabItem: View {
 struct GeneralSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(\.vegaSettings) var vegaSettings
+    @State private var showingAddEngine = false
 
     var body: some View {
         @Bindable var settings = vegaSettings
@@ -300,15 +301,47 @@ struct GeneralSettingsView: View {
                             Picker(
                                 "Search Engine",
                                 selection: $settings
-                                    .searchEngine
+                                    .searchEngineId
                             ) {
                                 ForEach(SearchProvider.allCases) { provider in
-                                    Text(provider.displayName).tag(provider)
+                                    Text(provider.displayName).tag(provider.rawValue)
+                                }
+                                ForEach(vegaSettings.customSearchEngines) { engine in
+                                    Text(engine.name).tag(engine.id.uuidString)
                                 }
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
                             .frame(width: 220)
+
+                            Button {
+                                showingAddEngine = true
+                            } label: {
+                                Image(systemName: "plus")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+
+                        if let selected = vegaSettings.customSearchEngines.first(where: { $0.id.uuidString == vegaSettings.searchEngineId }) {
+                            HStack {
+                                Text(selected.name)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Remove") {
+                                    vegaSettings.customSearchEngines.removeAll { $0.id == selected.id }
+                                    vegaSettings.searchEngineId = SearchProvider.google.rawValue
+                                }
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .sheet(isPresented: $showingAddEngine) {
+                        CustomSearchEngineEditor { newEngine in
+                            vegaSettings.customSearchEngines.append(newEngine)
                         }
                     }
                     
