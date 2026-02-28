@@ -92,9 +92,17 @@ jobs:
             --password "$APPLE_APP_SPECIFIC_PASSWORD"
 
           zip -r Vega.zip "Vega.app"
-          xcrun notarytool submit "Vega.zip" \
+          SUBMIT_OUTPUT=$(xcrun notarytool submit "Vega.zip" \
             --keychain-profile "vega-notary" \
-            --wait
+            --wait 2>&1)
+          echo "$SUBMIT_OUTPUT"
+          SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep "^  id:" | head -1 | awk '{print $2}')
+          STATUS=$(echo "$SUBMIT_OUTPUT" | grep "^  status:" | awk '{print $2}')
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "Notarization rejected. Fetching log..."
+            xcrun notarytool log "$SUBMISSION_ID" --keychain-profile "vega-notary"
+            exit 1
+          fi
 
       - name: Staple notarization ticket
         run: xcrun stapler staple "Vega.app"
