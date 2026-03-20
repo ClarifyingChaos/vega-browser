@@ -20,8 +20,7 @@ struct PrivacySettingsView: View {
     var body: some View {
         @Bindable var settings = vegaSettings
 
-        return
-        VStack(alignment: .leading, spacing: 20) {
+        return VStack(alignment: .leading, spacing: 20) {
             // Cookie Management Section
             VStack(alignment: .leading, spacing: 12) {
                 Text("Cookie Management")
