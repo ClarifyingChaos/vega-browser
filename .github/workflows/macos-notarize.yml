@@ -59,7 +59,9 @@ jobs:
         run: |
           set -e
           mkdir -p build
-          ENTITLEMENTS="$(pwd)/Vega/Vega.entitlements"
+          # CI entitlements omit push/autofill which require provisioning profiles.
+          # The re-sign step applies the full entitlements before notarization.
+          ENTITLEMENTS="$(pwd)/Vega/Vega-CI.entitlements"
           echo "Attempting universal build (arm64 + x86_64)..."
           if ! xcodebuild -scheme Vega -configuration Release \
             -arch arm64 -arch x86_64 \
