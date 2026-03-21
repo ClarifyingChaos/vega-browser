@@ -110,3 +110,9 @@ DerivedData/
 *.xcresult
 *.log
 *.profraw
+.superpowers/
+
+# Certificates
+*.p12
+*.cer
+*.certSigningRequest
