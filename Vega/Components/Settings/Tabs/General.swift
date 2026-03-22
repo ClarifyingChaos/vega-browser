@@ -8,9 +8,12 @@
 import SwiftUI
 
 struct SettingsGeneralTab: View {
+    @EnvironmentObject var browserManager: BrowserManager
+    @EnvironmentObject var tabManager: TabManager
     @Environment(\.vegaSettings) var vegaSettings
     @State private var showingAddSite = false
     @State private var showingAddEngine = false
+    @State private var showingAdBlockerInfo = false
 
     var body: some View {
         @Bindable var settings = vegaSettings
@@ -20,8 +23,36 @@ struct SettingsGeneralTab: View {
                 Toggle("Warn before quitting Vega", isOn: $settings.askBeforeQuit)
                 Toggle("Automatically update Vega", isOn: .constant(true))
                     .disabled(true)
-                Toggle("Vega's Ad Blocker", isOn: .constant(false))
-                    .disabled(true)
+                Toggle(isOn: $settings.adBlockerEnabled) {
+                    HStack(spacing: 4) {
+                        Text("Vega's Ad Blocker")
+                        Button {
+                            showingAdBlockerInfo.toggle()
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .font(.caption)
+                                .foregroundStyle(.secondary.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $showingAdBlockerInfo, arrowEdge: .trailing) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Vega's Ad Blocker")
+                                    .font(.headline)
+                                Text("Built on uBlock Origin's community-maintained filter lists, adapted for WebKit. Blocks ads, trackers, and annoyances using network-level filtering, cosmetic hiding, and scriptlet injection — including YouTube ad blocking.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text("Filter lists update automatically every 24 hours.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(12)
+                            .frame(width: 280)
+                        }
+                    }
+                }
+                .onChange(of: vegaSettings.adBlockerEnabled) { _, enabled in
+                    browserManager.contentBlockerManager.setEnabled(enabled)
+                }
 
                 Section(header: Text("Search")) {
                     HStack {
@@ -61,6 +92,48 @@ struct SettingsGeneralTab: View {
                             .foregroundStyle(.red)
                             .buttonStyle(.plain)
                         }
+                    }
+                }
+
+                Section("Performance") {
+                    Picker("Tab Management", selection: Binding(
+                        get: { vegaSettings.tabManagementMode },
+                        set: { vegaSettings.tabManagementMode = $0 }
+                    )) {
+                        ForEach(TabManagementMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: vegaSettings.tabManagementMode.icon)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                        Text(vegaSettings.tabManagementMode.description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Picker("On Startup", selection: Binding(
+                        get: { vegaSettings.startupLoadMode },
+                        set: { vegaSettings.startupLoadMode = $0 }
+                    )) {
+                        ForEach(StartupLoadMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "power")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                        Text(vegaSettings.startupLoadMode.description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Button("Unload All Inactive Tabs") {
+                        tabManager.unloadAllInactiveTabs()
                     }
                 }
 

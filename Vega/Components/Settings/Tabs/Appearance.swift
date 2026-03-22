@@ -14,6 +14,11 @@ struct SettingsAppearanceTab: View {
     var body: some View {
         @Bindable var settings = vegaSettings
         Form {
+            Picker("Appearance", selection: $settings.appearanceMode) {
+                ForEach(AppearanceMode.allCases) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
             Picker(
                 "Background Material",
                 selection: $settings
