@@ -12,6 +12,7 @@ struct SpaceContextMenu: View {
     @EnvironmentObject var browserManager: BrowserManager
     @EnvironmentObject var tabManager: TabManager
     @Environment(TabOrganizerManager.self) private var tabOrganizerManager
+    @Environment(\.vegaSettings) var vegaSettings
 
     let space: Space
     let canDelete: Bool
@@ -87,7 +88,7 @@ struct SpaceContextMenu: View {
             } label: {
                 Label("Organize Tabs", systemImage: "wand.and.stars")
             }
-            .disabled(tabOrganizerManager.isOrganizing)
+            .disabled(tabOrganizerManager.isOrganizing || !vegaSettings.tabOrganizerEnabled)
 
             Divider()
 
