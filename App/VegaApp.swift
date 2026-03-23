@@ -86,6 +86,7 @@ struct VegaApp: App {
                 .environment(keyboardShortcutManager)
                 .environment(aiConfigService)
                 .environment(mcpManager)
+                .environment(tabOrganizerManager)
         }
     }
 
