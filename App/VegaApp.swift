@@ -70,7 +70,8 @@ struct VegaApp: App {
             VegaCommands(
                 browserManager: browserManager,
                 windowRegistry: windowRegistry,
-                shortcutManager: keyboardShortcutManager
+                shortcutManager: keyboardShortcutManager,
+                tabOrganizerManager: tabOrganizerManager
             )
         }
 
