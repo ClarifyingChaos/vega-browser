@@ -251,7 +251,7 @@ struct TabFolderView: View {
 
     private func folderTabView(_ tab: Tab, index: Int) -> some View {
         VegaDragSourceView(
-            item: VegaDragItem(tabId: tab.id, title: tab.name, urlString: tab.url.absoluteString),
+            item: VegaDragItem(tabId: tab.id, title: tab.displayName, urlString: tab.url.absoluteString),
             tab: tab,
             zoneID: .folder(folder.id),
             index: index,
