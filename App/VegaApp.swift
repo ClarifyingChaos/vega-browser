@@ -11,7 +11,6 @@ import Carbon
 import OSLog
 import Sparkle
 import SwiftUI
-import WebKit
 
 @main
 struct VegaApp: App {
@@ -185,9 +184,6 @@ struct VegaApp: App {
                 // BrowserManager was deallocated - perform minimal cleanup
                 // Remove compositor container view to prevent leaks
                 webViewCoordinator.removeCompositorContainerView(for: windowId)
-                print(
-                    "⚠️ [VegaApp] Window \(windowId) closed after BrowserManager deallocation - performed minimal cleanup"
-                )
             }
         }
 
