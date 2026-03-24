@@ -409,6 +409,8 @@ class BrowserManager: ObservableObject {
     var importManager: ImportManager
     var zoomManager = ZoomManager()
     var keyboardShortcutManager: KeyboardShortcutManager?
+    weak var mcpManager: MCPManager?
+    weak var tabOrganizerManager: TabOrganizerManager?
     weak var vegaSettings: VegaSettingsService?
     weak var aiService: AIService?
     weak var aiConfigService: AIConfigService?
@@ -2387,12 +2389,16 @@ class BrowserManager: ObservableObject {
             .background(BackgroundWindowModifier())
             .ignoresSafeArea(.all)
             .environmentObject(self)
+            .environmentObject(tabManager)
             .environment(windowRegistry)
             .environment(webViewCoordinator)
             .environmentObject(gradientColorManager)
             .environment(\.vegaSettings, vegaSettings ?? VegaSettingsService())
             .environment(aiService)
             .environment(aiConfigService)
+            .environment(keyboardShortcutManager)
+            .environment(mcpManager)
+            .environment(tabOrganizerManager)
 
         newWindow.contentView = NSHostingView(rootView: contentView)
         newWindow.title = "Vega"
@@ -2449,12 +2455,16 @@ class BrowserManager: ObservableObject {
             .background(BackgroundWindowModifier())
             .ignoresSafeArea(.all)
             .environmentObject(self)
+            .environmentObject(tabManager)
             .environment(windowRegistry)
             .environment(webViewCoordinator)
             .environmentObject(gradientColorManager)
             .environment(\.vegaSettings, vegaSettings ?? VegaSettingsService())
             .environment(aiService)
             .environment(aiConfigService)
+            .environment(keyboardShortcutManager)
+            .environment(mcpManager)
+            .environment(tabOrganizerManager)
 
         newWindow.contentView = NSHostingView(rootView: contentView)
         newWindow.title = "Incognito - Vega"
