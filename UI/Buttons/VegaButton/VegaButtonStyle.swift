@@ -143,6 +143,21 @@ struct VegaButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Scale Button Style
+
+struct ScaleButtonStyle: ButtonStyle {
+    var scale: CGFloat = 0.95
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? scale : 1.0)
+            .animation(
+                .easeInOut(duration: 0.1),
+                value: configuration.isPressed
+            )
+    }
+}
+
 // MARK: - Convenience Extensions
 
 extension ButtonStyle where Self == VegaButtonStyle {
@@ -215,28 +230,23 @@ private struct ButtonPreviewSection: View {
     private var buttonStack: some View {
         VStack(spacing: 20) {
             Button("Create Space", systemImage: "plus") {
-                print("Create")
             }
             .buttonStyle(.vegaButtonProminent)
             .background(.red)
 
             Button("Cancel") {
-                print("Cancel")
             }
             .buttonStyle(.vegaButton)
 
             Button("Delete", systemImage: "trash") {
-                print("Delete")
             }
             .buttonStyle(.vegaButton(role: .destructive))
 
             Button("Erase Everything", systemImage: "flame") {
-                print("Erase")
             }
             .buttonStyle(.vegaButtonProminent(role: .destructive))
 
             Button("Disabled") {
-                print("Disabled")
             }
             .buttonStyle(.vegaButtonProminent)
             .disabled(true)
