@@ -135,6 +135,8 @@ struct VegaApp: App {
         browserManager.windowRegistry = windowRegistry
         browserManager.vegaSettings = settingsManager
         browserManager.tabManager.vegaSettings = settingsManager
+        browserManager.siteRoutingManager.settingsService = settingsManager
+        browserManager.siteRoutingManager.browserManager = browserManager
         browserManager.aiService = aiService
         browserManager.aiConfigService = aiConfigService
 
