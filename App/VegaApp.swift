@@ -76,9 +76,9 @@ struct VegaApp: App {
         }
 
 
-        // Native macOS Settings window
-        Settings {
-            SettingsView()
+        // macOS 26 style sidebar settings window
+        Window("Vega Settings", id: "vega-settings") {
+            SettingsWindow()
                 .environmentObject(browserManager)
                 .environmentObject(browserManager.tabManager)
                 .environmentObject(browserManager.gradientColorManager)
@@ -88,6 +88,8 @@ struct VegaApp: App {
                 .environment(mcpManager)
                 .environment(tabOrganizerManager)
         }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 
     // MARK: - Application Lifecycle Setup
