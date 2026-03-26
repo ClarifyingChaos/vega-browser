@@ -80,6 +80,7 @@ struct VegaApp: App {
         Settings {
             SettingsView()
                 .environmentObject(browserManager)
+                .environmentObject(browserManager.tabManager)
                 .environmentObject(browserManager.gradientColorManager)
                 .environment(\.vegaSettings, settingsManager)
                 .environment(keyboardShortcutManager)
