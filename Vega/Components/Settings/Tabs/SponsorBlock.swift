@@ -14,28 +14,26 @@ struct SettingsSponsorBlockTab: View {
         @Bindable var settings = vegaSettings
         Form {
             Section {
-                Toggle("Skip YouTube Sponsors", isOn: $settings.sponsorBlockEnabled)
+                Toggle("SponsorBlock", isOn: $settings.sponsorBlockEnabled)
             } footer: {
                 Text("Skip sponsored segments, intros, and other non-content on YouTube using community data from SponsorBlock.")
             }
 
             if vegaSettings.sponsorBlockEnabled {
-                Section("Behavior") {
-                    Toggle("Auto-skip segments", isOn: $settings.sponsorBlockAutoSkip)
-                }
-
                 Section("Categories") {
                     ForEach(SponsorBlockCategory.allCases) { category in
-                        Toggle(isOn: Binding(
-                            get: { vegaSettings.sponsorBlockCategories.contains(category.rawValue) },
-                            set: { enabled in
-                                if enabled {
-                                    vegaSettings.sponsorBlockCategories.append(category.rawValue)
-                                } else {
-                                    vegaSettings.sponsorBlockCategories.removeAll { $0 == category.rawValue }
-                                }
+                        Picker(selection: Binding(
+                            get: {
+                                SponsorBlockSkipOption(rawValue: vegaSettings.sponsorBlockCategoryOptions[category.rawValue] ?? category.defaultSkipOption.rawValue) ?? category.defaultSkipOption
+                            },
+                            set: { newValue in
+                                vegaSettings.sponsorBlockCategoryOptions[category.rawValue] = newValue.rawValue
                             }
                         )) {
+                            ForEach(SponsorBlockSkipOption.allCases) { option in
+                                Text(option.displayName).tag(option)
+                            }
+                        } label: {
                             HStack(spacing: 8) {
                                 Circle()
                                     .fill(sponsorBlockCategoryColor(category))

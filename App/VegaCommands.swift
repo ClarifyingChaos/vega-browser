@@ -87,6 +87,16 @@ struct VegaCommands: Commands {
                 openWindow(id: "vega-settings")
             }
             .keyboardShortcut(",", modifiers: .command)
+
+            Button("Import from another Browser") {
+                browserManager.dialogManager.showDialog(
+                    BrowserImportDialog(
+                        onCancel: {
+                            browserManager.dialogManager.closeDialog()
+                        }
+                    )
+                )
+            }
         }
 
         // Replace the standard Quit menu item to route through showQuitDialog(),
@@ -104,23 +114,12 @@ struct VegaCommands: Commands {
             Button("Make Vega Default Browser") {
                 browserManager.setAsDefaultBrowser()
             }
-            
+
             Button("Check for Updates...") {
                 appDelegate.updaterController.checkForUpdates(nil)
             }
         }
         
-        CommandGroup(after: .appSettings) {
-            Button("Import from another Browser") {
-                browserManager.dialogManager.showDialog(
-                    BrowserImportDialog(
-                        onCancel: {
-                            browserManager.dialogManager.closeDialog()
-                        }
-                    )
-                )
-            }
-        }
 
         // Edit Section
         CommandGroup(replacing: .undoRedo) {
