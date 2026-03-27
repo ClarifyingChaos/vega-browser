@@ -127,6 +127,7 @@ struct VegaApp: App {
         appDelegate.browserManager = browserManager
         appDelegate.windowRegistry = windowRegistry
         appDelegate.mcpManager = mcpManager
+        appDelegate.drainPendingURLs()
         browserManager.appDelegate = appDelegate
 
         // TEMPORARY: Wire coordinators to BrowserManager
