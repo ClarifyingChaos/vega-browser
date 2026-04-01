@@ -116,3 +116,4 @@ DerivedData/
 *.p12
 *.cer
 *.certSigningRequest
+.worktrees
