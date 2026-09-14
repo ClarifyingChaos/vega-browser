@@ -174,7 +174,7 @@ struct DialogCard<Content: View>: View {
                 VegaDesign.Radius.shape(VegaDesign.Radius.xl)
                     .stroke(.white.opacity(0.25), lineWidth: 1)
             }
-            .vegaElevation(.raised)
+            .vegaElevation(.floating)
     }
 }
 

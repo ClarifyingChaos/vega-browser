@@ -20,7 +20,7 @@ struct MiniWindowPrimaryButtonStyle: ButtonStyle {
                 Capsule()
                     .stroke(Color.white.opacity(0.35), lineWidth: 1)
             )
-            .vegaElevation(.floating)
+            .vegaElevation(configuration.isPressed ? .raised : .floating)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
     }
@@ -55,7 +55,7 @@ struct MiniWindowSuccessButtonStyle: ButtonStyle {
                 Capsule()
                     .stroke(Color.white.opacity(0.35), lineWidth: 1)
             )
-            .vegaElevation(.floating)
+            .vegaElevation(configuration.isPressed ? .raised : .floating)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
     }
@@ -90,7 +90,7 @@ struct MiniWindowErrorButtonStyle: ButtonStyle {
                 Capsule()
                     .stroke(Color.white.opacity(0.35), lineWidth: 1)
             )
-            .vegaElevation(.floating)
+            .vegaElevation(configuration.isPressed ? .raised : .floating)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
     }
