@@ -15,7 +15,6 @@ struct SpaceTab: View {
     var onMute: () -> Void
     @State private var isHovering: Bool = false
     @State private var isCloseHovering: Bool = false
-    @State private var isSpeakerHovering: Bool = false
     @FocusState private var isTextFieldFocused: Bool
     @EnvironmentObject var browserManager: BrowserManager
     @EnvironmentObject var tabManager: TabManager
@@ -27,9 +26,9 @@ struct SpaceTab: View {
         HStack(spacing: 0) {
             Color.black
             LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
-                .frame(width: 20)
+                .frame(width: VegaDesign.Spacing.titleFade)
             Color.clear
-                .frame(width: isHovering ? 32 : 0)
+                .frame(width: isHovering ? VegaDesign.Size.row : 0)
         }
     }
 
@@ -45,33 +44,21 @@ struct SpaceTab: View {
                 action()
             }
         }) {
-            HStack(spacing: 8) {
+            HStack(spacing: VegaDesign.Spacing.md) {
                 tab.favicon
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 18, height: 18)
-                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
-                    .opacity(tab.isUnloaded ? 0.5 : 1.0)
+                    .frame(width: VegaDesign.Size.favicon, height: VegaDesign.Size.favicon)
+                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
                 if tab.hasAudioContent || tab.hasPlayingAudio || tab.isAudioMuted {
-                    Button(action: {
-                        onMute()
-                    }) {
-                        ZStack {
-                            VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                                .fill(isSpeakerHovering ? VegaDesign.Surface.fillPressed : Color.clear)
-                                .frame(width: 22, height: 22)
-                                .animation(VegaDesign.Motion.quick, value: isSpeakerHovering)
-                            Image(systemName: tab.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                                .contentTransition(.symbolEffect(.replace))
-                                .font(VegaDesign.Font.secondary)
-                                .foregroundColor(tab.isAudioMuted ? AppColors.textSecondary : textTab)
-                        }
+                    Button(action: onMute) {
+                        Image(systemName: tab.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .contentTransition(.symbolEffect(.replace))
+                            .font(.system(size: VegaDesign.Size.rowGlyph, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .onHoverTracking { hovering in
-                        isSpeakerHovering = hovering
-                    }
-                    .help(tab.isAudioMuted ? "Unmute Audio" : "Mute Audio")
+                    .buttonStyle(.plain)
+                    .help(tab.isAudioMuted ? "Unmute" : "Mute")
                 }
                 
                 if tab.isRenaming {
@@ -116,8 +103,8 @@ struct SpaceTab: View {
                         Image(systemName: useUnload ? "minus" : "xmark")
                             .font(VegaDesign.Font.secondary)
                             .foregroundColor(textTab)
-                            .frame(width: 24, height: 24)
-                            .background(isCloseHovering ? (isCurrentTab ? VegaDesign.Surface.fill : VegaDesign.Surface.fillPressed) : Color.clear)
+                            .frame(width: VegaDesign.Size.rowButton, height: VegaDesign.Size.rowButton)
+                            .background(isCloseHovering ? VegaDesign.Surface.fillPressed : Color.clear)
                             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -126,13 +113,23 @@ struct SpaceTab: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
-            .frame(height: 36)
-            .frame(minWidth: 0, maxWidth: .infinity)
+            .padding(.horizontal, VegaDesign.Spacing.rowPadding)
+            .frame(height: VegaDesign.Size.row)
+            .frame(minWidth: VegaDesign.Spacing.zero, maxWidth: .infinity)
             .background(
                 backgroundColor
             )
-            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+            .overlay {
+                if tab.isRenaming {
+                    VegaDesign.Radius.shape(VegaDesign.Radius.md)
+                        .strokeBorder(browserManager.gradientColorManager.accentColor, lineWidth: 1)
+                } else if isCurrentTab {
+                    VegaDesign.Radius.shape(VegaDesign.Radius.md)
+                        .strokeBorder(VegaDesign.Surface.hairline, lineWidth: 1)
+                }
+            }
+            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+            .opacity(tab.isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
         }
         .buttonStyle(PlainButtonStyle())
         .onHoverTracking { hovering in
