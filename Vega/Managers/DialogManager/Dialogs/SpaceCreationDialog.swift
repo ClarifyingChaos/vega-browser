@@ -77,7 +77,7 @@ struct SpaceCreationContent: View {
     @Binding var spaceIcon: String
     @Binding var selectedProfileId: UUID?
     @Binding var accentHex: String
-    @StateObject private var emojiManager = EmojiPickerManager()
+    @State private var showIconPicker = false
     @EnvironmentObject var browserManager: BrowserManager
 
     var body: some View {
@@ -102,17 +102,21 @@ struct SpaceCreationContent: View {
 
                 HStack(spacing: 12) {
                     Button {
-                        emojiManager.toggle()
+                        showIconPicker = true
                     } label: {
-                        SpaceCreationIconPreview(icon: emojiManager.selectedEmoji)
-                            .frame(width: 20, height: 20)
+                        SpaceIconView(icon: spaceIcon, tint: .primary)
                             .padding(4)
                             .background(.white.opacity(0.2))
                             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                     }
                     .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
-                    .background(EmojiPickerAnchor(manager: emojiManager))
                     .buttonStyle(PlainButtonStyle())
+                    .popover(isPresented: $showIconPicker) {
+                        SpaceIconPicker(selected: spaceIcon, onPick: {
+                            spaceIcon = $0
+                            showIconPicker = false
+                        })
+                    }
 
                     Text("Choose an icon to represent this space")
                         .font(VegaDesign.Font.secondary)
@@ -152,14 +156,6 @@ struct SpaceCreationContent: View {
             }
         }
         .padding(.horizontal, 4)
-        .onAppear {
-            if !spaceIcon.isEmpty {
-                emojiManager.selectedEmoji = spaceIcon
-            }
-        }
-        .onChange(of: emojiManager.selectedEmoji) { _, newValue in
-            spaceIcon = newValue
-        }
     }
 
     private var currentProfileName: String {
@@ -178,31 +174,6 @@ struct SpaceCreationContent: View {
             return browserManager.profileManager.profiles.first?.icon ?? "person.circle"
         }
         return profile.icon
-    }
-}
-
-private struct SpaceCreationIconPreview: View {
-    let icon: String
-
-    var body: some View {
-        if icon.isEmpty {
-            Image(systemName: "square.grid.2x2")
-                .font(VegaDesign.Font.body)
-        } else if isEmoji(icon) {
-            Text(icon)
-                .font(VegaDesign.Font.body)
-        } else {
-            Image(systemName: icon)
-                .font(VegaDesign.Font.body)
-        }
-    }
-
-    private func isEmoji(_ string: String) -> Bool {
-        string.unicodeScalars.contains { scalar in
-            (scalar.value >= 0x1F300 && scalar.value <= 0x1F9FF)
-                || (scalar.value >= 0x2600 && scalar.value <= 0x26FF)
-                || (scalar.value >= 0x2700 && scalar.value <= 0x27BF)
-        }
     }
 }
 
