@@ -96,12 +96,11 @@ struct SpacesList: View {
                            let hoveredSpace = visibleSpaces.first(where: { $0.id == hoveredId }) {
                             Text(hoveredSpace.name)
                                 .font(.caption)
-                                .foregroundStyle(Color.primary)
-                                .opacity(VegaDesign.Surface.previewTextOpacity)
+                                .foregroundStyle(.secondary)
                                 .lineLimit(1)
                                 .id(hoveredSpace.id)
                                 .transition(.blur.animation(VegaDesign.Motion.standard))
-                                .offset(y: -VegaDesign.Spacing.previewLift)
+                                .offset(y: -VegaDesign.Spacing.xxl)
                         }
                     }
             }

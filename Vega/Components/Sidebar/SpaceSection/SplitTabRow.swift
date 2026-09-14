@@ -49,6 +49,7 @@ private struct SplitHalfTab: View {
     @State private var isCloseHovering: Bool = false
     @EnvironmentObject var browserManager: BrowserManager
     @EnvironmentObject var splitManager: SplitViewManager
+    @EnvironmentObject var tabManager: TabManager
     @Environment(BrowserWindowState.self) private var windowState
     @ObservedObject private var dragSession = VegaDragSessionManager.shared
 
@@ -105,6 +106,9 @@ private struct SplitHalfTab: View {
                 }
                 .contextMenu {
                     TabContextMenu(tab: tab, context: .split)
+                        .environmentObject(browserManager)
+                        .environmentObject(tabManager)
+                        .environment(windowState)
                 }
             }
         }
@@ -113,7 +117,7 @@ private struct SplitHalfTab: View {
         .overlay {
             if isActive {
                 VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                    .strokeBorder(VegaDesign.Surface.hairline, lineWidth: 1)
+                    .strokeBorder(VegaDesign.Surface.hairline, lineWidth: VegaDesign.Size.hairlineWidth)
             }
         }
     }

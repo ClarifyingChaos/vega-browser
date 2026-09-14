@@ -116,17 +116,17 @@ struct SpaceTab: View {
             }
             .padding(.horizontal, VegaDesign.Spacing.rowPadding)
             .frame(height: VegaDesign.Size.row)
-            .frame(minWidth: VegaDesign.Spacing.zero, maxWidth: .infinity)
+            .frame(minWidth: 0, maxWidth: .infinity)
             .background(
                 backgroundColor
             )
             .overlay {
                 if tab.isRenaming {
                     VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                        .strokeBorder(browserManager.gradientColorManager.accentColor, lineWidth: 1)
+                        .strokeBorder(browserManager.gradientColorManager.accentColor, lineWidth: VegaDesign.Size.hairlineWidth)
                 } else if isCurrentTab {
                     VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                        .strokeBorder(VegaDesign.Surface.hairline, lineWidth: 1)
+                        .strokeBorder(VegaDesign.Surface.hairline, lineWidth: VegaDesign.Size.hairlineWidth)
                 }
             }
             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
@@ -151,17 +151,16 @@ struct SpaceTab: View {
         )
         .contextMenu {
             TabContextMenu(tab: tab, context: menuContext)
+                .environmentObject(browserManager)
+                .environmentObject(tabManager)
+                .environment(windowState)
         }
-        .vegaElevation(isActive ? .raised : .flat)
+        .vegaElevation(isCurrentTab ? .raised : .flat)
         .onAppear {
             tab.ensureFaviconLoaded()
         }
     }
-    
-    private var isActive: Bool {
-        return browserManager.currentTab(for: windowState)?.id == tab.id
-    }
-    
+
     private var isCurrentTab: Bool {
         return browserManager.currentTab(for: windowState)?.id == tab.id
     }
