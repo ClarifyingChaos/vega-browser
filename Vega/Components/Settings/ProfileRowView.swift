@@ -102,7 +102,7 @@ struct ProfileRowView: View {
                 }
             }
         }
-        .padding(VegaDesign.Spacing.md)
+        .padding(VegaDesign.Spacing.lg)
         .background(
             VegaDesign.Radius.shape(VegaDesign.Radius.md)
                 .fill(isHovering ? VegaDesign.Surface.fill : Color.clear)
