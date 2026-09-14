@@ -134,7 +134,7 @@ struct SpaceTab: View {
         .contextMenu {
             Options()
         }
-        .vegaElevation(isActive ? .raised : .none)
+        .vegaElevation(isActive ? .raised : .flat)
         .onAppear {
             tab.ensureFaviconLoaded()
         }

@@ -45,6 +45,7 @@ final class ExtensionLibraryMoreMenuController {
         visualEffect.blendingMode = .behindWindow
         visualEffect.wantsLayer = true
         visualEffect.layer?.cornerRadius = VegaDesign.Radius.lg
+        visualEffect.layer?.cornerCurve = .continuous
         visualEffect.layer?.masksToBounds = true
         visualEffect.translatesAutoresizingMaskIntoConstraints = false
 

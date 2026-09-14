@@ -125,8 +125,8 @@ enum SpacesListLayoutMode {
     static func determine(spacesCount: Int, availableWidth: CGFloat) -> Self {
         guard spacesCount > 0 else { return .normal }
 
-        // Measurements for NavButtonStyle button with default .regular control size
-        let buttonSize: CGFloat = 32.0  // NavButtonStyle .regular = 32pt
+        // Measurements for VegaIconButtonStyle at its default size
+        let buttonSize = VegaDesign.Size.iconButton
         let minSpacing: CGFloat = 4.0
 
         // Normal mode: all icons visible with minimum spacing

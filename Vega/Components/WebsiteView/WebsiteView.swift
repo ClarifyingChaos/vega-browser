@@ -369,7 +369,7 @@ private struct MagneticCardView: View {
         .offset(offset)
         .scaleEffect(1.0) // Cards appear at full size
         .animation(
-            dragLocation != nil ? VegaDesign.Motion.spring : VegaDesign.Motion.spring,
+            VegaDesign.Motion.spring,
             value: offset
         )
         .transition(.asymmetric(
@@ -717,9 +717,7 @@ struct TabCompositorWrapper: NSViewRepresentable {
     }
 
     private func makePaneContainer(frame: NSRect, isActive: Bool, accent: NSColor, side: SplitViewManager.Side) -> NSView {
-        let cornerRadius: CGFloat = {
-            return VegaDesign.Radius.md
-        }()
+        let cornerRadius: CGFloat = VegaDesign.Radius.md
         
         let v = NSView(frame: frame)
         v.wantsLayer = true
