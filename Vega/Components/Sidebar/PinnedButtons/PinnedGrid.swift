@@ -45,12 +45,12 @@ struct PinnedGrid: View {
                 isVertical: false,
                 manager: dragSession
             ) {
-                VStack(spacing: 8) {
+                VStack(spacing: VegaDesign.Spacing.md) {
                     Image(systemName: "star.circle.fill")
                         .font(.title2)
                         .foregroundStyle(.secondary)
 
-                    VStack(spacing: 2) {
+                    VStack(spacing: VegaDesign.Spacing.xxs) {
                         Text("Drag to add Favorites")
                             .font(VegaDesign.Font.label)
                             .foregroundStyle(.secondary)
@@ -62,15 +62,15 @@ struct PinnedGrid: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .padding(.horizontal, 12)
+                .padding(.vertical, VegaDesign.Spacing.xl)
+                .padding(.horizontal, VegaDesign.Spacing.lg)
                 .background {
-                    VegaDesign.Radius.shape(VegaDesign.Radius.xl)
-                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
-                        .foregroundStyle(isDragging ? Color.primary.opacity(0.4) : Color.secondary.opacity(0.3))
+                    VegaDesign.Radius.shape(VegaDesign.Radius.lg)
+                        .strokeBorder(style: StrokeStyle(lineWidth: VegaDesign.Size.hairlineWidth, dash: [VegaDesign.Spacing.sm, VegaDesign.Spacing.xs]))
+                        .foregroundStyle(isDragging ? VegaDesign.Surface.dropBorderActive : VegaDesign.Surface.dropBorderIdle)
                 }
                 .background {
-                    VegaDesign.Radius.shape(VegaDesign.Radius.xl)
+                    VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                         .fill(isDragging ? VegaDesign.Surface.fillPressed : Color.clear)
                 }
                 .animation(VegaDesign.Motion.quick, value: isDragging)
@@ -86,7 +86,7 @@ struct PinnedGrid: View {
             }
         } else {
             ZStack { // Container to support transitions
-                VStack(spacing: 6) {
+                VStack(spacing: VegaDesign.Spacing.sm) {
                     ZStack(alignment: .top) {
                         VegaDropZoneHostView(
                             zoneID: .essentials,
@@ -241,7 +241,7 @@ struct PinnedGrid: View {
 
     private var essentialsPlaceholder: some View {
         VegaDesign.Radius.shape(VegaDesign.Radius.lg)
-            .fill(Color.primary.opacity(0.08))
+            .fill(VegaDesign.Surface.fillPressed)
             .frame(minWidth: VegaDesign.Size.essentialsTile, minHeight: VegaDesign.Size.essentialsTile)
     }
 

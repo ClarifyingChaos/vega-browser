@@ -60,6 +60,7 @@ struct SpaceView: View {
     @State private var refreshTrigger: UUID = UUID()
     @State private var folderChangeCount: Int = 0
     @State private var isHovered: Bool = false
+    @State private var isNewTabHovering = false
 
     let onActivateTab: (Tab) -> Void
     let onCloseTab: (Tab) -> Void
@@ -485,16 +486,32 @@ struct SpaceView: View {
         } label: {
             HStack(spacing: VegaDesign.Spacing.md) {
                 Image(systemName: "plus")
+                    .font(.system(size: VegaDesign.Size.favicon, weight: .medium))
                 Text("New Tab")
-                Spacer()
+                    .font(VegaDesign.Font.body)
+                Spacer(minLength: 0)
+                if isNewTabHovering {
+                    Text("⌘T")
+                        .font(VegaDesign.Font.caption)
+                        .foregroundStyle(.tertiary)
+                }
             }
+            .foregroundStyle(isNewTabHovering ? .secondary : .tertiary)
+            .padding(.horizontal, VegaDesign.Spacing.rowPadding)
+            .frame(height: VegaDesign.Size.row)
+            .frame(maxWidth: .infinity)
+            .background(isNewTabHovering ? VegaDesign.Surface.fill : Color.clear)
+            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+            .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         }
-        .buttonStyle(RectNavButtonStyle())
-        .padding(.top, VegaDesign.Spacing.md)
+        .buttonStyle(.plain)
+        .onHoverTracking { hovering in
+            withAnimation(VegaDesign.Motion.quick) { isNewTabHovering = hovering }
+        }
     }
 
     private var newTabButtonSectionWithClear: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: VegaDesign.Spacing.xs) {
             SpaceSeparator(
                 isHovering: $isSidebarHovered,
                 onClear: {
@@ -511,8 +528,7 @@ struct SpaceView: View {
                 isOrganizing: tabOrganizerManager.isOrganizing,
                 tabCount: tabs.filter { $0.folderId == nil }.count
             )
-            .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
-            .padding(.top, VegaDesign.Spacing.xs)
+            .padding(.horizontal, VegaDesign.Spacing.md)
 
             newTabButtonSection
         }

@@ -5,7 +5,7 @@ struct SpaceTitle: View {
     @EnvironmentObject var tabManager: TabManager
 
     let space: Space
-    var iconSize: CGFloat = 12
+    var iconSize: CGFloat = VegaDesign.Size.spaceIcon
 
     @State private var isHovering: Bool = false
     @State private var isRenaming: Bool = false
@@ -17,7 +17,7 @@ struct SpaceTitle: View {
     @State private var showIconPicker = false
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: VegaDesign.Spacing.sm) {
             SpaceIconView(icon: space.icon, size: iconSize, tint: space.accentColor)
                 .onTapGesture(count: 2) {
                     showIconPicker = true
@@ -50,7 +50,7 @@ struct SpaceTitle: View {
                         cancelRename()
                     }
             } else {
-                HStack(spacing: 6) {
+                HStack(spacing: VegaDesign.Spacing.sm) {
                     Text(space.name)
                         .font(VegaDesign.Font.label)
                         .foregroundStyle(textColor)
@@ -63,33 +63,33 @@ struct SpaceTitle: View {
             }
 
             Spacer()
-            
 
-            Menu {
-                SpaceContextMenu(
-                    space: space,
-                    canDelete: canDeleteSpace,
-                    onEditName: {
-                        startRenaming()
-                    },
-                    onEditIcon: {
-                        showIconPicker = true
-                    },
-                    onOpenSettings: {
-                        browserManager.showSpaceSettings(for: space)
-                    },
-                    onDeleteSpace: deleteSpace
-                )
-                .environmentObject(browserManager)
-                .environment(\.controlSize, .regular)
-            } label: {
-                Label("Configure Space", systemImage: "ellipsis")
-                    .font(.body.weight(.semibold))
-                    .labelStyle(.iconOnly)
+            if isHovering {
+                Menu {
+                    SpaceContextMenu(
+                        space: space,
+                        canDelete: canDeleteSpace,
+                        onEditName: {
+                            startRenaming()
+                        },
+                        onEditIcon: {
+                            showIconPicker = true
+                        },
+                        onOpenSettings: {
+                            browserManager.showSpaceSettings(for: space)
+                        },
+                        onDeleteSpace: deleteSpace
+                    )
+                    .environmentObject(browserManager)
+                    .environment(\.controlSize, .regular)
+                } label: {
+                    Label("Configure Space", systemImage: "ellipsis")
+                        .font(.body.weight(.semibold))
+                        .labelStyle(.iconOnly)
+                }
+                .menuStyle(.button)
+                .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.rowButton, radius: VegaDesign.Radius.sm))
             }
-            .menuStyle(.button)
-            .buttonStyle(VegaIconButtonStyle(size: 28))
-            .opacity(isHovering ? 1.0 : 0.0)
 
         }
         // Match tabs' internal left/right padding so text aligns
@@ -104,13 +104,12 @@ struct SpaceTitle: View {
             }
             dragSession.pendingDrop = nil
         }
-        .padding(.leading, 10)
-        .padding(.trailing, 5)
-        .padding(.vertical, 5)
+        .padding(.horizontal, VegaDesign.Spacing.sm)
+        .frame(height: VegaDesign.Size.navRow)
         .frame(maxWidth: .infinity)
         .background(hoverColor)
-        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
-        .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .onHoverTracking { hovering in
             withAnimation(VegaDesign.Motion.quick) {
                 isHovering = hovering
