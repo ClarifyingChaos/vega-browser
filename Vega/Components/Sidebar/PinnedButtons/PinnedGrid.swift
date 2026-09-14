@@ -18,6 +18,7 @@ struct PinnedGrid: View {
     @Environment(WindowRegistry.self) private var windowRegistry
     @Environment(\.vegaSettings) var vegaSettings
     @ObservedObject private var dragSession = VegaDragSessionManager.shared
+    private let maxColumns = 4
 
     init(width: CGFloat, profileId: UUID? = nil) {
         self.width = width
@@ -26,7 +27,6 @@ struct PinnedGrid: View {
 
     @ViewBuilder
     var body: some View {
-        let pinnedTabsConfiguration: PinnedTabsConfiguration = vegaSettings.pinnedTabsLook
         // Use profile-filtered essentials
         let effectiveProfileId = profileId ?? windowState.currentProfileId ?? browserManager.currentProfile?.id
         let items: [Tab] = effectiveProfileId != nil
@@ -77,9 +77,8 @@ struct PinnedGrid: View {
                 .animation(VegaDesign.Motion.quick, value: isDragging)
             }
             .onAppear {
-                dragSession.pinnedTabsConfig = pinnedTabsConfiguration
-                dragSession.itemCellSize[.essentials] = pinnedTabsConfiguration.minWidth
-                dragSession.itemCellSpacing[.essentials] = pinnedTabsConfiguration.gridSpacing
+                dragSession.itemCellSize[.essentials] = VegaDesign.Size.essentialsTile
+                dragSession.itemCellSpacing[.essentials] = VegaDesign.Spacing.sm
                 dragSession.itemCounts[.essentials] = 0
                 dragSession.gridColumnCount[.essentials] = colsCount
             }
@@ -95,7 +94,7 @@ struct PinnedGrid: View {
                             isVertical: false,
                             manager: dragSession
                         ) {
-                            LazyVGrid(columns: columns, alignment: .center, spacing: pinnedTabsConfiguration.gridSpacing) {
+                            LazyVGrid(columns: columns, alignment: .center, spacing: VegaDesign.Spacing.sm) {
                                 let insertionIdx = essentialsInsertionIndex(itemCount: items.count)
 
                                 ForEach(Array(items.enumerated()), id: \.element.id) { index, tab in
@@ -163,9 +162,8 @@ struct PinnedGrid: View {
                             .animation(VegaDesign.Motion.spring, value: essentialsInsertionIndex(itemCount: items.count))
                         }
                         .onAppear {
-                            dragSession.pinnedTabsConfig = pinnedTabsConfiguration
-                            dragSession.itemCellSize[.essentials] = pinnedTabsConfiguration.minWidth
-                            dragSession.itemCellSpacing[.essentials] = pinnedTabsConfiguration.gridSpacing
+                            dragSession.itemCellSize[.essentials] = VegaDesign.Size.essentialsTile
+                            dragSession.itemCellSpacing[.essentials] = VegaDesign.Spacing.sm
                             dragSession.itemCounts[.essentials] = items.count
                             dragSession.gridColumnCount[.essentials] = colsCount
                         }
@@ -245,7 +243,7 @@ struct PinnedGrid: View {
     private var essentialsPlaceholder: some View {
         VegaDesign.Radius.shape(VegaDesign.Radius.lg)
             .fill(Color.primary.opacity(0.08))
-            .frame(minWidth: vegaSettings.pinnedTabsLook.minWidth, minHeight: vegaSettings.pinnedTabsLook.minWidth)
+            .frame(minWidth: VegaDesign.Size.essentialsTile, minHeight: VegaDesign.Size.essentialsTile)
     }
 
     private func safeTitle(_ tab: Tab) -> String {
@@ -255,9 +253,9 @@ struct PinnedGrid: View {
 
     private func columnCount(for width: CGFloat, itemCount: Int) -> Int {
         guard width > 0, itemCount > 0 else { return 1 }
-        var cols = min(vegaSettings.pinnedTabsLook.maxColumns, itemCount)
+        var cols = min(maxColumns, itemCount)
         while cols > 1 {
-            let needed = CGFloat(cols) * vegaSettings.pinnedTabsLook.minWidth + CGFloat(cols - 1) * vegaSettings.pinnedTabsLook.gridSpacing
+            let needed = CGFloat(cols) * VegaDesign.Size.essentialsTile + CGFloat(cols - 1) * VegaDesign.Spacing.sm
             if needed <= width { break }
             cols -= 1
         }
@@ -267,8 +265,8 @@ struct PinnedGrid: View {
     private func makeColumns(count: Int) -> [GridItem] {
         Array(
             repeating: GridItem(
-                .flexible(minimum: vegaSettings.pinnedTabsLook.minWidth),
-                spacing: vegaSettings.pinnedTabsLook.gridSpacing,
+                .flexible(minimum: VegaDesign.Size.essentialsTile),
+                spacing: VegaDesign.Spacing.sm,
                 alignment: .center
             ),
             count: count

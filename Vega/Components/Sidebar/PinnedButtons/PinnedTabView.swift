@@ -17,7 +17,6 @@ struct PinnedTabView: View {
     var action: () -> Void
 
     @EnvironmentObject var browserManager: BrowserManager
-    @Environment(\.vegaSettings) var vegaSettings
     @State private var isHovered: Bool = false
 
     // Stroke overlay tunables
@@ -25,11 +24,10 @@ struct PinnedTabView: View {
     private let faviconBlur: CGFloat = 30.0      // blur applied to favicon
 
     var body: some View {
-        let pinnedTabsConfiguration: PinnedTabsConfiguration = vegaSettings.pinnedTabsLook
         Button(action: action) {
             ZStack {
                 ZStack {
-                    VegaDesign.Radius.shape(pinnedTabsConfiguration.cornerRadius)
+                    VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                         .fill(
                             backgroundColor
                         )
@@ -43,7 +41,7 @@ struct PinnedTabView: View {
 
                         }
                 }
-                .clipShape(VegaDesign.Radius.shape(pinnedTabsConfiguration.cornerRadius))
+                .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
 
 
                 HStack {
@@ -55,7 +53,7 @@ struct PinnedTabView: View {
                             .interpolation(.high)
                             .antialiased(true)
                             .scaledToFit()
-                            .frame(height: pinnedTabsConfiguration.faviconHeight)
+                            .frame(height: VegaDesign.Size.essentialsFavicon)
                             .opacity(isUnloaded ? 0.5 : 1.0)
                         Spacer()
                     }
@@ -67,8 +65,8 @@ struct PinnedTabView: View {
                 // Favicon-based stroke overlay
                 if isActive {
                     faviconStrokeOverlay(
-                        corner: pinnedTabsConfiguration.cornerRadius,
-                        thickness: pinnedTabsConfiguration.strokeWidth,
+                        corner: VegaDesign.Radius.lg,
+                        thickness: VegaDesign.Size.essentialsStroke,
                         scale: faviconScale,
                         blur: faviconBlur
                     )
@@ -76,9 +74,9 @@ struct PinnedTabView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: pinnedTabsConfiguration.height)
-            .frame(minWidth: pinnedTabsConfiguration.minWidth)
-            .contentShape(VegaDesign.Radius.shape(pinnedTabsConfiguration.cornerRadius))
+            .frame(height: VegaDesign.Size.essentialsTile)
+            .frame(minWidth: VegaDesign.Size.essentialsTile)
+            .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         }
         .buttonStyle(.plain)
         .onHoverTracking { hovering in

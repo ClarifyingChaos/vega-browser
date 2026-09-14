@@ -128,8 +128,7 @@ private struct VegaDragPreviewContent: View {
                     tab: manager.draggedTab,
                     title: manager.draggedItem?.title ?? "",
                     style: currentStyle,
-                    sidebarWidth: manager.sidebarScreenFrame.width,
-                    pinnedConfig: manager.pinnedTabsConfig
+                    sidebarWidth: manager.sidebarScreenFrame.width
                 )
                 .animation(morphSpring, value: currentStyle)
             }
@@ -160,7 +159,6 @@ private struct VegaMorphingPreview: View {
     let title: String
     let style: VegaPreviewStyle
     let sidebarWidth: CGFloat
-    let pinnedConfig: PinnedTabsConfiguration
 
     private let sidebarHorizontalPadding: CGFloat = 16
 
@@ -172,7 +170,7 @@ private struct VegaMorphingPreview: View {
             }
             return 200
         case .pinnedTile:
-            return pinnedConfig.minWidth
+            return VegaDesign.Size.essentialsTile
         case .ghost:
             return 160
         }
@@ -181,7 +179,7 @@ private struct VegaMorphingPreview: View {
     private var effectiveHeight: CGFloat {
         switch style {
         case .tabRow: return 36
-        case .pinnedTile: return pinnedConfig.height
+        case .pinnedTile: return VegaDesign.Size.essentialsTile
         case .ghost: return 100
         }
     }
@@ -189,7 +187,7 @@ private struct VegaMorphingPreview: View {
     private var effectiveCornerRadius: CGFloat {
         switch style {
         case .tabRow: return VegaDesign.Radius.lg
-        case .pinnedTile: return pinnedConfig.cornerRadius
+        case .pinnedTile: return VegaDesign.Radius.lg
         case .ghost: return VegaDesign.Radius.md
         }
     }
@@ -218,7 +216,7 @@ private struct VegaMorphingPreview: View {
 
     private var pinnedTilePreview: some View {
         ZStack {
-            VegaDesign.Radius.shape(pinnedConfig.cornerRadius)
+            VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                 .fill(backgroundColor)
 
             if let tab = tab {
@@ -227,15 +225,15 @@ private struct VegaMorphingPreview: View {
                     .interpolation(.high)
                     .antialiased(true)
                     .scaledToFit()
-                    .frame(height: pinnedConfig.faviconHeight)
+                    .frame(height: VegaDesign.Size.essentialsFavicon)
             } else {
                 Image(systemName: "globe")
-                    .font(.system(size: pinnedConfig.faviconHeight, weight: .medium))
+                    .font(.system(size: VegaDesign.Size.essentialsFavicon, weight: .medium))
                     .foregroundColor(.secondary)
             }
         }
-        .frame(width: pinnedConfig.minWidth, height: pinnedConfig.height)
-        .clipShape(VegaDesign.Radius.shape(pinnedConfig.cornerRadius))
+        .frame(width: VegaDesign.Size.essentialsTile, height: VegaDesign.Size.essentialsTile)
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
     }
 
     private var standardPreview: some View {
