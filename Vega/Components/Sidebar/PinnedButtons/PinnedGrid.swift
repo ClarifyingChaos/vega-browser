@@ -16,7 +16,6 @@ struct PinnedGrid: View {
     @EnvironmentObject var tabManager: TabManager
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(WindowRegistry.self) private var windowRegistry
-    @Environment(\.colorScheme) var colorScheme
     @Environment(\.vegaSettings) var vegaSettings
     @ObservedObject private var dragSession = VegaDragSessionManager.shared
 
@@ -73,10 +72,7 @@ struct PinnedGrid: View {
                 }
                 .background {
                     VegaDesign.Radius.shape(VegaDesign.Radius.xl)
-                        .fill(isDragging
-                            ? (colorScheme == .dark ? AppColors.pinnedTabHoverLight : AppColors.pinnedTabHoverDark)
-                            : Color.clear
-                        )
+                        .fill(isDragging ? VegaDesign.Surface.fillPressed : Color.clear)
                 }
                 .animation(VegaDesign.Motion.quick, value: isDragging)
             }

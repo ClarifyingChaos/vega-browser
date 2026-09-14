@@ -20,7 +20,6 @@ struct SpaceTab: View {
     @EnvironmentObject var browserManager: BrowserManager
     @EnvironmentObject var tabManager: TabManager
     @Environment(BrowserWindowState.self) private var windowState
-    @Environment(\.colorScheme) var colorScheme
 
     /// Fades the trailing edge of the title instead of truncating with an ellipsis.
     /// On hover the clear region grows so the text ends before the close button.
@@ -59,7 +58,7 @@ struct SpaceTab: View {
                     }) {
                         ZStack {
                             VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                                .fill(isSpeakerHovering ? (isCurrentTab ? AppColors.controlBackgroundHoverLight : AppColors.controlBackgroundActive) : AppColors.controlBackgroundHoverLight.opacity(0))
+                                .fill(isSpeakerHovering ? (isCurrentTab ? VegaDesign.Surface.fill : VegaDesign.Surface.fillPressed) : VegaDesign.Surface.fill.opacity(0))
                                 .frame(width: 22, height: 22)
                                 .animation(VegaDesign.Motion.quick, value: isSpeakerHovering)
                             Image(systemName: tab.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
@@ -118,7 +117,7 @@ struct SpaceTab: View {
                             .font(VegaDesign.Font.secondary)
                             .foregroundColor(textTab)
                             .frame(width: 24, height: 24)
-                            .background(isCloseHovering ? (isCurrentTab ? AppColors.controlBackgroundHoverLight : AppColors.controlBackgroundActive) : Color.clear)
+                            .background(isCloseHovering ? (isCurrentTab ? VegaDesign.Surface.fill : VegaDesign.Surface.fillPressed) : Color.clear)
                             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -367,15 +366,15 @@ struct SpaceTab: View {
     }
     private var backgroundColor: Color {
         if isCurrentTab {
-            return colorScheme == .dark ? AppColors.spaceTabActiveLight : AppColors.spaceTabActiveDark
+            return VegaDesign.Surface.raised
         } else if isHovering {
-            return colorScheme == .dark ? AppColors.spaceTabHoverLight : AppColors.spaceTabHoverDark
+            return VegaDesign.Surface.fill
         } else {
             return Color.clear
         }
     }
     private var textTab: Color {
-        return colorScheme == .dark ? AppColors.spaceTabTextLight : AppColors.spaceTabTextDark
+        .primary
     }
 
 }

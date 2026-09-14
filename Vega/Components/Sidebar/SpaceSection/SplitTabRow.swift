@@ -50,7 +50,6 @@ private struct SplitHalfTab: View {
     @EnvironmentObject var browserManager: BrowserManager
     @EnvironmentObject var splitManager: SplitViewManager
     @Environment(BrowserWindowState.self) private var windowState
-    @Environment(\.colorScheme) var colorScheme
     @ObservedObject private var dragSession = VegaDragSessionManager.shared
 
     var body: some View {
@@ -84,9 +83,8 @@ private struct SplitHalfTab: View {
                                     .background(
                                         isCloseHovering
                                             ? (isActive
-                                                ? AppColors
-                                                    .controlBackgroundHoverLight
-                                                : AppColors.controlBackgroundActive)
+                                                ? VegaDesign.Surface.fill
+                                                : VegaDesign.Surface.fillPressed)
                                             : Color.clear
                                     )
                                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
@@ -130,18 +128,15 @@ private struct SplitHalfTab: View {
 
     private var backgroundColor: Color {
         if isActive {
-            return colorScheme == .dark
-                ? AppColors.spaceTabActiveLight : AppColors.spaceTabActiveDark
+            return VegaDesign.Surface.raised
         } else if isHovering {
-            return colorScheme == .dark
-                ? AppColors.spaceTabHoverLight : AppColors.spaceTabHoverDark
+            return VegaDesign.Surface.fill
         } else {
             return Color.clear
         }
     }
     private var textTab: Color {
-        return colorScheme == .dark
-            ? AppColors.spaceTabTextLight : AppColors.spaceTabTextDark
+        .primary
     }
 
 }

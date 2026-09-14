@@ -15,7 +15,6 @@ struct CommandPaletteView: View {
     @Environment(CommandPalette.self) private var commandPalette
     @EnvironmentObject var gradientColorManager: GradientColorManager
     @State private var searchManager = SearchManager()
-    @Environment(\.colorScheme) var colorScheme
     @Environment(\.vegaSettings) var vegaSettings
 
     @FocusState private var isSearchFocused: Bool
@@ -65,11 +64,8 @@ struct CommandPaletteView: View {
     }
 
     var body: some View {
-        let isDark = colorScheme == .dark
         let isVisible = commandPalette.isVisible
-        let textFieldColor: Color = text.isEmpty
-            ? (isDark ? .white.opacity(0.25) : .black.opacity(0.25))
-            : (isDark ? .white.opacity(0.9) : .black.opacity(0.9))
+        let textFieldColor: Color = text.isEmpty ? .secondary : .primary
 
         return ZStack {
             Color.clear
@@ -96,7 +92,7 @@ struct CommandPaletteView: View {
                                 .id(activeSiteSearch != nil ? "magnifyingglass" : isLikelyURL(text) ? "globe" : "magnifyingglass")
                                 .transition(.blur(intensity: 2, scale: 0.6).animation(VegaDesign.Motion.standard))
                                 .font(VegaDesign.Font.bodyRegular)
-                                .foregroundStyle(isDark ? .white : .black)
+                                .foregroundStyle(Color.primary)
                                 .frame(width: 15)
 
                                 if let site = activeSiteSearch {
@@ -126,7 +122,7 @@ struct CommandPaletteView: View {
                                     .tint(gradientColorManager.accentColor)
                                     .overlay(alignment: .leading) {
                                         if let suffix = inlineCompletionSuffix {
-                                            (Text(text).foregroundColor(.clear) + Text(suffix).foregroundColor(isDark ? .white.opacity(0.25) : .black.opacity(0.25)))
+                                            (Text(text).foregroundColor(.clear) + Text(suffix).foregroundColor(.secondary))
                                                 .font(VegaDesign.Font.heading)
                                                 .lineLimit(1)
                                                 .allowsHitTesting(false)
@@ -212,20 +208,20 @@ struct CommandPaletteView: View {
                                         HStack(spacing: 6) {
                                             Text("Search \(match.name)")
                                                 .font(VegaDesign.Font.body)
-                                                .foregroundStyle(isDark ? .white.opacity(0.3) : .black.opacity(0.3))
+                                                .foregroundStyle(Color.secondary)
 
                                             Text("Tab")
                                                 .font(VegaDesign.Font.caption)
-                                                .foregroundStyle(isDark ? .white.opacity(0.4) : .black.opacity(0.4))
+                                                .foregroundStyle(Color.secondary)
                                                 .padding(.horizontal, 6)
                                                 .padding(.vertical, 2)
                                                 .background(
                                                     VegaDesign.Radius.shape(VegaDesign.Radius.xs)
-                                                        .fill(isDark ? .white.opacity(0.1) : .black.opacity(0.08))
+                                                        .fill(VegaDesign.Surface.fill)
                                                 )
                                                 .overlay(
                                                     VegaDesign.Radius.shape(VegaDesign.Radius.xs)
-                                                        .stroke(isDark ? .white.opacity(0.15) : .black.opacity(0.12), lineWidth: 0.5)
+                                                        .stroke(VegaDesign.Surface.hairline, lineWidth: 0.5)
                                                 )
                                         }
                                         .allowsHitTesting(false)
@@ -242,11 +238,7 @@ struct CommandPaletteView: View {
 
                             if !visibleSuggestions.isEmpty {
                                 Capsule()
-                                    .fill(
-                                        isDark
-                                            ? Color.white.opacity(0.4)
-                                            : Color.black.opacity(0.4)
-                                    )
+                                    .fill(VegaDesign.Surface.hairline)
                                     .frame(height: 0.5)
                                     .frame(maxWidth: .infinity)
                             }
@@ -347,11 +339,9 @@ struct CommandPaletteView: View {
         let suggestions: [SearchManager.SearchSuggestion]
         @Binding var selectedIndex: Int
         @Binding var hoveredIndex: Int?
-        @Environment(\.colorScheme) var colorScheme
         let onSelect: (SearchManager.SearchSuggestion) -> Void
 
         var body: some View {
-            let isDark = colorScheme == .dark
             LazyVStack(spacing: 5) {
                 ForEach(suggestions.indices, id: \.self) { index in
                     let suggestion = suggestions[index]
@@ -363,9 +353,8 @@ struct CommandPaletteView: View {
                             selectedIndex == index
                                 ? gradientColorManager.accentColor
                                 : isHovered
-                                    ? isDark
-                                        ? .white.opacity(0.05)
-                                        : .black.opacity(0.05) : .clear
+                                    ? VegaDesign.Surface.fill
+                                    : .clear
                         )
                         .clipShape(
                             VegaDesign.Radius.shape(VegaDesign.Radius.sm)
