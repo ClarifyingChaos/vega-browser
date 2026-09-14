@@ -391,8 +391,8 @@ struct VegaCommands: Commands {
             }
 
             CommandMenu("Appearance") {
-                Button("Customize Space Gradient...") {
-                    browserManager.showGradientEditor()
+                Button("Space Settings...") {
+                    browserManager.showSpaceSettings()
                 }
                 .modifier(dynamicShortcut(.customizeSpaceGradient))
                 .disabled(browserManager.tabManager.currentSpace == nil)
