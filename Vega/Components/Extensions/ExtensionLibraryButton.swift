@@ -21,7 +21,7 @@ struct ExtensionLibraryButton: View {
             togglePanel()
         }
         .labelStyle(.iconOnly)
-        .buttonStyle(URLBarButtonStyle())
+        .buttonStyle(VegaIconButtonStyle(size: 28, radius: VegaDesign.Radius.lg))
         .foregroundStyle(Color.primary)
         .background(ButtonAnchorCapture(window: $capturedWindow, anchorView: $anchorView))
         .onChange(of: windowState.isExtensionLibraryVisible) { _, visible in
