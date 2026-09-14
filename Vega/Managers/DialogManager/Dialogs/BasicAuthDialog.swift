@@ -69,7 +69,7 @@ struct BasicAuthDialog: DialogPresentable {
                     .padding(.vertical, 12)
                     .padding(.horizontal, 16)
                     .background(Color.primary.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
             }
 
             Toggle(isOn: $model.rememberCredential) {

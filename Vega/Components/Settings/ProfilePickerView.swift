@@ -106,7 +106,7 @@ struct ProfilePickerView: View {
                     Button(action: { select(p.id) }) {
                         HStack(spacing: 10) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 6)
+                                VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                                     .fill(Color(.controlBackgroundColor))
                                 Image(systemName: p.icon).font(.system(size: 16))
                             }

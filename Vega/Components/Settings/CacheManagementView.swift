@@ -148,7 +148,7 @@ struct CacheManagementView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(6)
+            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
             .frame(maxWidth: 300)
             
             Spacer()

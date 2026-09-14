@@ -71,7 +71,7 @@ struct CookieDetailsView: View {
                                     .textSelection(.enabled)
                                     .padding()
                                     .background(Color(NSColor.controlBackgroundColor))
-                                    .cornerRadius(6)
+                                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                             }
                             .frame(maxHeight: 200)
                         }
@@ -153,7 +153,7 @@ struct CookieDetailsView: View {
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         }
     }
     

@@ -15,7 +15,7 @@ struct SidebarHoverOverlayView: View {
     @Environment(CommandPalette.self) private var commandPalette
     @Environment(\.vegaSettings) var vegaSettings
 
-    private let cornerRadius: CGFloat = 12
+    private let cornerRadius: CGFloat = VegaDesign.Radius.lg
     private let horizontalInset: CGFloat = 7
     private let verticalInset: CGFloat = 7
 
@@ -51,11 +51,11 @@ struct SidebarHoverOverlayView: View {
                                 .environmentObject(browserManager)
                                 .environmentObject(browserManager.gradientColorManager)
                                 .environment(windowState)
-                                .clipShape(.rect(cornerRadius: cornerRadius))
-                            
+                                .clipShape(VegaDesign.Radius.shape(cornerRadius))
+
                                 Rectangle()
                                     .fill(Color.clear)
-                                    .vegaGlassEffect(in: .rect(cornerRadius: cornerRadius))
+                                    .vegaGlassEffect(in: VegaDesign.Radius.shape(cornerRadius))
                         }
                         .alwaysArrowCursor()
                         .padding(vegaSettings.sidebarPosition == .left ? .leading : .trailing, horizontalInset)

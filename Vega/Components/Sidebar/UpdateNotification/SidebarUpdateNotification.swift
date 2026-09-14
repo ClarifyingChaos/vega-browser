@@ -61,7 +61,7 @@ struct SidebarUpdateNotification: View {
                                 .padding(.vertical, 6)
                                 .frame(maxWidth: .infinity)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 8)
+                                    VegaDesign.Radius.shape(VegaDesign.Radius.md)
                                         .fill(
                                             LinearGradient(
                                                 gradient: Gradient(colors: [
@@ -87,7 +87,7 @@ struct SidebarUpdateNotification: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                         .fill(Color.gray.opacity(0.2))
                 )
                 .frame(maxWidth: .infinity)

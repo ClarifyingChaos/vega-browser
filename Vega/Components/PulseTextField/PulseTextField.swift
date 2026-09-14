@@ -57,10 +57,10 @@ struct VegaTextField: View {
         .padding(.horizontal, 16)
         .background(backgroundColor)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                 .stroke(borderColor, lineWidth: borderWidth)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .focused($isFocused)
         .animation(.easeInOut(duration: 0.15), value: isFocused)
         .animation(.easeInOut(duration: 0.15), value: hasError)

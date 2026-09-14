@@ -19,9 +19,9 @@ struct CopyURLToast: View {
                     .frame(width: 14, height: 14)
                     .padding(4)
                     .background(Color.white.opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 6)
+                        VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                             .stroke(.white.opacity(0.4), lineWidth: 1)
                     }
 

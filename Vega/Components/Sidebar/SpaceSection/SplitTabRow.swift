@@ -34,7 +34,7 @@ struct SplitTabRow: View {
             )
         }
         .frame(height: 34)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
     }
 }
 
@@ -68,7 +68,7 @@ private struct SplitHalfTab: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 18, height: 18)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
                         Text(tab.displayName)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(textTab)
@@ -89,7 +89,7 @@ private struct SplitHalfTab: View {
                                                 : AppColors.controlBackgroundActive)
                                             : Color.clear
                                     )
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                             }
                             .buttonStyle(PlainButtonStyle())
                             .onHoverTracking { state in

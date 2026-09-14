@@ -25,9 +25,9 @@ struct ShortcutConflictToast: View {
                     .frame(width: 18, height: 18)
                     .padding(5)
                     .background(Color.white.opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 8)
+                        VegaDesign.Radius.shape(VegaDesign.Radius.md)
                             .stroke(.white.opacity(0.4), lineWidth: 1)
                     }
                 

@@ -20,7 +20,7 @@ import SwiftUI
                 .foregroundColor(.white)
                 .frame(width: 32, height: 32)
                 .background(Color.blue.opacity(0.8))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("A new version of Vega is available!")
@@ -41,7 +41,7 @@ import SwiftUI
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
+                        VegaDesign.Radius.shape(VegaDesign.Radius.md)
                             .fill(Color.white.opacity(0.2))
                     )
             }
@@ -50,7 +50,7 @@ import SwiftUI
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                 .fill(Color.blue.opacity(0.6))
         )
         .frame(width: 300)
@@ -72,7 +72,7 @@ import SwiftUI
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                VegaDesign.Radius.shape(VegaDesign.Radius.md)
                     .fill(Color.blue.opacity(0.6))
             )
         }

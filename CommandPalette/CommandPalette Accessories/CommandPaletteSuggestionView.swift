@@ -65,7 +65,7 @@ struct CommandPaletteSuggestionView: View {
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(backgroundColor)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
             
         .onHoverTracking { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {

@@ -155,8 +155,8 @@ struct SpaceTitle: View {
         .padding(.vertical, 5)
         .frame(maxWidth: .infinity)
         .background(hoverColor)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+        .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .onHoverTracking { hovering in
             withAnimation(.easeInOut(duration: 0.1)) {
                 isHovering = hovering

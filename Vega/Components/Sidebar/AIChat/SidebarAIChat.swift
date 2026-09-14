@@ -202,7 +202,7 @@ struct SidebarAIChat: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(.ultraThinMaterial)
-        .clipShape(.rect(cornerRadius: 12))
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .padding(.horizontal, 8)
     }
 
@@ -297,7 +297,7 @@ struct SidebarAIChat: View {
                 .foregroundStyle(configService.generationConfig.webSearchEnabled ? .green : contrastText.opacity(0.5))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: 6)
+                    VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                         .fill(configService.generationConfig.webSearchEnabled ? .green.opacity(0.15) : contrastText.opacity(0.08))
                 )
         }
@@ -330,7 +330,7 @@ struct SidebarAIChat: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background(.white.opacity(0.9))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
             }
             .buttonStyle(.plain)
         }
@@ -369,7 +369,7 @@ struct SidebarAIChat: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
                     .background(.green.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                 }
             } else {
                 Text("Questions about this page, or just curious? I'm here.")
@@ -503,7 +503,7 @@ struct MessageBubble: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(.green.opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                             .padding(.horizontal, 12)
                             .padding(.top, 10)
                             .padding(.bottom, 6)
@@ -541,7 +541,7 @@ struct MessageBubble: View {
                         }
                     }
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
+                        VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                             .fill(contrastText.opacity(0.12))
                     )
                     .overlay(alignment: .topTrailing) {
@@ -559,11 +559,11 @@ struct MessageBubble: View {
                                     .foregroundStyle(contrastText.opacity(0.8))
                                     .frame(width: 28, height: 28)
                                     .background(
-                                        RoundedRectangle(cornerRadius: 8)
+                                        VegaDesign.Radius.shape(VegaDesign.Radius.md)
                                             .fill(.black.opacity(0.5))
                                     )
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
+                                        VegaDesign.Radius.shape(VegaDesign.Radius.md)
                                             .stroke(contrastText.opacity(0.15), lineWidth: 1)
                                     )
                             }
@@ -580,7 +580,7 @@ struct MessageBubble: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
+                            VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                                 .fill(.white.opacity(0.9))
                         )
                 }
@@ -706,7 +706,7 @@ struct MessageBubble: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
                     .background(contrastText.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
             }
             Text(code)
                 .font(.system(size: 12, design: .monospaced))
@@ -714,7 +714,7 @@ struct MessageBubble: View {
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(.black.opacity(0.3))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         }
     }
 
@@ -775,11 +775,11 @@ struct CitationView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                     .fill(contrastText.opacity(isHovered ? 0.12 : 0.08))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 6)
+                VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                     .stroke(contrastText.opacity(isHovered ? 0.2 : 0.0), lineWidth: 1)
             )
         }

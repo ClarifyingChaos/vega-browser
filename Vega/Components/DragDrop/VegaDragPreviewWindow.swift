@@ -190,9 +190,9 @@ private struct VegaMorphingPreview: View {
 
     private var effectiveCornerRadius: CGFloat {
         switch style {
-        case .tabRow: return 12
+        case .tabRow: return VegaDesign.Radius.lg
         case .pinnedTile: return pinnedConfig.cornerRadius
-        case .ghost: return 10
+        case .ghost: return VegaDesign.Radius.md
         }
     }
 
@@ -220,7 +220,7 @@ private struct VegaMorphingPreview: View {
 
     private var pinnedTilePreview: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: pinnedConfig.cornerRadius, style: .continuous)
+            VegaDesign.Radius.shape(pinnedConfig.cornerRadius)
                 .fill(backgroundColor)
 
             if let tab = tab {
@@ -237,7 +237,7 @@ private struct VegaMorphingPreview: View {
             }
         }
         .frame(width: pinnedConfig.minWidth, height: pinnedConfig.height)
-        .clipShape(RoundedRectangle(cornerRadius: pinnedConfig.cornerRadius, style: .continuous))
+        .clipShape(VegaDesign.Radius.shape(pinnedConfig.cornerRadius))
     }
 
     private var standardPreview: some View {
@@ -260,7 +260,7 @@ private struct VegaMorphingPreview: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 16, height: 16)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
                 } else {
                     Image(systemName: "globe")
                         .font(.system(size: 14, weight: .medium))
@@ -284,11 +284,11 @@ private struct VegaMorphingPreview: View {
         }
         .frame(width: effectiveWidth, height: effectiveHeight)
         .background(
-            RoundedRectangle(cornerRadius: effectiveCornerRadius)
+            VegaDesign.Radius.shape(effectiveCornerRadius)
                 .fill(backgroundColor)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: effectiveCornerRadius)
+            VegaDesign.Radius.shape(effectiveCornerRadius)
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
     }

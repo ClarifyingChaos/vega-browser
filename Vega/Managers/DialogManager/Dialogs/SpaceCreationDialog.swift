@@ -105,9 +105,9 @@ struct SpaceCreationContent: View {
                             .frame(width: 20, height: 20)
                             .padding(4)
                             .background(.white.opacity(0.2))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                     }
-                    .contentShape(RoundedRectangle(cornerRadius: 6))
+                    .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                     .background(EmojiPickerAnchor(manager: emojiManager))
                     .buttonStyle(PlainButtonStyle())
 

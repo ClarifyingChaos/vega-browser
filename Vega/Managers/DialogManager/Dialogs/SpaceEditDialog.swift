@@ -129,11 +129,11 @@ private struct SpaceEditContent: View {
                             .frame(width: 28, height: 28)
                             .padding(4)
                             .background(
-                                RoundedRectangle(cornerRadius: 8)
+                                VegaDesign.Radius.shape(VegaDesign.Radius.md)
                                     .fill(Color.primary.opacity(0.05))
                             )
                     }
-                    .contentShape(RoundedRectangle(cornerRadius: 8))
+                    .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
                     .background(EmojiPickerAnchor(manager: emojiManager))
                     .buttonStyle(PlainButtonStyle())
 
