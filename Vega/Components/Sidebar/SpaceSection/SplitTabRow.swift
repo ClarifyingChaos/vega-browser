@@ -82,9 +82,7 @@ private struct SplitHalfTab: View {
                                     .frame(width: 24, height: 24)
                                     .background(
                                         isCloseHovering
-                                            ? (isActive
-                                                ? VegaDesign.Surface.fill
-                                                : VegaDesign.Surface.fillPressed)
+                                            ? VegaDesign.Surface.fillPressed
                                             : Color.clear
                                     )
                                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))

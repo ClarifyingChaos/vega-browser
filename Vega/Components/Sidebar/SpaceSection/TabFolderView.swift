@@ -171,8 +171,8 @@ struct TabFolderView: View {
                 VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                     .fill(
                         isDropTargeted
-                            ? VegaDesign.Surface.fillPressed.opacity(0.25)
-                            : (isHovering ? VegaDesign.Surface.fillPressed : Color.clear)
+                            ? VegaDesign.Surface.fillPressed
+                            : (isHovering ? VegaDesign.Surface.fill : Color.clear)
                     )
             )
             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
@@ -241,7 +241,7 @@ struct TabFolderView: View {
         .padding(.vertical, 4)
         .background(
             VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                .fill(isDropTargeted ? VegaDesign.Surface.fillPressed.opacity(0.18) : Color.clear)
+                .fill(isDropTargeted ? VegaDesign.Surface.fillPressed : (isHovering ? VegaDesign.Surface.fill : Color.clear))
         )
         .onAppear {
             let zone = DropZoneID.folder(folder.id)

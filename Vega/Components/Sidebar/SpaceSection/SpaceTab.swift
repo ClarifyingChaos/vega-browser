@@ -58,7 +58,7 @@ struct SpaceTab: View {
                     }) {
                         ZStack {
                             VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                                .fill(isSpeakerHovering ? (isCurrentTab ? VegaDesign.Surface.fill : VegaDesign.Surface.fillPressed) : VegaDesign.Surface.fill.opacity(0))
+                                .fill(isSpeakerHovering ? VegaDesign.Surface.fillPressed : Color.clear)
                                 .frame(width: 22, height: 22)
                                 .animation(VegaDesign.Motion.quick, value: isSpeakerHovering)
                             Image(systemName: tab.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")

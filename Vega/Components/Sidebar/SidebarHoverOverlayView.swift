@@ -45,7 +45,7 @@ struct SidebarHoverOverlayView: View {
                         .environmentObject(browserManager.gradientColorManager)
                         .frame(maxHeight: .infinity)
                         .background{
-                            BlurEffectView(material: .sidebar, blendingMode: .behindWindow, state: .active)
+                            BlurEffectView(material: .sidebar, blendingMode: .withinWindow, state: .active)
                                 .clipShape(VegaDesign.Radius.shape(cornerRadius))
 
                                 Rectangle()
