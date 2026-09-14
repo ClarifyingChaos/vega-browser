@@ -151,7 +151,7 @@ private struct SpaceEditContent: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: VegaDesign.Spacing.sectionGap) {
                 Text("Accent")
                     .font(VegaDesign.Font.label)
                     .foregroundStyle(.primary)
