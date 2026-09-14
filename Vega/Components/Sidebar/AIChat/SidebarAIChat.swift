@@ -143,7 +143,7 @@ struct SidebarAIChat: View {
                 Text("Ask Vega")
                     .font(VegaDesign.Font.title)
                     .foregroundStyle(contrastText.opacity(0.9))
-                    .transition(.blur.animation(.smooth))
+                    .transition(.blur.animation(VegaDesign.Motion.standard))
             }
 
             Spacer()

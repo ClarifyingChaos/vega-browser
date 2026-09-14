@@ -64,7 +64,7 @@ struct CircularProgressView: View {
                     )
                 )
                 .rotationEffect(.degrees(-90))
-                .animation(.easeOut, value: progress)
+                .animation(VegaDesign.Motion.standard, value: progress)
                 .frame(width: 20, height: 20)
         }
     }
