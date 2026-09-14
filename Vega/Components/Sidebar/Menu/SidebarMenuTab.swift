@@ -32,8 +32,8 @@ struct SidebarMenuTab: View {
         .frame(height: 80)
         .frame(maxWidth: .infinity)
         .background(isActive ?.white.opacity(0.1) : isHovering ? .white.opacity(0.05) : .clear)
-        .animation(.linear(duration: 0.1), value: isHovering)
-        .animation(.linear(duration: 0.2), value: isActive)
+        .animation(VegaDesign.Motion.quick, value: isHovering)
+        .animation(VegaDesign.Motion.standard, value: isActive)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))
         .onHoverTracking { state in
             isHovering = state

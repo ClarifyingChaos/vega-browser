@@ -118,7 +118,7 @@ private struct VegaDragPreviewContent: View {
     @ObservedObject var manager: VegaDragSessionManager
 
     private var morphSpring: Animation {
-        .spring(response: 0.3, dampingFraction: 0.78)
+        VegaDesign.Motion.spring
     }
 
     var body: some View {

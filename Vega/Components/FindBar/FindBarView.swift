@@ -82,7 +82,7 @@ struct FindBarView: View {
                             .buttonStyle(.plain)
                             .disabled(findManager.searchText.isEmpty)
                             .onHoverTracking { hovering in
-                                withAnimation(.easeInOut(duration: 0.1)) {
+                                withAnimation(VegaDesign.Motion.quick) {
                                     isUpButtonHovered = hovering
                                 }
                             }
@@ -99,7 +99,7 @@ struct FindBarView: View {
                             .buttonStyle(.plain)
                             .disabled(findManager.searchText.isEmpty)
                             .onHoverTracking { hovering in
-                                withAnimation(.easeInOut(duration: 0.1)) {
+                                withAnimation(VegaDesign.Motion.quick) {
                                     isDownButtonHovered = hovering
                                 }
                             }
@@ -120,7 +120,7 @@ struct FindBarView: View {
                         }
                         .buttonStyle(.plain)
                         .onHoverTracking { hovering in
-                            withAnimation(.easeInOut(duration: 0.1)) {
+                            withAnimation(VegaDesign.Motion.quick) {
                                 isCloseButtonHovered = hovering
                             }
                         }
@@ -148,7 +148,7 @@ struct FindBarView: View {
         .opacity(findManager.isFindBarVisible ? 1 : 0)
         .blur(radius: findManager.isFindBarVisible ? 0 : 8)
         .allowsHitTesting(findManager.isFindBarVisible)
-        .animation(.smooth(duration: 0.25), value: findManager.isFindBarVisible)
+        .animation(VegaDesign.Motion.standard, value: findManager.isFindBarVisible)
         // Focus management
         .onChange(of: findManager.isFindBarVisible) { _, isVisible in
             if isVisible {

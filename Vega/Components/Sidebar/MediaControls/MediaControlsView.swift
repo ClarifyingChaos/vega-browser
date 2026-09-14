@@ -178,16 +178,16 @@ struct MediaControlsView: View {
                 .padding(.horizontal, 8)
                 .frame(maxWidth: .infinity)
                 .onHoverTracking { hovering in
-                    withAnimation(.easeInOut(duration: 0.15)) {
+                    withAnimation(VegaDesign.Motion.quick) {
                         isHovering = hovering
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: hasActiveMedia)
-        .animation(.easeInOut(duration: 0.2), value: shouldShowFavicon)
-        .animation(.easeInOut(duration: 0.2), value: shouldShowPreviousButton)
+        .animation(VegaDesign.Motion.standard, value: hasActiveMedia)
+        .animation(VegaDesign.Motion.standard, value: shouldShowFavicon)
+        .animation(VegaDesign.Motion.standard, value: shouldShowPreviousButton)
         .onAppear {
             if mediaControlsManager == nil {
                 let manager = MediaControlsManager(browserManager: browserManager, windowState: windowState)

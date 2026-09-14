@@ -46,6 +46,6 @@ struct SplitCardView: View {
                 .opacity(0.1)
         )
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xxl))
-        .animation(.easeInOut(duration: 0.2), value: currentTextColor)
+        .animation(VegaDesign.Motion.standard, value: currentTextColor)
     }
 }

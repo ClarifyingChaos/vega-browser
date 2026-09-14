@@ -439,7 +439,7 @@ struct DialogButtonStyle: ButtonStyle {
         .clipShape(VegaDesign.Radius.shape(cornerRadius))
         .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
         .opacity(configuration.isPressed ? 0.8 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+        .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
     }
 }
 

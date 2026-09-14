@@ -55,7 +55,7 @@ struct SidebarMenuDownloadsTab: View {
             .frame(height: 38)
             .frame(maxWidth: .infinity)
             .background(isHovering ? .white.opacity(0.08) : .white.opacity(0.05))
-            .animation(.easeInOut(duration: 0.1), value: isHovering)
+            .animation(VegaDesign.Motion.quick, value: isHovering)
             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
             .onHoverTracking { state in
                 isHovering = state
@@ -165,7 +165,7 @@ struct DownloadItem: View {
         .padding(.vertical, 12)
         .background(isHovering ? .white.opacity(0.2) : .clear)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))
-        .animation(.easeInOut(duration: 0.1), value: isHovering)
+        .animation(VegaDesign.Motion.quick, value: isHovering)
         .onHoverTracking { state in
             isHovering = state
         }

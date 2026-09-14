@@ -62,8 +62,8 @@ struct VegaTextField: View {
         )
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .focused($isFocused)
-        .animation(.easeInOut(duration: 0.15), value: isFocused)
-        .animation(.easeInOut(duration: 0.15), value: hasError)
+        .animation(VegaDesign.Motion.quick, value: isFocused)
+        .animation(VegaDesign.Motion.quick, value: hasError)
         .accessibilityLabel(placeholder)
         .accessibilityHint(hasError ? "Error state" : "Text input field")
     }

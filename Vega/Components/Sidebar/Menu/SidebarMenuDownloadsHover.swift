@@ -50,7 +50,7 @@ struct SidebarMenuHoverDownloads: View {
                             ? 1 : 0
                     )
                     .animation(
-                        .easeOut(duration: 0.15)
+                        VegaDesign.Motion.quick
                             .delay(
                                 Double(prioritizedDownloads.count - index)
                                     * 0.01
@@ -226,7 +226,7 @@ struct SidebarMenuHoverDownloadItem: View {
         .padding(.vertical, 6)
         .background(isHovering ? .white.opacity(0.2) : .clear)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
-        .animation(.easeInOut(duration: 0.1), value: isHovering)
+        .animation(VegaDesign.Motion.quick, value: isHovering)
         .onHoverTracking { state in
             isHovering = state
         }

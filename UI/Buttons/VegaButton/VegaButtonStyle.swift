@@ -72,8 +72,8 @@ struct VegaButtonStyle: ButtonStyle {
         }
         .compositingGroup()
         .opacity(isEnabled ? 1.0 : disabledOpacity)
-        .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-        .animation(.easeInOut(duration: 0.15), value: isHovering)
+        .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
+        .animation(VegaDesign.Motion.quick, value: isHovering)
         .onHoverTracking { hovering in
             isHovering = hovering
         }
@@ -152,7 +152,7 @@ struct ScaleButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? scale : 1.0)
             .animation(
-                .easeInOut(duration: 0.1),
+                VegaDesign.Motion.quick,
                 value: configuration.isPressed
             )
     }

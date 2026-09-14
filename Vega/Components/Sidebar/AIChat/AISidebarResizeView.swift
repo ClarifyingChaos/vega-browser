@@ -41,8 +41,8 @@ struct AISidebarResizeView: View {
                     .frame(width: 2)
                     .frame(maxHeight: .infinity)
                     .offset(x: indicatorOffset)
-                    .animation(.easeInOut(duration: 0.15), value: isResizing)
-                    .animation(.easeInOut(duration: 0.15), value: isHovering)
+                    .animation(VegaDesign.Motion.quick, value: isResizing)
+                    .animation(VegaDesign.Motion.quick, value: isHovering)
                     .padding(.vertical, 30)
             }
 

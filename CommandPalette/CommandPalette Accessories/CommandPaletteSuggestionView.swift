@@ -68,7 +68,7 @@ struct CommandPaletteSuggestionView: View {
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
             
         .onHoverTracking { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(VegaDesign.Motion.quick) {
                 isHovered = hovering
             }
         }

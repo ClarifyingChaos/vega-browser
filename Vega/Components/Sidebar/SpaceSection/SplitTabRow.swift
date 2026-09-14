@@ -103,7 +103,7 @@ private struct SplitHalfTab: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .onHoverTracking { hovering in
-                    withAnimation(.easeInOut(duration: 0.15)) {
+                    withAnimation(VegaDesign.Motion.quick) {
                         isHovering = hovering
                     }
                 }
