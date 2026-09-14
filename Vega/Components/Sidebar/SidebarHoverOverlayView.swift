@@ -16,8 +16,8 @@ struct SidebarHoverOverlayView: View {
     @Environment(\.vegaSettings) var vegaSettings
 
     private let cornerRadius: CGFloat = VegaDesign.Radius.lg
-    private let horizontalInset: CGFloat = 7
-    private let verticalInset: CGFloat = 7
+    private let horizontalInset: CGFloat = VegaDesign.Spacing.md
+    private let verticalInset: CGFloat = VegaDesign.Spacing.md
 
     var body: some View {
         // Only render overlay plumbing when the real sidebar is collapsed

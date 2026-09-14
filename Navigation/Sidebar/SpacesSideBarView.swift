@@ -59,7 +59,7 @@ struct SpacesSideBarView: View {
     @ObservedObject private var dragSession = VegaDragSessionManager.shared
 
     private var mainSidebarContent: some View {
-        return VStack(spacing: 8) {
+        return VStack(spacing: VegaDesign.Spacing.sectionGap) {
             // Header (window controls, nav buttons, URL bar)
             SidebarHeader(isSidebarHovered: isSidebarHovered)
                 .environmentObject(browserManager)
@@ -74,7 +74,7 @@ struct SpacesSideBarView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .conditionalWindowDrag()
-                    .frame(minHeight: 40)
+                    .frame(minHeight: VegaDesign.Size.bottomBar)
                     .zIndex(0)
             }
 
@@ -88,8 +88,8 @@ struct SpacesSideBarView: View {
                 .environmentObject(browserManager)
                 .environment(windowState)
                 .environment(vegaSettings)
-                .padding(.horizontal, 8)
-                .padding(.bottom, 8)
+                .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
+                .padding(.bottom, VegaDesign.Spacing.sidebarInset)
 
             // Media controls
             MediaControlsView()
@@ -107,8 +107,8 @@ struct SpacesSideBarView: View {
             .environment(windowState)
         }
         // Extra top padding when sidebar is on the left to avoid overlapping native traffic light buttons
-        .padding(.top, vegaSettings.sidebarPosition == .left ? 30 : 8)
-        .padding(.bottom, 8)
+        .padding(.top, vegaSettings.sidebarPosition == .left ? VegaDesign.Spacing.sidebarTop : VegaDesign.Spacing.sidebarInset)
+        .padding(.bottom, VegaDesign.Spacing.sidebarInset)
         .background(
             GeometryReader { geo in
                 Color.clear
@@ -187,11 +187,11 @@ struct SpacesSideBarView: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: VegaDesign.Spacing.xl) {
             Image(systemName: "square.grid.2x2")
                 .font(VegaDesign.Font.hero)
                 .foregroundColor(.secondary)
-            VStack(spacing: 8) {
+            VStack(spacing: VegaDesign.Spacing.md) {
                 Text("No Spaces")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -304,7 +304,7 @@ struct SpacesSideBarView: View {
 
     @ViewBuilder
     private func makeSpaceView(for space: Space, index: Int) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: VegaDesign.Spacing.zero) {
             if !windowState.isIncognito {
                 PinnedGrid(
                     width: windowState.sidebarContentWidth,
@@ -315,8 +315,8 @@ struct SpacesSideBarView: View {
                 .environment(windowState)
                 .environment(windowRegistry)
                 .environment(vegaSettings)
-                .padding(.horizontal, 8)
-                .padding(.bottom, 8)
+                .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
+                .padding(.bottom, VegaDesign.Spacing.sectionGap)
                 .modifier(FallbackDropBelowEssentialsModifier())
             }
 

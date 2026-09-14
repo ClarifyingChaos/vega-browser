@@ -16,7 +16,7 @@ struct SidebarHeader: View {
     @State private var sidebarWidth: CGFloat = 0
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: VegaDesign.Spacing.sectionGap) {
             if vegaSettings.topBarAddressView {
                 windowControls
             }
@@ -37,20 +37,20 @@ struct SidebarHeader: View {
         SidebarWindowControlsView()
             .environmentObject(browserManager)
             .environment(windowState)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
     }
 
     private var navigationButtons: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: VegaDesign.Spacing.xxs) {
             NavButtonsView(effectiveSidebarWidth: sidebarWidth)
         }
-        .padding(.horizontal, 8)
-        .frame(height: 30)
+        .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
+        .frame(height: VegaDesign.Size.navRow)
     }
 
     private var urlBar: some View {
         URLBarView(isSidebarHovered: isSidebarHovered)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
     }
 }
 
@@ -61,7 +61,7 @@ struct SidebarWindowControlsView: View {
     @Environment(\.vegaSettings) var vegaSettings
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: VegaDesign.Spacing.md) {
             Button("Toggle Sidebar", systemImage: vegaSettings.sidebarPosition == .left ? "sidebar.left" : "sidebar.right") {
                 browserManager.toggleSidebar(for: windowState)
             }
@@ -80,6 +80,6 @@ struct SidebarWindowControlsView: View {
 
             Spacer()
         }
-        .frame(height: 28)
+        .frame(height: VegaDesign.Size.navRow)
     }
 }
