@@ -117,3 +117,6 @@ DerivedData/
 *.cer
 *.certSigningRequest
 .worktrees
+
+# repowise index
+.repowise/
