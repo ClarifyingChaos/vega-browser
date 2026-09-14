@@ -104,7 +104,7 @@ struct MiniWindowToolbar: View {
                     .background(
                         VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                             .fill(controlBackgroundColor)
-                            .shadow(radius: 1, x: 1, y: 1)
+                            .vegaElevation(.raised)
                     )
                     .overlay(
                         VegaDesign.Radius.shape(VegaDesign.Radius.xs)
@@ -150,7 +150,7 @@ struct MiniWindowToolbar: View {
         .background(
             VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                 .fill(controlBackgroundColor)
-                .shadow(radius: 1, x: 1, y: 1)
+                .vegaElevation(.raised)
         )
         .overlay(
             VegaDesign.Radius.shape(VegaDesign.Radius.xs)
@@ -282,7 +282,7 @@ private struct MiniWindowShareButtonContainer: View {
             .background(
                 VegaDesign.Radius.shape(VegaDesign.Radius.xs)
                     .fill(backgroundColor)
-                    .shadow(radius: 1, x: 1, y: 1)
+                    .vegaElevation(.raised)
             )
             .overlay(
                 VegaDesign.Radius.shape(VegaDesign.Radius.xs)

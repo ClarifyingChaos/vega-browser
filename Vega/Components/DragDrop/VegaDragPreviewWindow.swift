@@ -215,7 +215,7 @@ private struct VegaMorphingPreview: View {
                 standardPreview
             }
         }
-        .shadow(color: .black.opacity(0.25), radius: style == .ghost ? 12 : 8, y: style == .ghost ? 4 : 2)
+        .vegaElevation(.floating)
     }
 
     private var pinnedTilePreview: some View {

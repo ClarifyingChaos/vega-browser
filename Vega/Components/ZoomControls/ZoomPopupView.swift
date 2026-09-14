@@ -103,7 +103,7 @@ struct ZoomPopupView: View {
             VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                 .stroke(.white.opacity(0.2), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+        .vegaElevation(.floating)
         .scaleEffect(isVisible ? 1.0 : 0.8)
         .opacity(isVisible ? 1.0 : 0.0)
         .animation(VegaDesign.Motion.spring, value: isVisible)
