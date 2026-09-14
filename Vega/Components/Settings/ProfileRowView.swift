@@ -28,7 +28,7 @@ struct ProfileRowView: View {
                 VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                     .fill(Color(.controlBackgroundColor))
                 Image(systemName: profile.icon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(VegaDesign.Font.heading)
             }
             .frame(width: 32, height: 32)
 

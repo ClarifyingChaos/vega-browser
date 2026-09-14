@@ -29,7 +29,7 @@ struct ExtensionPermissionView: View {
                         .scaledToFit()
                         .frame(width: 64, height: 64)
                     Image(systemName: "arrow.left")
-                        .font(.system(size: 28, weight: .medium))
+                        .font(VegaDesign.Font.display)
                         .foregroundColor(.secondary)
                     Image(nsImage: extensionLogo)
                         .resizable()
@@ -43,16 +43,16 @@ struct ExtensionPermissionView: View {
             Text(isRuntimeRequest
                  ? "\"\(extensionName)\" wants additional permissions"
                  : "Add the \"\(extensionName)\" extension to Vega?")
-                .font(.system(size: 16, weight: .semibold))
+                .font(VegaDesign.Font.title)
             
             Text("It can:")
-                .font(.system(size: 14, weight: .semibold))
+                .font(VegaDesign.Font.label)
                 .foregroundColor(.secondary)
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(requestedPermissions, id: \.self) { permission in
                     let message = getPermissionDescription(permission)
                     Text("•  \(message)")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(VegaDesign.Font.label)
                         .foregroundStyle(.secondary)
                 }
             }

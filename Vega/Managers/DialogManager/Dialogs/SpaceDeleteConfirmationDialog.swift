@@ -29,13 +29,13 @@ struct SpaceDeleteConfirmationDialog: DialogPresentable {
             HStack(spacing: 10) {
                 if isEmoji(spaceIcon) {
                     Text(spaceIcon)
-                        .font(.system(size: 20))
+                        .font(VegaDesign.Font.titleLarge)
                 } else {
                     Image(systemName: spaceIcon)
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(VegaDesign.Font.titleLarge)
                 }
                 Text(spaceName)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(VegaDesign.Font.title)
             }
             .padding(.bottom, 4)
 

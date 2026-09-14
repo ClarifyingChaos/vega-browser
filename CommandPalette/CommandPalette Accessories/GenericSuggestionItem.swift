@@ -28,7 +28,7 @@ struct GenericSuggestionItem: View {
             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
 
             Text(text)
-                .font(.system(size: 13, weight: .semibold))
+                .font(VegaDesign.Font.label)
                 .foregroundStyle(isSelected ? .white : isDark ? .white.opacity(0.6) : .black.opacity(0.8))
                 .lineLimit(1)
                 .truncationMode(.tail)

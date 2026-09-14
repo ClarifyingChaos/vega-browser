@@ -44,7 +44,7 @@ struct ProfilePickerView: View {
     private func row(for profile: Profile) -> some View {
         HStack(spacing: 8) {
             Image(systemName: profile.icon)
-                .font(.system(size: 14, weight: .semibold))
+                .font(VegaDesign.Font.label)
             Text(profile.name)
                 .lineLimit(1)
             Spacer()
@@ -77,8 +77,8 @@ struct ProfilePickerView: View {
                 ForEach(profiles, id: \.id) { p in
                     Button(action: { select(p.id) }) {
                         HStack(spacing: 8) {
-                            Image(systemName: p.icon).font(.system(size: 13))
-                            Text(p.name).font(.system(size: 13))
+                            Image(systemName: p.icon).font(VegaDesign.Font.body)
+                            Text(p.name).font(VegaDesign.Font.body)
                             Spacer()
                             if selectedProfileId == p.id { Image(systemName: "checkmark").foregroundStyle(.secondary) }
                         }
@@ -108,7 +108,7 @@ struct ProfilePickerView: View {
                             ZStack {
                                 VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                                     .fill(Color(.controlBackgroundColor))
-                                Image(systemName: p.icon).font(.system(size: 16))
+                                Image(systemName: p.icon).font(VegaDesign.Font.title)
                             }
                             .frame(width: 24, height: 24)
                             Text(p.name).lineLimit(1)

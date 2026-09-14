@@ -263,13 +263,13 @@ private struct VegaMorphingPreview: View {
                         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
                 } else {
                     Image(systemName: "globe")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(VegaDesign.Font.body)
                         .foregroundColor(.secondary)
                 }
 
                 if style.showTitle {
                     Text(title)
-                        .font(.system(size: style == .ghost ? 11 : 13, weight: .medium))
+                        .font(style == .ghost ? VegaDesign.Font.caption : VegaDesign.Font.body)
                         .foregroundColor(style == .ghost ? .secondary : .primary)
                         .lineLimit(1)
                     Spacer(minLength: 0)
