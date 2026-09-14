@@ -356,40 +356,38 @@ struct VegaCommands: Commands {
                 }
             }
 
-            if #available(macOS 15.5, *) {
-                CommandMenu("Extensions") {
-                    Button("Toggle Extension Library") {
-                        browserManager.toggleExtensionLibrary()
-                    }
-                    .keyboardShortcut("e", modifiers: [.command, .shift])
-
-                    Divider()
-
-                    Button("Install Extension...") {
-                        browserManager.showExtensionInstallDialog()
-                    }
-                    .modifier(dynamicShortcut(.installExtension))
-
-                    Button("Manage Extensions...") {
-                        vegaSettings.currentSettingsTab = .extensions
-                        openWindow(id: "vega-settings")
-                    }
-
-                    Divider()
-
-                    Button("Chrome Web Store") {
-                        if let tab = browserManager.currentTabForActiveWindow() {
-                            tab.loadURL("https://chromewebstore.google.com")
-                        }
-                    }
-
-                    #if DEBUG
-                    Divider()
-                    Button("Open Popup Console") {
-                        browserManager.extensionManager?.showPopupConsole()
-                    }
-                    #endif
+            CommandMenu("Extensions") {
+                Button("Toggle Extension Library") {
+                    browserManager.toggleExtensionLibrary()
                 }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+
+                Divider()
+
+                Button("Install Extension...") {
+                    browserManager.showExtensionInstallDialog()
+                }
+                .modifier(dynamicShortcut(.installExtension))
+
+                Button("Manage Extensions...") {
+                    vegaSettings.currentSettingsTab = .extensions
+                    openWindow(id: "vega-settings")
+                }
+
+                Divider()
+
+                Button("Chrome Web Store") {
+                    if let tab = browserManager.currentTabForActiveWindow() {
+                        tab.loadURL("https://chromewebstore.google.com")
+                    }
+                }
+
+                #if DEBUG
+                Divider()
+                Button("Open Popup Console") {
+                    browserManager.extensionManager?.showPopupConsole()
+                }
+                #endif
             }
 
             CommandMenu("Appearance") {
