@@ -36,7 +36,7 @@ struct DialogView: View {
 
     @ViewBuilder
     private var overlayBackground: some View {
-        Color.black.opacity(0.4)
+        VegaDesign.Surface.scrim
             .ignoresSafeArea()
             .onTapGesture {
                 browserManager.dialogManager.closeDialog()

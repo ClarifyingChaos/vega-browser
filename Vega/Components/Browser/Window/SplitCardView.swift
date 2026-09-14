@@ -39,13 +39,10 @@ struct SplitCardView: View {
         .frame(width: 237, height: 394)
         .padding(8)
         .background(
-            BlurEffectView(material: .hudWindow, state: .active)
-        )
-        .background(
             Color(currentTextColor)
                 .opacity(0.1)
         )
-        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xxl))
+        .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .animation(VegaDesign.Motion.standard, value: currentTextColor)
     }
 }

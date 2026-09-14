@@ -921,10 +921,7 @@ private struct SplitControlsOverlay: View {
                             .padding(6)
                     }
                     .buttonStyle(.plain)
-                    .background(.ultraThinMaterial)
-                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-                    .overlay(VegaDesign.Radius.shape(VegaDesign.Radius.md).stroke(Color.white.opacity(0.25), lineWidth: 1))
-                    .vegaElevation(.raised)
+                    .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
                     .padding(.leading, 8)
 
                     Spacer()
@@ -935,10 +932,7 @@ private struct SplitControlsOverlay: View {
                             .padding(6)
                     }
                     .buttonStyle(.plain)
-                    .background(.ultraThinMaterial)
-                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-                    .overlay(VegaDesign.Radius.shape(VegaDesign.Radius.md).stroke(Color.white.opacity(0.25), lineWidth: 1))
-                    .vegaElevation(.raised)
+                    .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
                     .padding(.trailing, 8)
                 }
                 .padding(.top, 8)

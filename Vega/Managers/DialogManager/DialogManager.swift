@@ -166,15 +166,9 @@ struct DialogCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(16)
-            .frame(maxWidth: 500, alignment: .leading)
-            .background(BlurEffectView(material: .headerView, state: .active))
-            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))
-            .overlay {
-                VegaDesign.Radius.shape(VegaDesign.Radius.xl)
-                    .stroke(.white.opacity(0.25), lineWidth: 1)
-            }
-            .vegaElevation(.floating)
+            .padding(VegaDesign.Spacing.xl)
+            .frame(maxWidth: VegaDesign.Size.dialogMaxWidth, alignment: .leading)
+            .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
     }
 }
 

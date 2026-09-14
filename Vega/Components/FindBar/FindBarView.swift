@@ -131,7 +131,6 @@ struct FindBarView: View {
                     .background(Color(.windowBackgroundColor).opacity(0.35))
                     .clipShape(Capsule())
                     .vegaGlassEffect(in: Capsule())
-                    .vegaElevation(.floating)
                     .padding(.trailing, 16)
                 }
                 .padding(.top, 12)
