@@ -21,7 +21,10 @@ struct SettingsWindow: View {
                 .environmentObject(browserManager)
                 .environmentObject(gradientColorManager)
         }
-        .frame(width: 780, height: 540)
+        .frame(
+            width: VegaDesign.Size.settingsWindowWidth,
+            height: VegaDesign.Size.settingsWindowHeight
+        )
         .navigationSplitViewStyle(.balanced)
     }
 }
@@ -49,22 +52,27 @@ private struct SettingsSidebar: View {
             }
         }
         .listStyle(.sidebar)
-        .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 240)
+        .navigationSplitViewColumnWidth(VegaDesign.Size.settingsSidebar)
     }
 
     private func sidebarRow(_ tab: SettingsTabs) -> some View {
         Label {
             Text(tab.name)
+                .font(VegaDesign.Font.body)
         } icon: {
             Image(systemName: tab.icon)
-                .font(VegaDesign.Font.secondary)
+                .font(VegaDesign.Font.caption)
                 .foregroundStyle(.white)
-                .frame(width: 24, height: 24)
+                .frame(
+                    width: VegaDesign.Size.settingsChip,
+                    height: VegaDesign.Size.settingsChip
+                )
                 .background(
                     VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                         .fill(tab.iconColor.gradient)
                 )
         }
+        .frame(height: VegaDesign.Size.navRow)
         .tag(tab)
     }
 }

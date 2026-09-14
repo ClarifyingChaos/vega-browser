@@ -77,7 +77,7 @@ struct VegaApp: App {
 
 
         // macOS 26 style sidebar settings window
-        Window("Vega Settings", id: "vega-settings") {
+        Settings {
             SettingsWindow()
                 .environmentObject(browserManager)
                 .environmentObject(browserManager.tabManager)
@@ -89,7 +89,6 @@ struct VegaApp: App {
                 .environment(tabOrganizerManager)
         }
         .windowResizability(.contentSize)
-        .defaultPosition(.center)
     }
 
     // MARK: - Application Lifecycle Setup

@@ -14,7 +14,7 @@ struct VegaCommands: Commands {
     let windowRegistry: WindowRegistry
     let shortcutManager: KeyboardShortcutManager
     let tabOrganizerManager: TabOrganizerManager
-    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
     @Environment(\.vegaSettings) var vegaSettings
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
@@ -81,13 +81,8 @@ struct VegaCommands: Commands {
         CommandGroup(replacing: .newItem) {}
         CommandGroup(replacing: .windowList) {}
 
-        // Replace the native Settings menu item to open our custom sidebar settings window
-        CommandGroup(replacing: .appSettings) {
-            Button("Settings...") {
-                openWindow(id: "vega-settings")
-            }
-            .keyboardShortcut(",", modifiers: .command)
-
+        // The Settings scene supplies the standard Settings… item at ⌘,
+        CommandGroup(after: .appSettings) {
             Button("Import from another Browser") {
                 browserManager.dialogManager.showDialog(
                     BrowserImportDialog(
@@ -371,7 +366,7 @@ struct VegaCommands: Commands {
 
                 Button("Manage Extensions...") {
                     vegaSettings.currentSettingsTab = .extensions
-                    openWindow(id: "vega-settings")
+                    openSettings()
                 }
 
                 Divider()

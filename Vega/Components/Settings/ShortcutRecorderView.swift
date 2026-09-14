@@ -22,18 +22,18 @@ struct ShortcutRecorderView: View {
     let onRecordingComplete: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: VegaDesign.Spacing.md) {
             Button(action: toggleRecording) {
-                HStack(spacing: 4) {
+                HStack(spacing: VegaDesign.Spacing.xs) {
                     Image(systemName: isRecording ? "stop.fill" : "pencil")
                     Text(isRecording ? "Recording..." : keyCombination.displayString)
-                        .font(.system(.body, design: .monospaced))
+                        .font(VegaDesign.Font.body.monospaced())
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, VegaDesign.Spacing.lg)
+                .padding(.vertical, VegaDesign.Spacing.sm)
                 .background(
                     VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                        .fill(isRecording ? Color.red.opacity(0.2) : Color(.controlBackgroundColor))
+                        .fill(isRecording ? Color.red.opacity(0.2) : VegaDesign.Surface.raised)
                 )
                 .overlay(
                     VegaDesign.Radius.shape(VegaDesign.Radius.sm)

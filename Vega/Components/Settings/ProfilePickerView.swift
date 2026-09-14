@@ -42,7 +42,7 @@ struct ProfilePickerView: View {
     // MARK: - Subviews
     @ViewBuilder
     private func row(for profile: Profile) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: VegaDesign.Spacing.md) {
             Image(systemName: profile.icon)
                 .font(VegaDesign.Font.label)
             Text(profile.name)
@@ -73,10 +73,10 @@ struct ProfilePickerView: View {
         var onSelect: ((UUID) -> Void)?
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: VegaDesign.Spacing.sm) {
                 ForEach(profiles, id: \.id) { p in
                     Button(action: { select(p.id) }) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: VegaDesign.Spacing.md) {
                             Image(systemName: p.icon).font(VegaDesign.Font.body)
                             Text(p.name).font(VegaDesign.Font.body)
                             Spacer()
@@ -101,23 +101,26 @@ struct ProfilePickerView: View {
         var onSelect: ((UUID) -> Void)?
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
                 ForEach(profiles, id: \.id) { p in
                     Button(action: { select(p.id) }) {
-                        HStack(spacing: 10) {
+                        HStack(spacing: VegaDesign.Spacing.sectionGap) {
                             ZStack {
                                 VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                                    .fill(Color(.controlBackgroundColor))
+                                    .fill(VegaDesign.Surface.raised)
                                 Image(systemName: p.icon).font(VegaDesign.Font.title)
                             }
-                            .frame(width: 24, height: 24)
+                            .frame(
+                                width: VegaDesign.Size.settingsChip,
+                                height: VegaDesign.Size.settingsChip
+                            )
                             Text(p.name).lineLimit(1)
                             Spacer()
                             if selectedProfileId == p.id { Image(systemName: "checkmark").foregroundStyle(.secondary) }
                         }
                     }
                     .buttonStyle(.plain)
-                    .padding(.vertical, 2)
+                    .padding(.vertical, VegaDesign.Spacing.xxs)
                 }
             }
         }
@@ -130,13 +133,13 @@ struct ProfilePickerView: View {
 
     private struct EmptyProfilesView: View {
         var body: some View {
-            HStack(spacing: 8) {
+            HStack(spacing: VegaDesign.Spacing.md) {
                 Image(systemName: "person.crop.circle")
                     .foregroundStyle(.secondary)
                 Text("No profiles available")
                     .foregroundStyle(.secondary)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, VegaDesign.Spacing.xs)
             .accessibilityLabel("No profiles available")
         }
     }
