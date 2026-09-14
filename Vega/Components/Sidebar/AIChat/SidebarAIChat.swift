@@ -201,7 +201,7 @@ struct SidebarAIChat: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(VegaDesign.Surface.raised)
+        .background(VegaDesign.Surface.fill)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .padding(.horizontal, 8)
     }

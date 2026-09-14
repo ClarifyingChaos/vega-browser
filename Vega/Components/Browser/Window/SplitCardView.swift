@@ -42,6 +42,7 @@ struct SplitCardView: View {
             Color(currentTextColor)
                 .opacity(0.1)
         )
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .animation(VegaDesign.Motion.standard, value: currentTextColor)
     }

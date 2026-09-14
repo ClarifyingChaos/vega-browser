@@ -44,10 +44,11 @@ struct SidebarHoverOverlayView: View {
                         .environment(commandPalette)
                         .environmentObject(browserManager.gradientColorManager)
                         .frame(maxHeight: .infinity)
-                        .vegaGlassEffect(in: VegaDesign.Radius.shape(cornerRadius))
+                        .background(Color(.windowBackgroundColor).opacity(0.35))
                         .alwaysArrowCursor()
                         .padding(vegaSettings.sidebarPosition == .left ? .leading : .trailing, horizontalInset)
                         .padding(.vertical, verticalInset)
+                        .vegaGlassEffect(in: VegaDesign.Radius.shape(cornerRadius))
                         .transition(
                             .move(edge: vegaSettings.sidebarPosition == .left ? .leading : .trailing)
                                 .combined(with: .opacity)
