@@ -14,8 +14,9 @@ struct PinnedTabView<Icon: View>: View {
     var tabIcon: Icon
     var isActive: Bool
     var isUnloaded: Bool = false
-    /// The favorite's open page has left its home URL.
-    var showsLeftHomeDot: Bool = false
+    /// The favorite's open page has left its pinned URL; hovering shows a reset button.
+    var hasLeftPinnedURL: Bool = false
+    var onResetToPinnedURL: () -> Void = {}
     var action: () -> Void
 
     @State private var isHovered: Bool = false
@@ -37,11 +38,17 @@ struct PinnedTabView<Icon: View>: View {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                if showsLeftHomeDot {
-                    Circle()
-                        .fill(.tertiary)
-                        .frame(width: VegaDesign.Size.statusDot, height: VegaDesign.Size.statusDot)
-                        .padding(VegaDesign.Spacing.xs)
+                if hasLeftPinnedURL && isHovered {
+                    Button(action: onResetToPinnedURL) {
+                        Image(systemName: "arrow.uturn.backward")
+                            .font(VegaDesign.Font.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: VegaDesign.Size.rowButton, height: VegaDesign.Size.rowButton)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Reset to Pinned URL")
+                    .padding(VegaDesign.Spacing.xs)
                 }
             }
             .frame(maxWidth: .infinity)
