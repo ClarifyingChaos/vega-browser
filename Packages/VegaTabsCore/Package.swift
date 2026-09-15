@@ -1,0 +1,14 @@
+// swift-tools-version: 6.0
+import PackageDescription
+
+let package = Package(
+    name: "VegaTabsCore",
+    platforms: [.macOS("26.0"), .iOS("26.0")],
+    products: [
+        .library(name: "VegaTabsCore", targets: ["VegaTabsCore"]),
+    ],
+    targets: [
+        .target(name: "VegaTabsCore", swiftSettings: [.swiftLanguageMode(.v5)]),
+        .testTarget(name: "VegaTabsCoreTests", dependencies: ["VegaTabsCore"], swiftSettings: [.swiftLanguageMode(.v5)]),
+    ]
+)
