@@ -16,7 +16,6 @@ struct VegaCommands: Commands {
     let tabOrganizerManager: TabOrganizerManager
     @Environment(\.openSettings) private var openSettings
     @Environment(\.vegaSettings) var vegaSettings
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init(browserManager: BrowserManager, windowRegistry: WindowRegistry, shortcutManager: KeyboardShortcutManager, tabOrganizerManager: TabOrganizerManager) {
         self.browserManager = browserManager
@@ -111,7 +110,7 @@ struct VegaCommands: Commands {
             }
 
             Button("Check for Updates...") {
-                appDelegate.updaterController.checkForUpdates(nil)
+                browserManager.appDelegate?.updaterController.checkForUpdates(nil)
             }
         }
         
