@@ -49,13 +49,10 @@ struct SpaceSwitcherTitle: View {
 
     private func label(_ space: SpaceRecord) -> some View {
         let isDropTarget = dragSession.isDragging && dragSession.activeZone == .target(.pinned(spaceID: space.id))
-        return HStack(spacing: VegaDesign.Spacing.sm) {
-            SpaceIconView(icon: space.icon, size: VegaDesign.Size.spaceIcon, tint: space.accentColor)
-            Text(space.name)
-                .font(VegaDesign.Font.title)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-        }
+        return Text(space.name)
+            .font(VegaDesign.Font.title)
+            .foregroundStyle(.primary)
+            .lineLimit(1)
         .padding(.horizontal, VegaDesign.Spacing.sm)
         .frame(height: VegaDesign.Size.row)
         .background(
