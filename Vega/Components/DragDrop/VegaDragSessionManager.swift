@@ -69,12 +69,6 @@ final class VegaDragSessionManager: ObservableObject {
                cursorScreenLocation.x <= sidebarScreenFrame.maxX
     }
 
-    var isSidebarReorder: Bool {
-        guard isDragging, let source = sourceZone, activeZone == source else { return false }
-        if case .section = source { return true }
-        return false
-    }
-
     private var previewWindow: VegaDragPreviewWindow?
 
     private func ensurePreviewWindow() {
