@@ -98,7 +98,7 @@ struct SpaceTab: View {
                     Circle()
                         .fill(.tertiary)
                         .frame(width: VegaDesign.Size.statusDot, height: VegaDesign.Size.statusDot)
-                        .help("Navigated away from this tab's home page")
+                        .help("Navigated away from the pinned URL")
                 }
             }
             .overlay(alignment: .trailing) {
