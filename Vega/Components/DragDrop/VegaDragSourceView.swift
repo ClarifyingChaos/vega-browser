@@ -11,16 +11,14 @@ import AppKit
 @MainActor
 final class VegaDragSourceCoordinator: NSObject, NSDraggingSource {
     var item: VegaDragItem
-    var tab: Tab?
+    var icon: Image?
     var zoneID: DropZoneID
-    var index: Int
     let manager: VegaDragSessionManager
 
-    init(item: VegaDragItem, tab: Tab?, zoneID: DropZoneID, index: Int, manager: VegaDragSessionManager) {
+    init(item: VegaDragItem, icon: Image?, zoneID: DropZoneID, manager: VegaDragSessionManager) {
         self.item = item
-        self.tab = tab
+        self.icon = icon
         self.zoneID = zoneID
-        self.index = index
         self.manager = manager
     }
 
@@ -61,7 +59,7 @@ final class VegaDragSourceNSView: NSView {
     }
 
     func initiateDrag(with event: NSEvent) {
-        guard let coordinator = coordinator, let tab = coordinator.tab else { return }
+        guard let coordinator = coordinator else { return }
 
         // Capture screen position from the event for preview window positioning
         let screenPoint: NSPoint
@@ -73,9 +71,8 @@ final class VegaDragSourceNSView: NSView {
 
         coordinator.manager.beginDrag(
             item: coordinator.item,
-            tab: tab,
+            icon: coordinator.icon,
             from: coordinator.zoneID,
-            at: coordinator.index,
             cursorScreenPoint: screenPoint
         )
 
@@ -101,9 +98,8 @@ final class VegaDragSourceNSView: NSView {
 
 private struct DragSourceAnchor: NSViewRepresentable {
     let item: VegaDragItem
-    let tab: Tab?
+    let icon: Image?
     let zoneID: DropZoneID
-    let index: Int
     let manager: VegaDragSessionManager
 
     func makeNSView(context: Context) -> VegaDragSourceNSView {
@@ -115,9 +111,8 @@ private struct DragSourceAnchor: NSViewRepresentable {
 
     func updateNSView(_ nsView: VegaDragSourceNSView, context: Context) {
         context.coordinator.item = item
-        context.coordinator.tab = tab
+        context.coordinator.icon = icon
         context.coordinator.zoneID = zoneID
-        context.coordinator.index = index
     }
 
     static func dismantleNSView(_ nsView: VegaDragSourceNSView, coordinator: VegaDragSourceCoordinator) {
@@ -125,7 +120,7 @@ private struct DragSourceAnchor: NSViewRepresentable {
     }
 
     func makeCoordinator() -> VegaDragSourceCoordinator {
-        VegaDragSourceCoordinator(item: item, tab: tab, zoneID: zoneID, index: index, manager: manager)
+        VegaDragSourceCoordinator(item: item, icon: icon, zoneID: zoneID, manager: manager)
     }
 }
 
@@ -133,9 +128,8 @@ private struct DragSourceAnchor: NSViewRepresentable {
 
 struct VegaDragSourceView<Content: View>: View {
     let item: VegaDragItem
-    let tab: Tab?
+    let icon: Image?
     let zoneID: DropZoneID
-    let index: Int
     let manager: VegaDragSessionManager
     @ViewBuilder let content: () -> Content
 
@@ -144,9 +138,8 @@ struct VegaDragSourceView<Content: View>: View {
             .background(
                 DragSourceAnchor(
                     item: item,
-                    tab: tab,
+                    icon: icon,
                     zoneID: zoneID,
-                    index: index,
                     manager: manager
                 )
             )
