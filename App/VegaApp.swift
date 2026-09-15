@@ -42,12 +42,14 @@ struct VegaApp: App {
                     .background(BackgroundWindowModifier())
                     .environment(\.vegaSettings, settingsManager)
                     .environmentObject(browserManager)
+                    .environment(browserManager.tabs)
             } viewB: {
                 ContentView()
                     .ignoresSafeArea(.all)
                     .background(BackgroundWindowModifier())
                     .environmentObject(browserManager)
                     .environmentObject(browserManager.tabManager)
+                    .environment(browserManager.tabs)
                     .environment(windowRegistry)
                     .environment(webViewCoordinator)
                     .environment(\.vegaSettings, settingsManager)
@@ -81,6 +83,7 @@ struct VegaApp: App {
             SettingsWindow()
                 .environmentObject(browserManager)
                 .environmentObject(browserManager.tabManager)
+                .environment(browserManager.tabs)
                 .environmentObject(browserManager.gradientColorManager)
                 .environment(\.vegaSettings, settingsManager)
                 .environment(keyboardShortcutManager)
@@ -179,6 +182,9 @@ struct VegaApp: App {
             [webViewCoordinator, weak browserManager] windowId in
             // Only cleanup if browserManager still exists (it's captured weakly)
             if let browserManager = browserManager {
+                if let windowState = browserManager.windowRegistry?.windows[windowId] {
+                    browserManager.tabs.detach(window: windowState)
+                }
                 webViewCoordinator.cleanupWindow(
                     windowId,
                     tabManager: browserManager.tabManager
