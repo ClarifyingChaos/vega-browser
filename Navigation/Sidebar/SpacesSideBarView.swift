@@ -61,6 +61,13 @@ struct SpacesSideBarView: View {
 
     private var mainSidebarContent: some View {
         return VStack(spacing: VegaDesign.Spacing.sectionGap) {
+            // Space title: shares the traffic-light row on the left, its own row on the right.
+            if vegaSettings.sidebarPosition != .left {
+                spaceSwitcherTitle
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
+            }
+
             // Header (window controls, nav buttons, URL bar)
             SidebarHeader(isSidebarHovered: isSidebarHovered)
                 .environmentObject(browserManager)
@@ -109,6 +116,13 @@ struct SpacesSideBarView: View {
         }
         // Extra top padding when sidebar is on the left to avoid overlapping native traffic light buttons
         .padding(.top, vegaSettings.sidebarPosition == .left ? VegaDesign.Spacing.sidebarTop : VegaDesign.Spacing.sidebarInset)
+        .overlay(alignment: .topLeading) {
+            if vegaSettings.sidebarPosition == .left {
+                spaceSwitcherTitle
+                    .frame(height: VegaDesign.Spacing.sidebarTop)
+                    .padding(.leading, VegaDesign.Spacing.trafficLights)
+            }
+        }
         .padding(.bottom, VegaDesign.Spacing.sidebarInset)
         .background(
             GeometryReader { geo in
@@ -311,10 +325,6 @@ struct SpacesSideBarView: View {
                 .padding(.bottom, VegaDesign.Spacing.sectionGap)
             }
 
-            spaceTitle(space.id)
-                .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
-                .padding(.bottom, VegaDesign.Spacing.xs)
-
             SpaceView(
                 spaceID: space.id,
                 isActive: windowState.spaceID == space.id,
@@ -334,17 +344,10 @@ struct SpacesSideBarView: View {
         .tag(index)
     }
 
-    /// The space title doubles as a drop target that pins the dragged tab into the space.
-    private func spaceTitle(_ spaceID: UUID) -> some View {
-        let pinned = Parent.pinned(spaceID: spaceID)
-        let zone = DropZoneID.target(pinned)
-        return VegaDropZoneHostView(zoneID: zone, manager: dragSession, onDrop: { itemID in
-            withAnimation(VegaDesign.Motion.spring) {
-                tabs.pin(itemID, to: pinned)
-            }
-        }) {
-            SpaceTitle(spaceID: spaceID, isDropHovering: dragSession.isDragging && dragSession.activeZone == zone)
-        }
+    private var spaceSwitcherTitle: some View {
+        SpaceSwitcherTitle(onNewSpace: showSpaceCreationDialog)
+            .environmentObject(browserManager)
+            .environment(windowState)
     }
 
     // MARK: - Dialogs
