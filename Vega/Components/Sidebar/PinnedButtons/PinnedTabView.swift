@@ -8,15 +8,16 @@
 import SwiftUI
 import AppKit
 
-struct PinnedTabView: View {
+struct PinnedTabView<Icon: View>: View {
     var tabName: String
     var tabURL: String
-    var tabIcon: SwiftUI.Image
+    var tabIcon: Icon
     var isActive: Bool
     var isUnloaded: Bool = false
+    /// The favorite's open page has left its home URL.
+    var showsLeftHomeDot: Bool = false
     var action: () -> Void
 
-    @EnvironmentObject var browserManager: BrowserManager
     @State private var isHovered: Bool = false
 
     var body: some View {
@@ -27,16 +28,20 @@ struct PinnedTabView: View {
                     .animation(VegaDesign.Motion.quick, value: isHovered)
 
                 tabIcon
-                    .resizable()
-                    .interpolation(.high)
-                    .antialiased(true)
-                    .scaledToFit()
                     .frame(height: VegaDesign.Size.essentialsFavicon)
                     .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
 
                 if isActive {
                     VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                         .strokeBorder(VegaDesign.Surface.hairline, lineWidth: VegaDesign.Size.hairlineWidth)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if showsLeftHomeDot {
+                    Circle()
+                        .fill(.tertiary)
+                        .frame(width: VegaDesign.Size.statusDot, height: VegaDesign.Size.statusDot)
+                        .padding(VegaDesign.Spacing.xs)
                 }
             }
             .frame(maxWidth: .infinity)
