@@ -25,7 +25,7 @@ struct VegaApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     // TEMPORARY: BrowserManager will be phased out as a global singleton.
-    // Eventually each manager (TabManager, etc.) will be independent and injected via environment.
+    // Eventually each manager (TabsController, etc.) will be independent and injected via environment.
     @StateObject private var browserManager = BrowserManager()
 
     init() {
@@ -48,7 +48,6 @@ struct VegaApp: App {
                     .ignoresSafeArea(.all)
                     .background(BackgroundWindowModifier())
                     .environmentObject(browserManager)
-                    .environmentObject(browserManager.tabManager)
                     .environment(browserManager.tabs)
                     .environment(windowRegistry)
                     .environment(webViewCoordinator)
@@ -82,7 +81,6 @@ struct VegaApp: App {
         Settings {
             SettingsWindow()
                 .environmentObject(browserManager)
-                .environmentObject(browserManager.tabManager)
                 .environment(browserManager.tabs)
                 .environmentObject(browserManager.gradientColorManager)
                 .environment(\.vegaSettings, settingsManager)
@@ -137,7 +135,6 @@ struct VegaApp: App {
         browserManager.webViewCoordinator = webViewCoordinator
         browserManager.windowRegistry = windowRegistry
         browserManager.vegaSettings = settingsManager
-        browserManager.tabManager.vegaSettings = settingsManager
         browserManager.siteRoutingManager.settingsService = settingsManager
         browserManager.siteRoutingManager.browserManager = browserManager
         browserManager.aiService = aiService
@@ -182,13 +179,10 @@ struct VegaApp: App {
             [webViewCoordinator, weak browserManager] windowId in
             // Only cleanup if browserManager still exists (it's captured weakly)
             if let browserManager = browserManager {
+                webViewCoordinator.cleanupWindow(windowId, tabs: browserManager.tabs)
                 if let windowState = browserManager.windowRegistry?.windows[windowId] {
                     browserManager.tabs.detach(window: windowState)
                 }
-                webViewCoordinator.cleanupWindow(
-                    windowId,
-                    tabManager: browserManager.tabManager
-                )
                 browserManager.splitManager.cleanupWindow(windowId)
 
                 // Clean up incognito window if applicable
