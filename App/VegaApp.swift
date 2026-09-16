@@ -137,6 +137,8 @@ struct VegaApp: App {
         browserManager.vegaSettings = settingsManager
         browserManager.siteRoutingManager.settingsService = settingsManager
         browserManager.siteRoutingManager.browserManager = browserManager
+        // Rules written before spaces owned their data still name a profile.
+        browserManager.siteRoutingManager.dropMergedProfileTargets()
         browserManager.aiService = aiService
         browserManager.aiConfigService = aiConfigService
 
