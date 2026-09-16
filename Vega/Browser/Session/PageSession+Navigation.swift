@@ -294,6 +294,7 @@ extension PageSession: WKNavigationDelegate, WKDownloadDelegate {
             if let settings = browserManager?.vegaSettings {
                 YouTubeTweaks.apply(for: url, in: webView, settings: settings)
                 SocialImageTweaks.apply(for: url, in: webView, settings: settings)
+                FacebookTweaks.apply(for: url, in: webView, settings: settings)
             }
         }
 
