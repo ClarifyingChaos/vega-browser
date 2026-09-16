@@ -16,24 +16,26 @@ struct SpacesListItem: View {
 
     let space: SpaceRecord
     let isActive: Bool
-    let compact: Bool
     let isFaded: Bool
     let onHoverChange: ((Bool) -> Void)?
 
     @State private var isHovering: Bool = false
+    @Environment(\.vegaSettings) private var vegaSettings
+    @Environment(\.openSettings) private var openSettings
 
     private let dotSize: CGFloat = VegaDesign.Spacing.sm
+    private let activeDotSize: CGFloat = VegaDesign.Spacing.md
+    // A tight hit target so the 28pt default icon-button padding doesn't push the dots apart.
+    private let buttonSize: CGFloat = VegaDesign.Spacing.xl
 
     init(
         space: SpaceRecord,
         isActive: Bool,
-        compact: Bool,
         isFaded: Bool,
         onHoverChange: ((Bool) -> Void)? = nil
     ) {
         self.space = space
         self.isActive = isActive
-        self.compact = compact
         self.isFaded = isFaded
         self.onHoverChange = onHoverChange
     }
@@ -45,13 +47,10 @@ struct SpacesListItem: View {
                 tabs.setSpace(space.id, in: windowState)
             }
         } label: {
-            spaceIcon
-                .frame(maxWidth: .infinity)
-
+            spaceDot
         }
         .labelStyle(.iconOnly)
-        .buttonStyle(VegaIconButtonStyle())
-        .background(VegaDesign.Radius.shape(VegaDesign.Radius.md).fill(isActive ? VegaDesign.Surface.fill : .clear))
+        .buttonStyle(VegaIconButtonStyle(size: buttonSize))
         .layoutPriority(isActive ? 1 : 0)
         .opacity(isFaded ? 0.3 : 1.0)
         .onHoverTracking { hovering in
@@ -62,10 +61,9 @@ struct SpacesListItem: View {
             SpaceContextMenu(
                 space: space,
                 canDelete: tabs.switchableSpaces(for: windowState).count > 1,
-                onEditName: nil,
-                onEditIcon: nil,
                 onOpenSettings: {
-                    SpaceEditDialog.present(spaceID: space.id, tabs: tabs, dialogManager: browserManager.dialogManager)
+                    vegaSettings.currentSettingsTab = .spaces
+                    openSettings()
                 },
                 onDeleteSpace: { tabs.deleteSpace(space.id) }
             )
@@ -73,16 +71,13 @@ struct SpacesListItem: View {
         }
     }
 
-    // MARK: - Icon
+    // MARK: - Dot
 
     @ViewBuilder
-    private var spaceIcon: some View {
-        if compact && !isActive {
-            Circle()
-                .fill(.tertiary)
-                .frame(width: dotSize, height: dotSize)
-        } else {
-            SpaceIconView(icon: space.icon, tint: isActive ? space.accentColor : AppColors.textTertiary)
-        }
+    private var spaceDot: some View {
+        Circle()
+            .fill(isActive ? AnyShapeStyle(space.accentColor) : AnyShapeStyle(.tertiary))
+            .frame(width: isActive ? activeDotSize : dotSize, height: isActive ? activeDotSize : dotSize)
+            .animation(VegaDesign.Motion.standard, value: isActive)
     }
 }

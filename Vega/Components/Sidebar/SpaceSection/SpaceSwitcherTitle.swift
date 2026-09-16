@@ -9,7 +9,6 @@ import VegaTabsCore
 import SwiftUI
 
 struct SpaceSwitcherTitle: View {
-    @EnvironmentObject var browserManager: BrowserManager
     @Environment(TabsController.self) private var tabs
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(\.vegaSettings) private var vegaSettings
@@ -50,7 +49,7 @@ struct SpaceSwitcherTitle: View {
     private func label(_ space: SpaceRecord) -> some View {
         let isDropTarget = dragSession.isDragging && dragSession.activeZone == .target(.pinned(spaceID: space.id))
         return Text(space.name)
-            .font(VegaDesign.Font.title)
+            .font(VegaDesign.Font.bodyRegular)
             .foregroundStyle(.primary)
             .lineLimit(1)
         .padding(.horizontal, VegaDesign.Spacing.sm)
@@ -78,9 +77,6 @@ struct SpaceSwitcherTitle: View {
         }
         Divider()
         Button("New Space…", systemImage: "plus", action: onNewSpace)
-        Button("Edit Space…", systemImage: "pencil") {
-            SpaceEditDialog.present(spaceID: current.id, tabs: tabs, dialogManager: browserManager.dialogManager)
-        }
         Button("Space Settings", systemImage: "gearshape") {
             vegaSettings.currentSettingsTab = .spaces
             openSettings()

@@ -776,7 +776,8 @@ class BrowserManager: ObservableObject {
             }
             return
         }
-        SpaceEditDialog.present(spaceID: spaceID, tabs: tabs, dialogManager: dialogManager)
+        vegaSettings?.currentSettingsTab = .spaces
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     func closeDialog() {
