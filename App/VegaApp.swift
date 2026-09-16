@@ -166,6 +166,9 @@ struct VegaApp: App {
         browserManager.keyboardShortcutManager = keyboardShortcutManager
         browserManager.mcpManager = mcpManager
         browserManager.tabOrganizerManager = tabOrganizerManager
+        #if DEBUG
+        DevMCPServer.shared.start(browserManager: browserManager)
+        #endif
 
         // Set up window lifecycle callbacks
         windowRegistry.onWindowRegister = { [weak browserManager] windowState in
