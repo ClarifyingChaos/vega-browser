@@ -5,10 +5,10 @@
 //  Created by Maciek Bagiński on 28/07/2025.
 //
 
-import VegaBlocker
 import AppKit
 import Combine
 import CoreServices
+import VegaBlocker
 import VegaSettings
 import OSLog
 import Sparkle

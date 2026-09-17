@@ -9,12 +9,12 @@
 //    --header "Authorization: Bearer $(cat ~/Library/Application\ Support/com.baingurley.vega/dev-mcp-token)"
 //
 
-import VegaBlocker
 import AppKit
 import Foundation
 import Network
 import OSLog
 import WebKit
+import VegaBlocker
 
 @MainActor
 final class DevMCPServer {

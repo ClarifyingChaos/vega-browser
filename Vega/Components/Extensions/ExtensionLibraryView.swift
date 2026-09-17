@@ -3,13 +3,14 @@
 //  Vega
 //
 
-import VegaBlocker
-import VegaSettings
-import SwiftUI
-import VegaDesign
 import AppKit
-import WebKit
 import os
+import SwiftUI
+import WebKit
+
+import VegaBlocker
+import VegaDesign
+import VegaSettings
 
 struct ExtensionLibraryView: View {
     let browserManager: BrowserManager

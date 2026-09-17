@@ -5,8 +5,9 @@
 //  Created by Claude on 26/03/2026.
 //
 
-import VegaBlocker
 import SwiftUI
+
+import VegaBlocker
 import VegaDesign
 
 struct SettingsAdBlockerTab: View {

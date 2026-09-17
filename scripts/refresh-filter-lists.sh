@@ -1,9 +1,9 @@
 #!/bin/bash
-# Refresh the bundled filter-list snapshots in Vega/Managers/ContentBlockerManager/Resources.
+# Refresh the bundled filter-list snapshots in Packages/VegaBlocker/Sources/VegaBlocker/Resources.
 # Run before a release (CI does) so first-run protection ships with current lists.
 # Keep the URL/filename pairs in sync with FilterListManager.defaultLists.
 set -euo pipefail
-DEST="$(cd "$(dirname "$0")/.." && pwd)/Vega/Managers/ContentBlockerManager/Resources"
+DEST="$(cd "$(dirname "$0")/.." && pwd)/Packages/VegaBlocker/Sources/VegaBlocker/Resources"
 LISTS=(
   "easylist.txt|https://easylist.to/easylist/easylist.txt"
   "easyprivacy.txt|https://easylist.to/easylist/easyprivacy.txt"

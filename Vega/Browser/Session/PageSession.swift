@@ -7,11 +7,11 @@
 //  the session reports committed URLs and titles to its TabsController.
 //
 
-import VegaBlocker
 import AppKit
 import Combine
 import CoreAudio
 import FaviconFinder
+import VegaBlocker
 import VegaSettings
 import SwiftUI
 import WebKit

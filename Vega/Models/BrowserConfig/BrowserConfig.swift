@@ -5,10 +5,10 @@
 //  Created by Maciek Bagiński on 31/07/2025.
 //
 
-import VegaBlocker
 import AppKit
 import SwiftUI
 import WebKit
+import VegaBlocker
 
 class BrowserConfiguration {
     static let shared = BrowserConfiguration()
