@@ -3,6 +3,7 @@
 //  Vega
 //
 
+import VegaSettings
 import VegaTabsCore
 import SwiftUI
 

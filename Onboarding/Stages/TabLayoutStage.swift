@@ -5,6 +5,7 @@
 //  Created by Maciek Bagiński on 17/02/2026.
 //
 
+import VegaSettings
 import SwiftUI
 
 struct TabLayoutStage: View {

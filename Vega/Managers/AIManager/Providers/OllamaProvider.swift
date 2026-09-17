@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import VegaSettings
 import OSLog
 
 struct OllamaProvider: AIProviderProtocol {

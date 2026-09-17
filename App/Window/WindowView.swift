@@ -27,7 +27,7 @@ struct WindowView: View {
             WindowBackground()
                 .contextMenu {
                     Button("Space Settings...") {
-                        vegaSettings.currentSettingsTab = .spaces
+                        SettingsNavigation.shared.currentSettingsTab = .spaces
                         openSettings()
                     }
                     .disabled(windowState.spaceID.flatMap { tabs.space($0) } == nil)

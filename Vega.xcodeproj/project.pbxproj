@@ -21,6 +21,7 @@
 		7FAFC5DA2E3ADDCD009D7DC4 /* FaviconFinder in Frameworks */ = {isa = PBXBuildFile; productRef = 7FAFC5D92E3ADDCD009D7DC4 /* FaviconFinder */; };
 		A1B2C3D62F0E6A0100ABCDEF /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D52F0E6A0100ABCDEF /* MLXLLM */; };
 		C0DE7AB50000000000000003 /* VegaTabsCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000002 /* VegaTabsCore */; };
+		C0DE7AB50000000000000013 /* VegaSettings in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000012 /* VegaSettings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -136,6 +137,7 @@
 				360021332EC6EAEB0016A41E /* (null) in Frameworks */,
 				A1B2C3D62F0E6A0100ABCDEF /* MLXLLM in Frameworks */,
 				C0DE7AB50000000000000003 /* VegaTabsCore in Frameworks */,
+				C0DE7AB50000000000000013 /* VegaSettings in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,6 +195,7 @@
 				564997D72E9B24CC00D89F78 /* Garnish */,
 				A1B2C3D52F0E6A0100ABCDEF /* MLXLLM */,
 				C0DE7AB50000000000000002 /* VegaTabsCore */,
+				C0DE7AB50000000000000012 /* VegaSettings */,
 			);
 			productName = Pulse;
 			productReference = 7F8340FC2E37F39400674A5D /* Vega.app */;
@@ -228,6 +231,7 @@
 				564997D62E9B24CC00D89F78 /* XCRemoteSwiftPackageReference "Garnish" */,
 				A1B2C3D42F0E6A0100ABCDEF /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 				C0DE7AB50000000000000001 /* XCLocalSwiftPackageReference "Packages/VegaTabsCore" */,
+				C0DE7AB50000000000000011 /* XCLocalSwiftPackageReference "Packages/VegaSettings" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7F8340FD2E37F39400674A5D /* Products */;
@@ -525,6 +529,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/VegaTabsCore;
 		};
+		C0DE7AB50000000000000011 /* XCLocalSwiftPackageReference "Packages/VegaSettings" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/VegaSettings;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -586,6 +594,10 @@
 		C0DE7AB50000000000000002 /* VegaTabsCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = VegaTabsCore;
+		};
+		C0DE7AB50000000000000012 /* VegaSettings */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaSettings;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

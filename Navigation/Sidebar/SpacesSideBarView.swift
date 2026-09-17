@@ -7,6 +7,7 @@
 //
 
 import AppKit
+import VegaSettings
 import VegaTabsCore
 import SwiftUI
 import UniformTypeIdentifiers

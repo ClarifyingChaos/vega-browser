@@ -5,6 +5,7 @@
 //  AI settings — flat Form layout matching other settings tabs
 //
 
+import VegaSettings
 import SwiftUI
 
 struct SettingsAITab: View {
@@ -505,6 +506,11 @@ struct SettingsAITab: View {
                             .font(VegaDesign.Font.caption)
                             .foregroundStyle(.secondary)
                     }
+                }
+                // The setting lives in VegaSettings, which cannot reach the server; start and
+                // stop it from here so the toggle still takes effect without a relaunch.
+                .onChange(of: settings.browserControlServerEnabled) {
+                    DevMCPServer.shared.applyEnabledSetting($1)
                 }
             } header: {
                 Text("Browser Control")

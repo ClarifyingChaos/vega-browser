@@ -1,4 +1,5 @@
 import AppKit
+import VegaSettings
 import VegaTabsCore
 import WebKit
 

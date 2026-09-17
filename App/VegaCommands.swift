@@ -356,7 +356,7 @@ struct VegaCommands: Commands {
                 .modifier(dynamicShortcut(.installExtension))
 
                 Button("Manage Extensions...") {
-                    vegaSettings.currentSettingsTab = .extensions
+                    SettingsNavigation.shared.currentSettingsTab = .extensions
                     openSettings()
                 }
 

@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import VegaSettings
 import VegaTabsCore
 import OSLog
 

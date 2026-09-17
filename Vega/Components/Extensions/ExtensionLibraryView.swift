@@ -3,6 +3,7 @@
 //  Vega
 //
 
+import VegaSettings
 import SwiftUI
 import AppKit
 import WebKit

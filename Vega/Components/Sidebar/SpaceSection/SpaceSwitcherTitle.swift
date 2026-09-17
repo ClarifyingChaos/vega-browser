@@ -78,7 +78,7 @@ struct SpaceSwitcherTitle: View {
         Divider()
         Button("New Space…", systemImage: "plus", action: onNewSpace)
         Button("Space Settings", systemImage: "gearshape") {
-            vegaSettings.currentSettingsTab = .spaces
+            SettingsNavigation.shared.currentSettingsTab = .spaces
             openSettings()
         }
     }
