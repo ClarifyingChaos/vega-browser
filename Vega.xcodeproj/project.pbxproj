@@ -24,6 +24,7 @@
 		C0DE7AB50000000000000013 /* VegaSettings in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000012 /* VegaSettings */; };
 		C0DE7AB50000000000000023 /* VegaDesign in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000022 /* VegaDesign */; };
 		C0DE7AB50000000000000033 /* VegaBlocker in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000032 /* VegaBlocker */; };
+		C0DE7AB50000000000000043 /* VegaTweaks in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000042 /* VegaTweaks */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -145,6 +146,7 @@
 				C0DE7AB50000000000000013 /* VegaSettings in Frameworks */,
 				C0DE7AB50000000000000023 /* VegaDesign in Frameworks */,
 				C0DE7AB50000000000000033 /* VegaBlocker in Frameworks */,
+				C0DE7AB50000000000000043 /* VegaTweaks in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -205,6 +207,7 @@
 				C0DE7AB50000000000000012 /* VegaSettings */,
 				C0DE7AB50000000000000022 /* VegaDesign */,
 				C0DE7AB50000000000000032 /* VegaBlocker */,
+				C0DE7AB50000000000000042 /* VegaTweaks */,
 			);
 			productName = Pulse;
 			productReference = 7F8340FC2E37F39400674A5D /* Vega.app */;
@@ -243,6 +246,7 @@
 				C0DE7AB50000000000000011 /* XCLocalSwiftPackageReference "Packages/VegaSettings" */,
 				C0DE7AB50000000000000021 /* XCLocalSwiftPackageReference "Packages/VegaDesign" */,
 				C0DE7AB50000000000000031 /* XCLocalSwiftPackageReference "Packages/VegaBlocker" */,
+				C0DE7AB50000000000000041 /* XCLocalSwiftPackageReference "Packages/VegaTweaks" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7F8340FD2E37F39400674A5D /* Products */;
@@ -528,6 +532,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/VegaBlocker;
 		};
+		C0DE7AB50000000000000041 /* XCLocalSwiftPackageReference "Packages/VegaTweaks" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/VegaTweaks;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -601,6 +609,10 @@
 		C0DE7AB50000000000000032 /* VegaBlocker */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = VegaBlocker;
+		};
+		C0DE7AB50000000000000042 /* VegaTweaks */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaTweaks;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

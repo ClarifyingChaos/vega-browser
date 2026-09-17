@@ -7,6 +7,7 @@ import VegaSettings
 import VegaTabsCore
 import SwiftUI
 import VegaDesign
+import VegaTweaks
 
 struct AirTrafficControlSettingsView: View {
     @Environment(\.vegaSettings) var vegaSettings

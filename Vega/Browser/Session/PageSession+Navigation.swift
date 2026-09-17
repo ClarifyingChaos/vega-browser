@@ -9,6 +9,7 @@ import AppKit
 import SwiftUI
 import WebKit
 import VegaBlocker
+import VegaTweaks
 // MARK: - WKNavigationDelegate
 extension PageSession: WKNavigationDelegate, WKDownloadDelegate {
 

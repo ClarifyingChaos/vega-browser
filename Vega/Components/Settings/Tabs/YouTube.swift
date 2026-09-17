@@ -8,6 +8,7 @@
 import VegaSettings
 import SwiftUI
 import VegaDesign
+import VegaTweaks
 
 struct SettingsYouTubeTab: View {
     @Environment(\.vegaSettings) var vegaSettings
