@@ -8,6 +8,7 @@
 import SwiftUI
 import VegaDesign
 import UniformTypeIdentifiers
+import VegaUI
 
 struct SidebarMenuHoverDownloads: View {
     @EnvironmentObject var browserManager: BrowserManager

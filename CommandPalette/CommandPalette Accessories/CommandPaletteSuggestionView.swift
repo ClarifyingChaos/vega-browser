@@ -9,6 +9,7 @@ import SwiftUI
 import VegaDesign
 import VegaWeb
 import FaviconFinder
+import VegaUI
 
 struct CommandPaletteSuggestionView: View {
     var favicon: SwiftUI.Image

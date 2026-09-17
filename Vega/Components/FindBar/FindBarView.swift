@@ -7,6 +7,7 @@
 
 import SwiftUI
 import VegaDesign
+import VegaUI
 
 struct FindBarView: View {
     @ObservedObject var findManager: FindManager

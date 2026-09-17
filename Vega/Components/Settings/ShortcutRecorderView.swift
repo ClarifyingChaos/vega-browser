@@ -8,6 +8,7 @@
 import SwiftUI
 import VegaDesign
 import AppKit
+import VegaUI
 
 struct ShortcutRecorderView: View {
     @Binding var keyCombination: KeyCombination

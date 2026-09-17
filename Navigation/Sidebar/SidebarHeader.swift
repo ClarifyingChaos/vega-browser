@@ -8,6 +8,7 @@
 import SwiftUI
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 /// Header section of the sidebar (window controls, navigation buttons, URL bar)
 struct SidebarHeader: View {

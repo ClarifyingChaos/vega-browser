@@ -10,6 +10,7 @@ import WebKit
 import AppKit
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 // MARK: - Status Bar View
 struct LinkStatusBar: View {

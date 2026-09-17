@@ -9,6 +9,7 @@ import AppKit
 import SwiftUI
 import VegaDesign
 import UniformTypeIdentifiers
+import VegaUI
 
 struct SidebarMenuDownloadsTab: View {
     @EnvironmentObject var browserManager: BrowserManager

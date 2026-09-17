@@ -8,6 +8,7 @@
 import SwiftUI
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 struct TabSuggestionItem: View {
     let tab: SearchManager.TabMatch

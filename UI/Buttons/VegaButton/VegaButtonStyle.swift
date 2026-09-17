@@ -8,6 +8,7 @@
 import SwiftUI
 import VegaDesign
 import Garnish
+import VegaUI
 
 struct VegaButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) var colorScheme

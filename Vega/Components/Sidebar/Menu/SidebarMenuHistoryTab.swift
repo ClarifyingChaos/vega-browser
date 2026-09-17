@@ -11,6 +11,7 @@ import Garnish
 import SwiftUI
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 struct HistorySection: Identifiable {
     let id = UUID()

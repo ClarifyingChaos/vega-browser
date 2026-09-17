@@ -12,6 +12,7 @@ import os
 import VegaDesign
 import VegaSettings
 import VegaWeb
+import VegaUI
 
 struct ExtensionActionView: View {
     let extensions: [InstalledExtension]

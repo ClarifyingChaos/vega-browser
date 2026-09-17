@@ -9,6 +9,7 @@ import SwiftUI
 import AppKit
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 struct SidebarHoverOverlayView: View {
     @EnvironmentObject var browserManager: BrowserManager

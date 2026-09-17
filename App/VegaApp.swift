@@ -12,6 +12,7 @@ import OSLog
 import Sparkle
 import SwiftUI
 import VegaSettings
+import VegaUI
 import VegaWeb
 
 @main
@@ -49,6 +50,7 @@ struct VegaApp: App {
                     .ignoresSafeArea(.all)
                     .background(BackgroundWindowModifier())
                     .environment(\.vegaSettings, settingsManager)
+                    .environment(settingsManager)
                     .environmentObject(browserManager)
                     .environment(browserManager.tabs)
             } viewB: {
@@ -60,6 +62,8 @@ struct VegaApp: App {
                     .environment(windowRegistry)
                     .environment(webViewCoordinator)
                     .environment(\.vegaSettings, settingsManager)
+                    .environment(settingsManager)
+                    .environment(\.tabActions, browserManager)
                     .environment(keyboardShortcutManager)
                     .environment(aiConfigService)
                     .environment(mcpManager)
@@ -92,6 +96,10 @@ struct VegaApp: App {
                 .environment(browserManager.tabs)
                 .environmentObject(browserManager.gradientColorManager)
                 .environment(\.vegaSettings, settingsManager)
+                .environment(settingsManager)
+                .environment(\.tabActions, browserManager)
+                .environment(\.contentBlocker, browserManager.contentBlockerManager)
+                .environment(\.siteRouting, browserManager.siteRoutingManager)
                 .environment(keyboardShortcutManager)
                 .environment(aiConfigService)
                 .environment(mcpManager)

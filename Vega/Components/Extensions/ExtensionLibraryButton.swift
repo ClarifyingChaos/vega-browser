@@ -8,6 +8,7 @@ import AppKit
 import os
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 struct ExtensionLibraryButton: View {
     @EnvironmentObject var browserManager: BrowserManager

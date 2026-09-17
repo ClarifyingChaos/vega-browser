@@ -10,6 +10,7 @@ import SwiftUI
 import WebKit
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 enum TopBarMetrics {
     static let height: CGFloat = 40

@@ -10,6 +10,7 @@ import AVFoundation
 import CoreLocation
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 @MainActor
 final class ExtensionLibraryMoreMenuController {

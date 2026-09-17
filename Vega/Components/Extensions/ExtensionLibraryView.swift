@@ -12,6 +12,7 @@ import VegaBlocker
 import VegaDesign
 import VegaSettings
 import VegaWeb
+import VegaUI
 
 struct ExtensionLibraryView: View {
     let browserManager: BrowserManager

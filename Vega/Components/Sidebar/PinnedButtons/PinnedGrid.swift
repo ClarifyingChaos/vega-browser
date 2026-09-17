@@ -9,6 +9,7 @@ import UniformTypeIdentifiers
 import VegaDesign
 import VegaTabsCore
 import VegaWeb
+import VegaUI
 
 struct PinnedGrid: View {
     let width: CGFloat
@@ -190,8 +191,9 @@ private struct PinnedTile: View {
             .frame(maxWidth: .infinity)
             .contextMenu {
                 TabContextMenu(itemID: item.id, context: .favorite)
-                    .environmentObject(browserManager)
                     .environment(windowState)
+                    .environment(tabs)
+                    .environment(\.tabActions, browserManager)
             }
             .onHoverTracking { hovering in
                 browserManager.hoveredPinnedTabId = hovering ? item.id : nil

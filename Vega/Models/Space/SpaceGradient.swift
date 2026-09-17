@@ -10,6 +10,7 @@ import Foundation
 import AppKit
 #endif
 import SwiftUI
+import VegaUI
 
 struct SpaceGradient: Codable, Hashable {
     var angle: Double

@@ -14,6 +14,7 @@ import VegaDesign
 import VegaSettings
 import VegaTabsCore
 import VegaWeb
+import VegaUI
 
 struct SpacesSideBarView: View {
     @EnvironmentObject var browserManager: BrowserManager

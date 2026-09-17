@@ -9,6 +9,7 @@ import SwiftUI
 import VegaDesign
 import VegaWeb
 import FaviconFinder
+import VegaUI
 
 struct HistorySuggestionItem: View {
     let entry: HistoryEntry

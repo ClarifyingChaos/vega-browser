@@ -10,6 +10,7 @@ import VegaDesign
 import Combine
 import VegaTabsCore
 import VegaWeb
+import VegaUI
 
 // MARK: - Drop Position
 

@@ -8,6 +8,7 @@ import SwiftUI
 import WebKit
 import VegaDesign
 import VegaWeb
+import VegaUI
 
 struct NavButtonsView: View {
     @EnvironmentObject var browserManager: BrowserManager

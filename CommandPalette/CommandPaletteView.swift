@@ -11,6 +11,7 @@ import Garnish
 import VegaDesign
 import VegaSettings
 import VegaWeb
+import VegaUI
 
 struct CommandPaletteView: View {
     @EnvironmentObject var browserManager: BrowserManager
