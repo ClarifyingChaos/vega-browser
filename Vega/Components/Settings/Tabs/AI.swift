@@ -494,6 +494,25 @@ struct SettingsAITab: View {
                     }
                 }
             }
+
+            // MARK: - Browser Control
+            Section {
+                Toggle(isOn: $settings.browserControlServerEnabled) {
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        Text("Allow agents to control this browser")
+                            .font(VegaDesign.Font.body)
+                        Text("Serves MCP on 127.0.0.1:47823 so a coding agent can drive Vega")
+                            .font(VegaDesign.Font.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Browser Control")
+            } footer: {
+                Text("A client must send the token from Application Support/com.baingurley.vega/dev-mcp-token. Any program on this Mac can read that file, and with it run JavaScript in your tabs and read pages you are signed in to. Leave this off unless you are driving Vega from an agent.")
+                    .font(VegaDesign.Font.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }
