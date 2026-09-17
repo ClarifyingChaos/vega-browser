@@ -5,6 +5,7 @@
 //  Clean ExtensionActionView using ONLY native WKWebExtension APIs
 //
 
+import VegaSettings
 import SwiftUI
 import WebKit
 import AppKit

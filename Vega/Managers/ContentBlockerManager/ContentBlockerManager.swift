@@ -14,6 +14,7 @@
 //
 
 import Foundation
+import VegaSettings
 import WebKit
 import OSLog
 
