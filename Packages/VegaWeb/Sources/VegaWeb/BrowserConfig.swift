@@ -8,7 +8,6 @@
 import SwiftUI
 import WebKit
 import VegaBlocker
-import VegaWeb
 
 public class BrowserConfiguration {
     public static let shared = BrowserConfiguration()
