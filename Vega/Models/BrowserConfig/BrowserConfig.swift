@@ -71,6 +71,7 @@ class BrowserConfiguration {
         // TODO: Remove this once the entitlement is granted.
         let passkeySuppress = WKUserScript(
             source: """
+            // Vega Passkey Suppression
             (function() {
                 if (window.PublicKeyCredential) {
                     PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = function() {
@@ -96,12 +97,16 @@ class BrowserConfiguration {
     var contentRuleListApplicator: ((WKUserContentController) -> Void)?
 
     // MARK: - Fresh User Content Controller
-    // Creates a fresh WKUserContentController but preserves shared user scripts
-    // (e.g., extension bridge scripts). This avoids cross-tab handler conflicts
-    // while keeping scripts that must be present on every tab.
+    // Creates a fresh WKUserContentController but preserves Vega's own shared
+    // user scripts. This avoids cross-tab handler conflicts while keeping
+    // scripts that must be present on every tab.
+    //
+    // Only Vega-owned scripts are copied. WKWebExtensionController injects its
+    // content scripts into every new controller itself, so copying them here as
+    // well would hand each new tab two of each. See WKUserScript+VegaOwned.
     func freshUserContentController() -> WKUserContentController {
         let controller = WKUserContentController()
-        for script in webViewConfiguration.userContentController.userScripts {
+        for script in webViewConfiguration.userContentController.userScripts.vegaOwned {
             controller.addUserScript(script)
         }
         // Apply content blocker rule lists if available

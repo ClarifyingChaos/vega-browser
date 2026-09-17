@@ -39,6 +39,7 @@ final class WebContextMenuBridge: NSObject, WKScriptMessageHandler {
 
     private static let handlerName = "contextMenuPayload"
     private static let scriptSource: String = """
+    // Vega Context Menu Bridge
     (function() {
         if (window.__vegaContextMenuBridgeInstalled) { return; }
         window.__vegaContextMenuBridgeInstalled = true;
