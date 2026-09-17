@@ -11,6 +11,7 @@ import CoreServices
 import VegaBlocker
 import VegaSettings
 import VegaTweaks
+import VegaWeb
 import OSLog
 import Sparkle
 import SwiftData

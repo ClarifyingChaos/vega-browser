@@ -8,6 +8,7 @@
 import Foundation
 import WebKit
 import SwiftUI
+import VegaWeb
 
 @MainActor
 class CacheManager: ObservableObject {

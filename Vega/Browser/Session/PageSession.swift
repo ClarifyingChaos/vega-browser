@@ -13,6 +13,7 @@ import CoreAudio
 import FaviconFinder
 import VegaBlocker
 import VegaSettings
+import VegaWeb
 import SwiftUI
 import WebKit
 

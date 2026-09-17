@@ -10,6 +10,7 @@
 
 import AppKit
 import VegaTabsCore
+import VegaWeb
 import OSLog
 import WebKit
 

@@ -8,6 +8,7 @@
 import Foundation
 import AppKit
 import WebKit
+import VegaWeb
 
 @MainActor
 @Observable

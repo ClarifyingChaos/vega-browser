@@ -10,6 +10,7 @@ import FaviconFinder
 import Garnish
 import SwiftUI
 import VegaDesign
+import VegaWeb
 
 struct HistorySection: Identifiable {
     let id = UUID()

@@ -7,6 +7,7 @@
 
 import AppKit
 import VegaTabsCore
+import VegaWeb
 import SwiftUI
 
 extension TabsController {

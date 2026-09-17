@@ -5,6 +5,7 @@
 
 import Foundation
 import VegaTabsCore
+import VegaWeb
 import SwiftUI
 
 extension BrowserManager {
