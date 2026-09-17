@@ -7,6 +7,7 @@
 
 import SwiftUI
 import VegaDesign
+import VegaWeb
 
 /// Reactive title display that re-renders when the tab's name changes.
 /// Observation tracks the session's title.

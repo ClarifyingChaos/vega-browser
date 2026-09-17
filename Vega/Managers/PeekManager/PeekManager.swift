@@ -8,6 +8,7 @@
 import SwiftUI
 import WebKit
 import AppKit
+import VegaWeb
 
 @MainActor
 final class PeekManager: ObservableObject {

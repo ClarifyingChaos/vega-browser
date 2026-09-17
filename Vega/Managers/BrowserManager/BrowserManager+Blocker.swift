@@ -7,8 +7,9 @@
 //  every controller it mints.
 //
 
-import VegaBlocker
 import WebKit
+import VegaBlocker
+import VegaWeb
 
 extension BrowserManager: ContentBlockerHost {
     public var blockablePages: [any BlockablePage] { tabs.sessions }

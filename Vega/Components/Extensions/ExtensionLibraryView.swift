@@ -11,6 +11,7 @@ import WebKit
 import VegaBlocker
 import VegaDesign
 import VegaSettings
+import VegaWeb
 
 struct ExtensionLibraryView: View {
     let browserManager: BrowserManager

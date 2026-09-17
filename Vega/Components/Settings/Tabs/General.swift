@@ -5,9 +5,10 @@
 //  Created by Maciek Bagiński on 07/12/2025.
 //
 
-import VegaSettings
 import SwiftUI
 import VegaDesign
+import VegaSettings
+import VegaWeb
 
 struct SettingsGeneralTab: View {
     @EnvironmentObject var browserManager: BrowserManager

@@ -5,9 +5,10 @@
 //  Created by Maciek Bagiński on 30/07/2025.
 //
 
-import VegaTabsCore
 import SwiftUI
 import VegaDesign
+import VegaTabsCore
+import VegaWeb
 
 /// One tab row in the sidebar outline.
 struct SpaceTab: View {

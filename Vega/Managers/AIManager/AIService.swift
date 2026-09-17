@@ -7,9 +7,10 @@
 
 import AppKit
 import Foundation
-import VegaSettings
 import OSLog
 import WebKit
+import VegaSettings
+import VegaWeb
 
 // MARK: - Tool Approval
 

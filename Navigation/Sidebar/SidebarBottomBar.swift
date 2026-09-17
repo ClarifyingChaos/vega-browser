@@ -5,9 +5,10 @@
 //  Created by Aether on 15/11/2025.
 //
 
-import VegaTabsCore
 import SwiftUI
 import VegaDesign
+import VegaTabsCore
+import VegaWeb
 
 /// Bottom bar of the sidebar containing menu button, spaces list, and new space button
 struct SidebarBottomBar: View {

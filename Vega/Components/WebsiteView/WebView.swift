@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import VegaWeb
 
 struct WebView: NSViewRepresentable {
     let urlString: String

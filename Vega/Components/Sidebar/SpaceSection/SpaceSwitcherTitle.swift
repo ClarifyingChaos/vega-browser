@@ -5,9 +5,10 @@
 //  The current space's name in the traffic-light row. Clicking it lists every space.
 //
 
-import VegaTabsCore
 import SwiftUI
 import VegaDesign
+import VegaTabsCore
+import VegaWeb
 
 struct SpaceSwitcherTitle: View {
     @Environment(TabsController.self) private var tabs

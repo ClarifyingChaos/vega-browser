@@ -4,10 +4,11 @@
 //
 //      Created by Maciek Bagiński on 30/07/2025.
 //
-import VegaTabsCore
 import SwiftUI
-import VegaDesign
 import UniformTypeIdentifiers
+import VegaDesign
+import VegaTabsCore
+import VegaWeb
 
 struct PinnedGrid: View {
     let width: CGFloat

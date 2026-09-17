@@ -15,6 +15,7 @@ import Network
 import OSLog
 import WebKit
 import VegaBlocker
+import VegaWeb
 
 @MainActor
 final class DevMCPServer {

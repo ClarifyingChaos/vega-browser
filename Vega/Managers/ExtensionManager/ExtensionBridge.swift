@@ -7,9 +7,10 @@
 
 import AppKit
 import Foundation
-import VegaTabsCore
 import os
 import WebKit
+import VegaTabsCore
+import VegaWeb
 
 /// One regular browser window. Private windows never get an adapter.
 final class ExtensionWindowAdapter: NSObject, WKWebExtensionWindow {

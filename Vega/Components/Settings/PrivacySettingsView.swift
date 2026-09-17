@@ -9,6 +9,7 @@ import SwiftUI
 import WebKit
 
 import VegaSettings
+import VegaWeb
 
 struct PrivacySettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
@@ -350,5 +351,5 @@ struct PrivacySettingsView: View {
 
 #Preview {
     PrivacySettingsView()
-        .environmentObject(BrowserManager(settings: VegaSettingsService()))
+        .environmentObject(BrowserManager(settings: VegaSettingsService(), windowRegistry: WindowRegistry()))
 }

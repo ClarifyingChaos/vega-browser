@@ -8,6 +8,7 @@
 
 import SwiftUI
 import VegaDesign
+import VegaWeb
 
 /// Main window view that orchestrates the browser UI layout
 struct WindowView: View {

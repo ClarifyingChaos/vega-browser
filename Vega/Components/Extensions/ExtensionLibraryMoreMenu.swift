@@ -4,11 +4,12 @@
 //
 
 import SwiftUI
-import VegaDesign
 import AppKit
 import WebKit
 import AVFoundation
 import CoreLocation
+import VegaDesign
+import VegaWeb
 
 @MainActor
 final class ExtensionLibraryMoreMenuController {

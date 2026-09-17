@@ -7,6 +7,7 @@
 
 import SwiftUI
 import VegaDesign
+import VegaWeb
 
 struct SidebarMenuTab: View {
     var image: String

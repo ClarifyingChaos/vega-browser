@@ -12,6 +12,7 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 import WebKit
+import VegaWeb
 
 @MainActor
 final class ExtensionManager: NSObject, ObservableObject,

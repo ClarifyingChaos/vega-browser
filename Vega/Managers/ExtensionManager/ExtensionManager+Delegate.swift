@@ -7,11 +7,12 @@
 
 import AppKit
 import Foundation
-import VegaTabsCore
 import os
 import SwiftData
 import SwiftUI
 import WebKit
+import VegaTabsCore
+import VegaWeb
 
 extension ExtensionManager {
 

@@ -8,6 +8,7 @@
 import Foundation
 import OSLog
 import WebKit
+import VegaWeb
 
 @MainActor
 class BrowserToolExecutor {

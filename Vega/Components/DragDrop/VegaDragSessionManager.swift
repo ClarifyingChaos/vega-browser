@@ -9,6 +9,7 @@ import VegaDesign
 @preconcurrency import AppKit
 import Combine
 import VegaTabsCore
+import VegaWeb
 
 // MARK: - Drop Position
 

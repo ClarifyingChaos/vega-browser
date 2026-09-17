@@ -3,11 +3,12 @@
 //  Vega
 //
 
-import VegaSettings
 import SwiftUI
-import VegaDesign
 import AppKit
 import os
+import VegaDesign
+import VegaSettings
+import VegaWeb
 
 @MainActor
 final class ExtensionLibraryPanelController {

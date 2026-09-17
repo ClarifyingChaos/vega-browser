@@ -8,6 +8,7 @@
 import AppKit
 import SwiftUI
 import WebKit
+import VegaWeb
 
 struct VegaCommands: Commands {
     let browserManager: BrowserManager

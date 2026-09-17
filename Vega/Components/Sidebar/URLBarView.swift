@@ -6,8 +6,9 @@
 //
 
 import SwiftUI
-import VegaDesign
 import AppKit
+import VegaDesign
+import VegaWeb
 
 struct URLBarView: View {
     @EnvironmentObject var browserManager: BrowserManager

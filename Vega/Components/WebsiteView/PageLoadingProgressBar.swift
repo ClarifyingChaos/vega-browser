@@ -7,8 +7,9 @@
 //
 
 import SwiftUI
-import VegaDesign
 import WebKit
+import VegaDesign
+import VegaWeb
 
 struct PageLoadingProgressBar: View {
     let session: PageSession?

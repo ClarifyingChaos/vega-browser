@@ -7,6 +7,7 @@
 
 import SwiftUI
 import WebKit
+import VegaWeb
 
 struct PeekWebView: NSViewRepresentable {
     @ObservedObject var session: PeekSession

@@ -1,5 +1,6 @@
-import VegaTabsCore
 import SwiftUI
+import VegaTabsCore
+import VegaWeb
 
 /// Split view per window. The pair lives on `BrowserWindowState.split` (item ids, saved with the
 /// window); the active side is whichever pane the window selects. Only the drag preview state is

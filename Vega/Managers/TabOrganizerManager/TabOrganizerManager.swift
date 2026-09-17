@@ -8,8 +8,9 @@
 //
 
 import Foundation
-import VegaTabsCore
 import OSLog
+import VegaTabsCore
+import VegaWeb
 
 // MARK: - TabOrganizerManager
 

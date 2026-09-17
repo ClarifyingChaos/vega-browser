@@ -4,9 +4,10 @@
 //
 
 import SwiftUI
-import VegaDesign
 import AppKit
 import os
+import VegaDesign
+import VegaWeb
 
 struct ExtensionLibraryButton: View {
     @EnvironmentObject var browserManager: BrowserManager

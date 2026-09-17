@@ -9,10 +9,11 @@
 //
 
 import Foundation
-import VegaTabsCore
-import VegaTweaks
 import OSLog
 import WebKit
+import VegaTabsCore
+import VegaTweaks
+import VegaWeb
 
 private let tweaksLog = Logger(subsystem: "com.baingurley.vega", category: "SiteRouting")
 

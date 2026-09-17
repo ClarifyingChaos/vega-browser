@@ -7,8 +7,9 @@
 //
 
 import Foundation
-import VegaTabsCore
 import OSLog
+import VegaTabsCore
+import VegaWeb
 
 // MARK: - AcceptedChanges
 

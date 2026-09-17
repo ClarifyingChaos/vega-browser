@@ -6,9 +6,10 @@
 //
 
 import SwiftUI
-import VegaDesign
 import AppKit
 import Garnish
+import VegaDesign
+import VegaWeb
 
 struct ChatMessage: Identifiable, Equatable {
     let id = UUID()

@@ -6,9 +6,10 @@
 //
 
 import SwiftUI
-import VegaDesign
 import WebKit
 import AppKit
+import VegaDesign
+import VegaWeb
 
 // MARK: - Status Bar View
 struct LinkStatusBar: View {

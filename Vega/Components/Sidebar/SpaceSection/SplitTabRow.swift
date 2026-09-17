@@ -1,6 +1,7 @@
-import VegaTabsCore
 import SwiftUI
 import VegaDesign
+import VegaTabsCore
+import VegaWeb
 
 /// The window's split pair shown as one sidebar row (from `BrowserWindowState.split`).
 struct SplitTabRow: View {

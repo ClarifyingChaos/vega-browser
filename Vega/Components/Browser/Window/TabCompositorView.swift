@@ -1,7 +1,8 @@
 import AppKit
+import WebKit
 import VegaSettings
 import VegaTabsCore
-import WebKit
+import VegaWeb
 
 // MARK: - Tab Compositor Manager
 

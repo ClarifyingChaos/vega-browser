@@ -5,12 +5,13 @@
 //  Clean ExtensionActionView using ONLY native WKWebExtension APIs
 //
 
-import VegaSettings
 import SwiftUI
-import VegaDesign
 import WebKit
 import AppKit
 import os
+import VegaDesign
+import VegaSettings
+import VegaWeb
 
 struct ExtensionActionView: View {
     let extensions: [InstalledExtension]

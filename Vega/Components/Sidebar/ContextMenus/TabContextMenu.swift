@@ -6,8 +6,9 @@
 //
 
 import AppKit
-import VegaTabsCore
 import SwiftUI
+import VegaTabsCore
+import VegaWeb
 
 /// Which view shows the tab. The item's section (favorites, pinned, tabs) comes from the tree.
 enum TabMenuContext {

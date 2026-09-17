@@ -6,10 +6,11 @@
 //
 
 import AppKit
-import VegaSettings
 import SwiftUI
-import VegaDesign
 import Garnish
+import VegaDesign
+import VegaSettings
+import VegaWeb
 
 struct CommandPaletteView: View {
     @EnvironmentObject var browserManager: BrowserManager

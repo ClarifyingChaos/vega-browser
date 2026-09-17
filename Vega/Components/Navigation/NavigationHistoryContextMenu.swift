@@ -6,8 +6,9 @@
 //
 
 import SwiftUI
-import VegaDesign
 import WebKit
+import VegaDesign
+import VegaWeb
 
 struct NavigationHistoryContextMenu: View {
     let historyType: HistoryType

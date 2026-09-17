@@ -8,14 +8,15 @@
 
 import AppKit
 import Carbon
-import VegaSettings
 import OSLog
 import Sparkle
 import SwiftUI
+import VegaSettings
+import VegaWeb
 
 @main
 struct VegaApp: App {
-    @State private var windowRegistry = WindowRegistry()
+    @State private var windowRegistry: WindowRegistry
     @State private var webViewCoordinator = WebViewCoordinator()
     @State private var settingsManager: VegaSettingsService
     @State private var keyboardShortcutManager = KeyboardShortcutManager()
@@ -32,7 +33,10 @@ struct VegaApp: App {
     init() {
         let settings = VegaSettingsService()
         _settingsManager = State(initialValue: settings)
-        _browserManager = StateObject(wrappedValue: BrowserManager(settings: settings))
+        let registry = WindowRegistry()
+        _windowRegistry = State(initialValue: registry)
+        _browserManager = StateObject(
+            wrappedValue: BrowserManager(settings: settings, windowRegistry: registry))
         let config = AIConfigService()
         _aiConfigService = State(initialValue: config)
         _aiService = State(initialValue: AIService(configService: config))

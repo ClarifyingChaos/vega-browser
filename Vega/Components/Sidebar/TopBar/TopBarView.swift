@@ -7,8 +7,9 @@
 
 import AppKit
 import SwiftUI
-import VegaDesign
 import WebKit
+import VegaDesign
+import VegaWeb
 
 enum TopBarMetrics {
     static let height: CGFloat = 40

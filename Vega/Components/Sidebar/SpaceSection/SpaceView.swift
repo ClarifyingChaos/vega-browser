@@ -10,9 +10,10 @@
 //  drop position math in `VegaDragSessionManager` relies on.
 //
 
-import VegaTabsCore
 import SwiftUI
 import VegaDesign
+import VegaTabsCore
+import VegaWeb
 
 struct SpaceView: View {
     let spaceID: UUID

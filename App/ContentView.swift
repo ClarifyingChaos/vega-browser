@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AppKit
+import VegaWeb
 
 struct ContentView: View {
     @EnvironmentObject var browserManager: BrowserManager
