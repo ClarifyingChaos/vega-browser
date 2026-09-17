@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct CookieDetailsView: View {
     let cookie: CookieInfo

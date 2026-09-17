@@ -7,6 +7,7 @@
 
 import VegaSettings
 import SwiftUI
+import VegaDesign
 
 struct SettingsGeneralTab: View {
     @EnvironmentObject var browserManager: BrowserManager

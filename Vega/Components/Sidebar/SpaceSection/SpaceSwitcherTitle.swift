@@ -7,6 +7,7 @@
 
 import VegaTabsCore
 import SwiftUI
+import VegaDesign
 
 struct SpaceSwitcherTitle: View {
     @Environment(TabsController.self) private var tabs

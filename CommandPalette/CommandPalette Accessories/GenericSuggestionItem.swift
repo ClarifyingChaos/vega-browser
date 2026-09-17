@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct GenericSuggestionItem: View {
     let icon: Image

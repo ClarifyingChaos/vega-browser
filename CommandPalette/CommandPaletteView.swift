@@ -8,6 +8,7 @@
 import AppKit
 import VegaSettings
 import SwiftUI
+import VegaDesign
 import Garnish
 
 struct CommandPaletteView: View {

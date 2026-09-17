@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct SpaceAccentPicker: View {
     @Binding var selectedHex: String

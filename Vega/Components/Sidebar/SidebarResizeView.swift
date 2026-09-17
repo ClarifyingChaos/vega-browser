@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct SidebarResizeView: View {
     @EnvironmentObject var browserManager: BrowserManager

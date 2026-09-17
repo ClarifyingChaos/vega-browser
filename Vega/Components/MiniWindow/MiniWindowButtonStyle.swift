@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct MiniWindowPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

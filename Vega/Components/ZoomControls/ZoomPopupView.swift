@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct ZoomPopupView: View {
     @ObservedObject var zoomManager: ZoomManager

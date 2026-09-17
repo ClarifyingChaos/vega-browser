@@ -10,6 +10,7 @@ import AppKit
 import VegaSettings
 import VegaTabsCore
 import SwiftUI
+import VegaDesign
 import UniformTypeIdentifiers
 import Sparkle
 

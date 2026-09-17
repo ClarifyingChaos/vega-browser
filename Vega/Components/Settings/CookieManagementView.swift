@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct CookieManagementView: View {
     @StateObject private var cookieManager = CookieManager()

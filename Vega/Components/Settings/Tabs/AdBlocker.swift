@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct SettingsAdBlockerTab: View {
     @EnvironmentObject var browserManager: BrowserManager

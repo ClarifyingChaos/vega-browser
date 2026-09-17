@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct DialogView: View {
     @EnvironmentObject var browserManager: BrowserManager

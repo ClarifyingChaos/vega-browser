@@ -9,6 +9,7 @@ import AppKit
 import FaviconFinder
 import Garnish
 import SwiftUI
+import VegaDesign
 
 struct HistorySection: Identifiable {
     let id = UUID()

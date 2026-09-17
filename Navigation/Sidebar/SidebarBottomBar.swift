@@ -7,6 +7,7 @@
 
 import VegaTabsCore
 import SwiftUI
+import VegaDesign
 
 /// Bottom bar of the sidebar containing menu button, spaces list, and new space button
 struct SidebarBottomBar: View {

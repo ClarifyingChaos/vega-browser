@@ -7,6 +7,7 @@
 
 import AppKit
 import SwiftUI
+import VegaDesign
 import UniformTypeIdentifiers
 
 struct SidebarMenuDownloadsTab: View {

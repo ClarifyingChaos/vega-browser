@@ -7,6 +7,7 @@
 
 import AppKit
 import SwiftUI
+import VegaDesign
 
 struct ExtensionsSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager

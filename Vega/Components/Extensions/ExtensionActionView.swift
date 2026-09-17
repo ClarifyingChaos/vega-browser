@@ -7,6 +7,7 @@
 
 import VegaSettings
 import SwiftUI
+import VegaDesign
 import WebKit
 import AppKit
 import os

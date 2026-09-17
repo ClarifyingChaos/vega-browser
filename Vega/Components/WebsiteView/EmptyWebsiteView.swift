@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct EmptyWebsiteView: View {
     @Environment(\.colorScheme) var colorScheme

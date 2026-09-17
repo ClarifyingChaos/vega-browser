@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct EditPinnedURLDialog: DialogPresentable {
     let originalURL: String

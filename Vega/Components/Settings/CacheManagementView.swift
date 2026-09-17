@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct CacheManagementView: View {
     @StateObject private var cacheManager = CacheManager()

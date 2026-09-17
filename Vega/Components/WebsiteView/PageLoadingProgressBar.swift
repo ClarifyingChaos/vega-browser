@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 import WebKit
 
 struct PageLoadingProgressBar: View {

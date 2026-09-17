@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct SettingsDialog: DialogPresentable {
     @State private var autoSave: Bool

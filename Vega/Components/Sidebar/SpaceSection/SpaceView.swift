@@ -12,6 +12,7 @@
 
 import VegaTabsCore
 import SwiftUI
+import VegaDesign
 
 struct SpaceView: View {
     let spaceID: UUID

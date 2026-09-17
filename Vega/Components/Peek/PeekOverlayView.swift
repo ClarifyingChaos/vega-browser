@@ -7,6 +7,7 @@
 
 import VegaTabsCore
 import SwiftUI
+import VegaDesign
 import AppKit
 
 struct PeekOverlayView: View {

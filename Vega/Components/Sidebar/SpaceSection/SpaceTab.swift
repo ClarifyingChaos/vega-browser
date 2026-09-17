@@ -7,6 +7,7 @@
 
 import VegaTabsCore
 import SwiftUI
+import VegaDesign
 
 /// One tab row in the sidebar outline.
 struct SpaceTab: View {

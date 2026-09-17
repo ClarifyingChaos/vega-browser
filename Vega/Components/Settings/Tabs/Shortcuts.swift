@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct ShortcutsSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager

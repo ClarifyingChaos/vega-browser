@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 import AppKit
 
 struct SidebarHoverOverlayView: View {

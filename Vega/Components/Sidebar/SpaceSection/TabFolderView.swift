@@ -8,6 +8,7 @@
 import AppKit
 import VegaTabsCore
 import SwiftUI
+import VegaDesign
 
 /// A folder header row in the sidebar outline. Its children are separate rows below it.
 struct TabFolderView: View {

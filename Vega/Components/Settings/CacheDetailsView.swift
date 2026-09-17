@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct CacheDetailsView: View {
     let cache: CacheInfo

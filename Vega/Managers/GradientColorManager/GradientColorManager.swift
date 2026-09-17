@@ -9,6 +9,7 @@
 
 import AppKit
 import SwiftUI
+import VegaDesign
 
 @MainActor
 final class GradientColorManager: ObservableObject {

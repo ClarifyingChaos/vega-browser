@@ -7,6 +7,7 @@
 
 import AppKit
 import SwiftUI
+import VegaDesign
 
 struct SpaceCreationDialog: DialogPresentable {
     @State private var spaceName: String

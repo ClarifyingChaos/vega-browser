@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 import AppKit
 import WebKit
 import AVFoundation

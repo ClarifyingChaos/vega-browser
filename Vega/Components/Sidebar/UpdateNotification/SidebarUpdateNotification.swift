@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct SidebarUpdateNotification: View {
     @EnvironmentObject var browserManager: BrowserManager

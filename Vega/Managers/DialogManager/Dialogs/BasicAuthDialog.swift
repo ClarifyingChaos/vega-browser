@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 import Observation
 
 @Observable

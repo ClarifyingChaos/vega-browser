@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 // MARK: - Shortcut Conflict Toast View
 

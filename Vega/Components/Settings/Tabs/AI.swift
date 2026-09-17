@@ -7,6 +7,7 @@
 
 import VegaSettings
 import SwiftUI
+import VegaDesign
 
 struct SettingsAITab: View {
     @Environment(\.vegaSettings) var vegaSettings

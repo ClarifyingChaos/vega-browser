@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct TabClosureToast: View {
     @EnvironmentObject var browserManager: BrowserManager

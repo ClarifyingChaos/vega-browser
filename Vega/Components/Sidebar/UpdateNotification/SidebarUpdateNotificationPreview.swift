@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 #Preview {
     VStack(spacing: 16) {

@@ -8,6 +8,7 @@
 
 import VegaTabsCore
 import SwiftUI
+import VegaDesign
 
 struct SpacesListItem: View {
     @EnvironmentObject var browserManager: BrowserManager

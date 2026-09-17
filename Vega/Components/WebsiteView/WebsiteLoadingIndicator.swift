@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct WebsiteLoadingIndicator: View {
     @EnvironmentObject var browserManager: BrowserManager

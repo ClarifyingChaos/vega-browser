@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 
 struct CopyURLToast: View {
     @Environment(BrowserWindowState.self) private var windowState

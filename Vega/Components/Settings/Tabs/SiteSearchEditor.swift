@@ -7,6 +7,7 @@
 
 import VegaSettings
 import SwiftUI
+import VegaDesign
 
 struct SiteSearchEntryEditor: View {
     let entry: SiteSearchEntry?

@@ -5,6 +5,7 @@
 //
 
 import SwiftUI
+import VegaDesign
 @preconcurrency import AppKit
 import Combine
 import VegaTabsCore
