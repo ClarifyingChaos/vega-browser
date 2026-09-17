@@ -5,6 +5,7 @@
 //  Created by Claude on 26/03/2026.
 //
 
+import VegaBlocker
 import CryptoKit
 import Foundation
 import VegaSettings

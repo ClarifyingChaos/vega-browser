@@ -5,6 +5,7 @@
 //  Navigation delegate, downloads and find in page for a PageSession.
 //
 
+import VegaBlocker
 import AppKit
 import SwiftUI
 import WebKit

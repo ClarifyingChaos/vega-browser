@@ -24,12 +24,12 @@ import WebKit
 extension WKUserScript {
     /// Every user script Vega injects begins with a `// Vega …` comment.
     /// Anything else in the controller belongs to WebKit or to an extension.
-    static let vegaOwnedPrefix = "// Vega"
+    public static let vegaOwnedPrefix = "// Vega"
 
-    var isVegaOwned: Bool { source.hasPrefix(Self.vegaOwnedPrefix) }
+    public var isVegaOwned: Bool { source.hasPrefix(Self.vegaOwnedPrefix) }
 }
 
 extension Array where Element == WKUserScript {
     /// The subset safe to re-add after `removeAllUserScripts()`.
-    var vegaOwned: [WKUserScript] { filter(\.isVegaOwned) }
+    public var vegaOwned: [WKUserScript] { filter(\.isVegaOwned) }
 }

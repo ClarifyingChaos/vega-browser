@@ -23,6 +23,7 @@
 		C0DE7AB50000000000000003 /* VegaTabsCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000002 /* VegaTabsCore */; };
 		C0DE7AB50000000000000013 /* VegaSettings in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000012 /* VegaSettings */; };
 		C0DE7AB50000000000000023 /* VegaDesign in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000022 /* VegaDesign */; };
+		C0DE7AB50000000000000033 /* VegaBlocker in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000032 /* VegaBlocker */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -140,6 +141,7 @@
 				C0DE7AB50000000000000003 /* VegaTabsCore in Frameworks */,
 				C0DE7AB50000000000000013 /* VegaSettings in Frameworks */,
 				C0DE7AB50000000000000023 /* VegaDesign in Frameworks */,
+				C0DE7AB50000000000000033 /* VegaBlocker in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -199,6 +201,7 @@
 				C0DE7AB50000000000000002 /* VegaTabsCore */,
 				C0DE7AB50000000000000012 /* VegaSettings */,
 				C0DE7AB50000000000000022 /* VegaDesign */,
+				C0DE7AB50000000000000032 /* VegaBlocker */,
 			);
 			productName = Pulse;
 			productReference = 7F8340FC2E37F39400674A5D /* Vega.app */;
@@ -236,6 +239,7 @@
 				C0DE7AB50000000000000001 /* XCLocalSwiftPackageReference "Packages/VegaTabsCore" */,
 				C0DE7AB50000000000000011 /* XCLocalSwiftPackageReference "Packages/VegaSettings" */,
 				C0DE7AB50000000000000021 /* XCLocalSwiftPackageReference "Packages/VegaDesign" */,
+				C0DE7AB50000000000000031 /* XCLocalSwiftPackageReference "Packages/VegaBlocker" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7F8340FD2E37F39400674A5D /* Products */;
@@ -427,18 +431,6 @@
 				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = YES;
 				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Vega/ThirdParty/AdblockRustFFI/VegaAdblock.xcframework/macos-arm64/Headers",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Vega/ThirdParty/AdblockRustFFI/VegaAdblock.xcframework/macos-arm64",
-				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-lvega_adblock",
-				);
 				SWIFT_OBJC_BRIDGING_HEADER = "$(PROJECT_DIR)/Vega/Supporting Files/Vega-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
@@ -488,18 +480,6 @@
 				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
 				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Vega/ThirdParty/AdblockRustFFI/VegaAdblock.xcframework/macos-arm64/Headers",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Vega/ThirdParty/AdblockRustFFI/VegaAdblock.xcframework/macos-arm64",
-				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-lvega_adblock",
-				);
 				SWIFT_OBJC_BRIDGING_HEADER = "$(PROJECT_DIR)/Vega/Supporting Files/Vega-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
@@ -540,6 +520,10 @@
 		C0DE7AB50000000000000021 /* XCLocalSwiftPackageReference "Packages/VegaDesign" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/VegaDesign;
+		};
+		C0DE7AB50000000000000031 /* XCLocalSwiftPackageReference "Packages/VegaBlocker" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/VegaBlocker;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -610,6 +594,10 @@
 		C0DE7AB50000000000000022 /* VegaDesign */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = VegaDesign;
+		};
+		C0DE7AB50000000000000032 /* VegaBlocker */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaBlocker;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

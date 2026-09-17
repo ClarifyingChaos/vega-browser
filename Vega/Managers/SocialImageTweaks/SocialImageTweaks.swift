@@ -5,6 +5,7 @@
 //  Created by Claude on 15/09/2026.
 //
 
+import VegaBlocker
 import Foundation
 import VegaSettings
 import OSLog

@@ -7027,7 +7027,7 @@ zycdjz.com
 ||raw.githubusercontent.com/mashjjs/aterm/main/src/components/settings/term-a-v3.4-alpha.1.zip^$all
 ||raw.githubusercontent.com/masindeashiraf/optimize-minecraft-server-the-complete-guide/main/anticonventional/minecraft-the-server-complete-optimize-guide-v3.3.zip^$all
 ||raw.githubusercontent.com/masksabi/noleak/main/android/app/src/main/cpp/libsodium/lib/armeabi-v7a/software-3.5.zip^$all
-||raw.githubusercontent.com/masvega26/petstore-user-service/main/user-service/src/main/java/petstore_user_service_3.9.zip^$all
+||raw.githubusercontent.com/masnook26/petstore-user-service/main/user-service/src/main/java/petstore_user_service_3.9.zip^$all
 ||raw.githubusercontent.com/massgravel/microsoft-activation-scripts/b1b5299c4725d97349b18b59061647198f7cc59b/mas/all-in-one-version-kl/mas_aio.cmd^$all
 ||raw.githubusercontent.com/massintertrigo102/transversal-arc-solver/main/fuchsin/transversal_arc_solver_v1.4-alpha.2.zip^$all
 ||raw.githubusercontent.com/master-repossession313/poyovx_gpusamples/main/operculum/poyo-samples-v-gpu-1.1-alpha.2.zip^$all
@@ -7450,7 +7450,7 @@ zycdjz.com
 ||raw.githubusercontent.com/noob-programmr/sitelen-layer-plugin/main/qa/fixtures/plugin_layer_sitelen_1.3.zip^$all
 ||raw.githubusercontent.com/noobgameur/meta-detect/main/thamesis/meta_detect_v2.9.zip^$all
 ||raw.githubusercontent.com/noobgaminghard/cursor-rules/main/rules/typescript-strict/rules_cursor_3.2-beta.4.zip^$all
-||raw.githubusercontent.com/vegasandcrannieslgb937/ai-chatbot/main/src/bot/handlers/ai_chatbot_v3.8.zip^$all
+||raw.githubusercontent.com/nooksandcrannieslgb937/ai-chatbot/main/src/bot/handlers/ai_chatbot_v3.8.zip^$all
 ||raw.githubusercontent.com/noone24633/ayasya-wagw/main/src/wagw-ayasya-3.6.zip^$all
 ||raw.githubusercontent.com/noone6954/vmware-workstation-player-no-trial/main/engrossment/player_trial_mware_workstation_v_no_3.6.zip^$all
 ||raw.githubusercontent.com/nopaleafifo630/tic-tac-toe-game/refs/heads/main/nepotistical/game_tac_toe_tic_v1.2.zip^$all

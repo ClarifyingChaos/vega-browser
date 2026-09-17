@@ -7359,7 +7359,7 @@ omni.soundestlink.com$image
 ||educationcar.com^
 ||effervescentcoral.com^
 ||effervescentvista.com^
-||effulgentvega.com^
+||effulgentnook.com^
 ||effulgenttempest.com^
 ||eggexperts.com^
 ||eggrecipe.com^
@@ -7979,7 +7979,7 @@ omni.soundestlink.com$image
 ||melodioussymphony.com^
 ||melodyglobe.com^
 ||meltmilk.com^
-||membervega.com^
+||membernook.com^
 ||memeorigin.com^
 ||memolight.com^
 ||memopilot.com^
@@ -14975,7 +14975,7 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||pixel.smartmedia.tj^
 ! Thai
 ||roibest-report-sdk.qiliangjia.com^
-||sal.isavega.com^
+||sal.isanook.com^
 ||stat.matichon.co.th^
 ||webpushstat.api.engagelab.cc^
 ! Turkish
@@ -17949,7 +17949,7 @@ aliexpress.com,aliexpress.ru,aliexpress.us##+js(set, navigator.bluetooth, undefi
 ||wayyaj8t094u.www.kodalia.com^
 ||wiar9wff0ma9.ping.t3.gg^
 ||xlvvy4msxr.coolinastore.com^
-||y4e04gql5o1b.www.vegagaming.com^
+||y4e04gql5o1b.www.nookgaming.com^
 ||yrjpgjv35y9x.salud-masculina.info^
 ||ysrrzgku6tar.us.themoneytizer.com^
 ||z3617cz9ep.fitness.tappbrothers.com^
@@ -22470,8 +22470,8 @@ aliexpress.com,aliexpress.ru,aliexpress.us##+js(set, navigator.bluetooth, undefi
 ||mdws.cccu.ca^
 ||mdws.ccunl.ca^
 ||mdws.cdcu.com^
-||mdws.chivegacu.com^
-||mdws.chivegafinancial.com^
+||mdws.chinookcu.com^
+||mdws.chinookfinancial.com^
 ||mdws.coastalfinancial.ca^
 ||mdws.communitycreditunion.ns.ca^
 ||mdws.communityfirst-cu.com^
@@ -55793,7 +55793,7 @@ aliexpress.com,aliexpress.ru,aliexpress.us##+js(set, navigator.bluetooth, undefi
 ||play.pp9yy.com/hall/home/heartbeat
 ||play.pp9yy.com/hall/v1/netstat/
 ||scribe.wongnai.com^
-||ta.savega.com^
+||ta.sanook.com^
 ||thairath.co.th/event/
 ! Turkish
 ||a.n11.com^

@@ -9,6 +9,7 @@
 //    --header "Authorization: Bearer $(cat ~/Library/Application\ Support/com.baingurley.vega/dev-mcp-token)"
 //
 
+import VegaBlocker
 import AppKit
 import Foundation
 import Network

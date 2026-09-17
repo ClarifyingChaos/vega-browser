@@ -3,6 +3,7 @@
 //  Vega
 //
 
+import VegaBlocker
 import VegaSettings
 import SwiftUI
 import VegaDesign

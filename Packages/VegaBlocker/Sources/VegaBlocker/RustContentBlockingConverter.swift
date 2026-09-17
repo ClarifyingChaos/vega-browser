@@ -10,6 +10,7 @@
 //
 
 import Foundation
+import VegaAdblockFFI
 import OSLog
 
 private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "ContentBlocker")

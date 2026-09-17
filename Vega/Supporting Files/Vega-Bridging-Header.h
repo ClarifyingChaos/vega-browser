@@ -6,4 +6,3 @@
 //
 
 #import "MuteableWKWebView.h"
-#import "vega_adblock.h"
