@@ -1,0 +1,4 @@
+module VegaAdblockFFI {
+    header "vega_adblock.h"
+    export *
+}
