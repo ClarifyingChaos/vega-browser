@@ -8,6 +8,10 @@
 //  width beside Cancel, so the bar is one row sitting on the keyboard. Forward
 //  is edge-swipe only, as in Safari.
 //
+//  Reading collapses it: scrolling down shrinks the whole bar to a pill on the
+//  trailing edge, under the thumb, and scrolling back up or tapping the pill
+//  restores it.
+//
 
 import SwiftUI
 import VegaDesign
@@ -24,6 +28,8 @@ enum BottomBarStyle {
 
 struct BottomBar: View {
     var style: BottomBarStyle = .floating
+    /// Driven by the page's scroll direction. The sidebar never condenses.
+    @Binding var condensed: Bool
 
     @EnvironmentObject private var model: BrowserModel
     @Environment(TabsController.self) private var tabs
@@ -34,7 +40,63 @@ struct BottomBar: View {
 
     private var session: PageSession? { tabs.selectedSession(in: window) }
 
+    private var isCondensed: Bool { condensed && !isFocused && style == .floating }
+
     var body: some View {
+        HStack(spacing: 0) {
+            if isCondensed { Spacer(minLength: 0) }
+            barBody
+                .modifier(BarBackground(style: style, condensed: isCondensed))
+        }
+        .animation(VegaDesign.Motion.standard, value: isCondensed)
+        .animation(VegaDesign.Motion.standard, value: isFocused)
+        .gesture(
+            // The swipe covers the whole bar, field included: it is the biggest
+            // target and switching tabs is the point. minimumDistance keeps taps
+            // going to the field.
+            DragGesture(minimumDistance: 30)
+                .onEnded { value in
+                    guard !isFocused,
+                          abs(value.translation.width) > abs(value.translation.height) else { return }
+                    if value.translation.width < 0 {
+                        tabs.selectNext(in: window)
+                    } else {
+                        tabs.selectPrevious(in: window)
+                    }
+                    Haptics.alignment()
+                }
+        )
+    }
+
+    /// The host alone, on the thumb side. Tapping it brings the bar back.
+    private var pill: some View {
+        Button {
+            condensed = false
+        } label: {
+            HStack(spacing: VegaDesign.Spacing.sm) {
+                if let itemID = tabs.selectedItemID(in: window), let item = tabs.item(itemID) {
+                    ItemFavicon(item: item, session: session)
+                }
+                Text(session?.url.host() ?? "")
+                    .lineLimit(1)
+                    .foregroundStyle(.primary)
+            }
+            .padding(.horizontal, VegaDesign.Spacing.lg)
+            .frame(height: VegaDesign.Size.row)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var barBody: some View {
+        if isCondensed {
+            pill
+        } else {
+            fullBar
+        }
+    }
+
+    private var fullBar: some View {
         VStack(spacing: VegaDesign.Spacing.md) {
             if !isFocused, style == .floating {
                 SpacesList()
@@ -78,24 +140,6 @@ struct BottomBar: View {
         }
         .padding(.horizontal, VegaDesign.Spacing.rowPadding)
         .padding(.vertical, VegaDesign.Spacing.md)
-        .modifier(BarBackground(style: style))
-        .animation(VegaDesign.Motion.standard, value: isFocused)
-        .gesture(
-            // The swipe covers the whole bar, field included: it is the biggest
-            // target and switching tabs is the point. minimumDistance keeps taps
-            // going to the field.
-            DragGesture(minimumDistance: 30)
-                .onEnded { value in
-                    guard !isFocused,
-                          abs(value.translation.width) > abs(value.translation.height) else { return }
-                    if value.translation.width < 0 {
-                        tabs.selectNext(in: window)
-                    } else {
-                        tabs.selectPrevious(in: window)
-                    }
-                    Haptics.alignment()
-                }
-        )
     }
 }
 
@@ -104,10 +148,13 @@ struct BottomBar: View {
 /// which already has a material behind it.
 private struct BarBackground: ViewModifier {
     let style: BottomBarStyle
+    let condensed: Bool
 
     @ViewBuilder
     func body(content: Content) -> some View {
         switch style {
+        case .floating where condensed:
+            content.vegaGlassEffect(in: Capsule())
         case .floating:
             content.vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.xxl))
         case .sidebar:
