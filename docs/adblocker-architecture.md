@@ -15,8 +15,9 @@ components AdGuard for Safari and wBlock use, both GPL-3.0:
 Unlike a Safari extension, Vega injects directly into `WKWebView` via `WKUserScript`, which gives
 per-tab control (whitelist, temporary disable, OAuth exemption) and no extension process.
 
-Everything in `Vega/Managers/ContentBlockerManager/` is Foundation + WebKit only, so it is reusable
-as-is for an iOS target.
+Everything in `Packages/VegaBlocker/Sources/VegaBlocker/` (moved there from `Vega/Managers/ContentBlockerManager/`
+in the September 2026 phase 2 package split) is Foundation + WebKit only, so it is reusable as-is for an
+iOS target.
 
 ## Pipeline
 
@@ -87,7 +88,8 @@ pattern semantics.
 ## Blocked-request counts
 
 Content rule lists report nothing, so the same rules are also loaded into Brave's adblock-rust
-(`Vega/ThirdParty/AdblockRustFFI`, MPL-2.0, C API over a static library). `vega-request-stats.js`
+(`Vega/ThirdParty/AdblockRustFFI`, MPL-2.0, C API over a static library wrapped in an xcframework
+and consumed by `Packages/VegaBlocker` as a `binaryTarget`). `vega-request-stats.js`
 observes every resource URL a page tries to load (fetch, XHR, beacon, WebSocket, and DOM-inserted
 img/script/link/iframe/media via one MutationObserver), batches them, and posts to the
 `vegaRequestStats` handler. `RequestStatsEngine` checks them on a serial queue and adds to
@@ -108,7 +110,8 @@ on edge cases, and CSS background images are not observed.
 - SafariConverterLib: bump the SPM requirement in the Xcode project; keep it on the same major as the
   npm package.
 - Filter list snapshots: `scripts/refresh-filter-lists.sh` (keep its URL list in sync with `FilterListManager.defaultLists`).
-- adblock-rust: `Vega/ThirdParty/AdblockRustFFI/build.sh` (needs Rust; the built `.a` is committed).
+- adblock-rust: `Vega/ThirdParty/AdblockRustFFI/build.sh` (needs Rust; the built `.a` is committed, wrapped
+  in `VegaAdblock.xcframework`).
 
 ## History
 
