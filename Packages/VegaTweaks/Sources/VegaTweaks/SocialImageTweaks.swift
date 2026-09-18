@@ -11,7 +11,7 @@ import VegaSettings
 import OSLog
 import WebKit
 
-private let socialLog = Logger(subsystem: "com.baingurley.vega", category: "SocialImageTweaks")
+private let socialLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "SocialImageTweaks")
 
 /// Download button over photos and videos on Instagram, Facebook, and VSCO, each with its own setting. The
 /// isolated script picks the largest srcset candidate, or asks a page-world script for the MP4 in React's

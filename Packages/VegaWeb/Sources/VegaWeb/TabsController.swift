@@ -49,7 +49,7 @@ public final class TabsController {
     @ObservationIgnored private let store: TabStore
     @ObservationIgnored private(set) var undoStack: [Change] = []
     @ObservationIgnored private var isTerminating = false
-    @ObservationIgnored public let log = Logger(subsystem: "com.baingurley.vega", category: "Tabs")
+    @ObservationIgnored public let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "Tabs")
 
     // MARK: - Injected
 
@@ -67,7 +67,7 @@ public final class TabsController {
 
     nonisolated public static var defaultDirectory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("com.baingurley.vega", isDirectory: true)
+            .appendingPathComponent(Bundle.main.bundleIdentifier ?? "Vega", isDirectory: true)
             .appendingPathComponent("Tabs", isDirectory: true)
     }
 
@@ -127,7 +127,7 @@ public final class TabsController {
             do {
                 try tree.createTab(url: homeURL, title: "Google", in: .tabs(spaceID: profile.id), after: nil, now: now)
             } catch {
-                Logger(subsystem: "com.baingurley.vega", category: "Tabs").error("Seeding space failed: \(String(describing: error), privacy: .public)")
+                Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "Tabs").error("Seeding space failed: \(String(describing: error), privacy: .public)")
             }
         }
         return tree

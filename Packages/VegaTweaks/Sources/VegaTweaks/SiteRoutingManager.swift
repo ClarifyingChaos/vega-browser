@@ -9,7 +9,7 @@ import OSLog
 
 @MainActor
 public final class SiteRoutingManager {
-    private let logger = Logger(subsystem: "com.baingurley.vega", category: "SiteRouting")
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "SiteRouting")
 
     private let settings: VegaSettingsService
     public weak var host: SiteRoutingHost?

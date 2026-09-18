@@ -11,7 +11,7 @@ import VegaSettings
 import OSLog
 import WebKit
 
-private let ytLog = Logger(subsystem: "com.baingurley.vega", category: "YouTubeTweaks")
+private let ytLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "YouTubeTweaks")
 
 /// The selectors each hideable home shelf is matched by. The enum itself lives in VegaSettings.
 extension YouTubeHomeSection {

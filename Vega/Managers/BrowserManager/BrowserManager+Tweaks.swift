@@ -15,7 +15,7 @@ import VegaTabsCore
 import VegaTweaks
 import VegaWeb
 
-private let tweaksLog = Logger(subsystem: "com.baingurley.vega", category: "SiteRouting")
+private let tweaksLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "SiteRouting")
 
 extension BrowserManager: SiteRoutingHost {
     func route(url: URL, toSpace spaceID: UUID, from page: AnyObject?) -> Bool {

@@ -11,7 +11,7 @@ import VegaSettings
 import OSLog
 import WebKit
 
-private let fbTweaksLog = Logger(subsystem: "com.baingurley.vega", category: "FacebookTweaks")
+private let fbTweaksLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "FacebookTweaks")
 
 /// Hides the Reels carousel and suggested content in Facebook's news feed. Shares
 /// `facebook-feed-prune.js` with the content blocker: this copy sets the reels and suggested flags,

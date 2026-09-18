@@ -12,7 +12,7 @@ import VegaSettings
 import OSLog
 import WebKit
 
-private let sbLog = Logger(subsystem: "com.baingurley.vega", category: "SponsorBlock")
+private let sbLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Vega", category: "SponsorBlock")
 
 @MainActor
 public final class SponsorBlockManager {

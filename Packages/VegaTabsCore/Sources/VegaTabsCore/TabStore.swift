@@ -50,7 +50,7 @@ public final class TabStore: @unchecked Sendable {
     private var deviceURL: URL { directory.appendingPathComponent("device.json") }
     private var backupsURL: URL { directory.appendingPathComponent("Backups", isDirectory: true) }
 
-    private let queue = DispatchQueue(label: "com.baingurley.vega.tabstore", qos: .utility)
+    private let queue = DispatchQueue(label: "com.gstudios.vega.tabstore", qos: .utility)
     private let lock = NSLock()
     private var pending: (TabTree, DeviceState)?
     private var scheduled = false

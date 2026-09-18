@@ -6,7 +6,7 @@
 //  Streamable HTTP (JSON responses only) on 127.0.0.1, bearer token from a 0600 file.
 //
 //  mcp add --transport http vega http://127.0.0.1:47823/mcp \
-//    --header "Authorization: Bearer $(cat ~/Library/Application\ Support/com.baingurley.vega/dev-mcp-token)"
+//    --header "Authorization: Bearer $(cat ~/Library/Application\ Support/com.gstudios.vega/dev-mcp-token)"
 //
 
 import AppKit
@@ -29,7 +29,7 @@ final class DevMCPServer {
     private weak var browserManager: BrowserManager?
     private var listener: NWListener?
     private var token = ""
-    private let queue = DispatchQueue(label: "com.baingurley.vega.devmcp")
+    private let queue = DispatchQueue(label: "com.gstudios.vega.devmcp")
 
     /// Remember the browser and start only if the user has turned the server on.
     /// Off is the default: see VegaSettingsService.browserControlServerEnabled.
@@ -77,7 +77,7 @@ final class DevMCPServer {
 
     private static func loadOrCreateToken() throws -> String {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("com.baingurley.vega", isDirectory: true)
+            .appendingPathComponent(Bundle.main.bundleIdentifier ?? "Vega", isDirectory: true)
         let file = dir.appendingPathComponent("dev-mcp-token")
         if let existing = try? String(contentsOf: file, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines),
            existing.count >= 32 {
