@@ -1,3 +1,4 @@
+// Licensed under GPL-3.0 with the App Store exception in LICENSE-EXCEPTION.md.
 //
 //  ContentRuleListCompiler.swift
 //  Vega
@@ -39,7 +40,7 @@ final class ContentRuleListCompiler {
 
     private static var cacheDir: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return appSupport.appendingPathComponent("io.browsewithnook.vega/ContentBlocker/Cache", isDirectory: true)
+        return appSupport.appendingPathComponent("\(Bundle.main.bundleIdentifier ?? "Vega")/ContentBlocker/Cache", isDirectory: true)
     }
 
     private static var hashFile: URL { cacheDir.appendingPathComponent("rules.sha256") }

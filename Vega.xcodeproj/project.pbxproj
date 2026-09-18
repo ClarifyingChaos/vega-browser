@@ -27,10 +27,18 @@
 		C0DE7AB50000000000000043 /* VegaTweaks in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000042 /* VegaTweaks */; };
 		C0DE7AB50000000000000053 /* VegaWeb in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000052 /* VegaWeb */; };
 		C0DE7AB50000000000000063 /* VegaUI in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE7AB50000000000000062 /* VegaUI */; };
+		105000000000000000000200 /* VegaTabsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 105000000000000000000100 /* VegaTabsCore */; };
+		105000000000000000000201 /* VegaSettings in Frameworks */ = {isa = PBXBuildFile; productRef = 105000000000000000000101 /* VegaSettings */; };
+		105000000000000000000202 /* VegaDesign in Frameworks */ = {isa = PBXBuildFile; productRef = 105000000000000000000102 /* VegaDesign */; };
+		105000000000000000000203 /* VegaBlocker in Frameworks */ = {isa = PBXBuildFile; productRef = 105000000000000000000103 /* VegaBlocker */; };
+		105000000000000000000204 /* VegaTweaks in Frameworks */ = {isa = PBXBuildFile; productRef = 105000000000000000000104 /* VegaTweaks */; };
+		105000000000000000000205 /* VegaWeb in Frameworks */ = {isa = PBXBuildFile; productRef = 105000000000000000000105 /* VegaWeb */; };
+		105000000000000000000206 /* VegaUI in Frameworks */ = {isa = PBXBuildFile; productRef = 105000000000000000000106 /* VegaUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		7F8340FC2E37F39400674A5D /* Vega.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vega.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		105000000000000000000009 /* VegaiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VegaiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -73,6 +81,13 @@
 				Sidebar/SpacesSideBarView.swift,
 			);
 			target = 7F8340FB2E37F39400674A5D /* Vega */;
+		};
+		105000000000000000000010 /* Exceptions for "VegaiOS" folder in "VegaiOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 105000000000000000000001 /* VegaiOS */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -121,6 +136,14 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
+		105000000000000000000002 /* VegaiOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				105000000000000000000010 /* Exceptions for "VegaiOS" folder in "VegaiOS" target */,
+			);
+			path = VegaiOS;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -151,12 +174,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		105000000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				105000000000000000000200 /* VegaTabsCore in Frameworks */,
+				105000000000000000000201 /* VegaSettings in Frameworks */,
+				105000000000000000000202 /* VegaDesign in Frameworks */,
+				105000000000000000000203 /* VegaBlocker in Frameworks */,
+				105000000000000000000204 /* VegaTweaks in Frameworks */,
+				105000000000000000000205 /* VegaWeb in Frameworks */,
+				105000000000000000000206 /* VegaUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		7F8340F32E37F39400674A5D = {
 			isa = PBXGroup;
 			children = (
+				105000000000000000000002 /* VegaiOS */,
 				7F6409912F4729B600A02697 /* Onboarding */,
 				2D0834C72EC8D90400C302AC /* Settings */,
 				2D0834CF2EC8E0AD00C302AC /* Navigation */,
@@ -171,6 +209,7 @@
 		7F8340FD2E37F39400674A5D /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				105000000000000000000009 /* VegaiOS.app */,
 				7F8340FC2E37F39400674A5D /* Vega.app */,
 			);
 			name = Products;
@@ -216,6 +255,35 @@
 			productReference = 7F8340FC2E37F39400674A5D /* Vega.app */;
 			productType = "com.apple.product-type.application";
 		};
+		105000000000000000000001 /* VegaiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 105000000000000000000006 /* Build configuration list for PBXNativeTarget "VegaiOS" */;
+			buildPhases = (
+				105000000000000000000003 /* Sources */,
+				105000000000000000000004 /* Frameworks */,
+				105000000000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				105000000000000000000002 /* VegaiOS */,
+			);
+			name = VegaiOS;
+			packageProductDependencies = (
+				105000000000000000000100 /* VegaTabsCore */,
+				105000000000000000000101 /* VegaSettings */,
+				105000000000000000000102 /* VegaDesign */,
+				105000000000000000000103 /* VegaBlocker */,
+				105000000000000000000104 /* VegaTweaks */,
+				105000000000000000000105 /* VegaWeb */,
+				105000000000000000000106 /* VegaUI */,
+			);
+			productName = VegaiOS;
+			productReference = 105000000000000000000009 /* VegaiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -259,6 +327,7 @@
 			projectRoot = "";
 			targets = (
 				7F8340FB2E37F39400674A5D /* Vega */,
+				105000000000000000000001 /* VegaiOS */,
 			);
 		};
 /* End PBXProject section */
@@ -271,10 +340,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		105000000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		7F8340F82E37F39400674A5D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		105000000000000000000003 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -495,6 +578,68 @@
 			};
 			name = Release;
 		};
+		105000000000000000000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = logo;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VegaiOS/VegaiOS.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				DEVELOPMENT_TEAM = ZHB786H6YN;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VegaiOS/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Vega;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gstudios.vega;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		105000000000000000000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = logo;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VegaiOS/VegaiOS.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				DEVELOPMENT_TEAM = ZHB786H6YN;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VegaiOS/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Vega;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gstudios.vega;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -512,6 +657,15 @@
 			buildConfigurations = (
 				7F8341092E37F39500674A5D /* Debug */,
 				7F83410A2E37F39500674A5D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		105000000000000000000006 /* Build configuration list for PBXNativeTarget "VegaiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				105000000000000000000007 /* Debug */,
+				105000000000000000000008 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -630,6 +784,34 @@
 			productName = VegaWeb;
 		};
 		C0DE7AB50000000000000062 /* VegaUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaUI;
+		};
+		105000000000000000000100 /* VegaTabsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaTabsCore;
+		};
+		105000000000000000000101 /* VegaSettings */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaSettings;
+		};
+		105000000000000000000102 /* VegaDesign */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaDesign;
+		};
+		105000000000000000000103 /* VegaBlocker */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaBlocker;
+		};
+		105000000000000000000104 /* VegaTweaks */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaTweaks;
+		};
+		105000000000000000000105 /* VegaWeb */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VegaWeb;
+		};
+		105000000000000000000106 /* VegaUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = VegaUI;
 		};
