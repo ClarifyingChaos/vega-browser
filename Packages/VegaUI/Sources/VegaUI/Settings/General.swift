@@ -19,14 +19,31 @@ public struct SettingsGeneralTab: View {
 
     public init() {}
 
+    /// The provider list, shared by both platforms' spellings of the row.
+    @ViewBuilder
+    private func searchEnginePicker(_ settings: VegaSettingsService) -> some View {
+        @Bindable var settings = settings
+        Picker("Default search engine", selection: $settings.searchEngineId) {
+            ForEach(SearchProvider.allCases) { provider in
+                Text(provider.displayName).tag(provider.rawValue)
+            }
+            ForEach(vegaSettings.customSearchEngines) { engine in
+                Text(engine.name).tag(engine.id.uuidString)
+            }
+        }
+    }
+
     public var body: some View {
         @Bindable var settings = vegaSettings
         Form {
+            #if os(macOS)
+            // Quitting and Sparkle updates are both macOS-only concepts.
             Section {
                 Toggle("Warn before quitting Vega", isOn: $settings.askBeforeQuit)
                 Toggle("Automatically update Vega", isOn: .constant(true))
                     .disabled(true)
             }
+            #endif
 
             Section {
                 Picker("Tab Management", selection: Binding(
@@ -63,20 +80,11 @@ public struct SettingsGeneralTab: View {
             }
 
             Section {
+                #if os(macOS)
                 LabeledContent("Default search engine") {
                     HStack(spacing: VegaDesign.Spacing.md) {
-                        Picker(
-                            "Default search engine",
-                            selection: $settings.searchEngineId
-                        ) {
-                            ForEach(SearchProvider.allCases) { provider in
-                                Text(provider.displayName).tag(provider.rawValue)
-                            }
-                            ForEach(vegaSettings.customSearchEngines) { engine in
-                                Text(engine.name).tag(engine.id.uuidString)
-                            }
-                        }
-                        .labelsHidden()
+                        searchEnginePicker(settings)
+                            .labelsHidden()
 
                         Button {
                             showingAddEngine = true
@@ -87,6 +95,13 @@ public struct SettingsGeneralTab: View {
                         .controlSize(.small)
                     }
                 }
+                #else
+                // A picker inside a LabeledContent's trailing slot gets squeezed
+                // to "G...gle" at phone width. The Form's own picker row does not,
+                // so the add button takes a row of its own.
+                searchEnginePicker(settings)
+                Button("Add Search Engine…") { showingAddEngine = true }
+                #endif
 
                 if let selected = vegaSettings.customSearchEngines.first(where: { $0.id.uuidString == vegaSettings.searchEngineId }) {
                     LabeledContent {

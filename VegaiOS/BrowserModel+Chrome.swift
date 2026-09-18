@@ -71,12 +71,16 @@ extension BrowserModel {
     }
 
     /// Hands-off checks cannot tap the tabs button, so a Debug launch argument
-    /// opens a sheet for screenshotting:
-    /// `xcrun simctl launch <udid> com.gstudios.vega -VegaOpenSheet tabs`.
+    /// opens a sheet for screenshotting, optionally on one settings row:
+    /// `-VegaOpenSheet tabs`, or `-VegaOpenSheet settings -VegaSettingsRoute adBlocker`.
     func openDebugSheetIfRequested() {
         #if DEBUG
         guard let name = UserDefaults.standard.string(forKey: "VegaOpenSheet"),
               let requested = ChromeSheet(rawValue: name) else { return }
+        if let route = UserDefaults.standard.string(forKey: "VegaSettingsRoute"),
+           let destination = SettingsRoute(rawValue: route) {
+            settingsPath = [destination]
+        }
         present(requested)
         #endif
     }
