@@ -124,3 +124,4 @@ DerivedData/
 # Rust FFI build output
 Nook/ThirdParty/AdblockRustFFI/target/
 build-release/
+build-release-signed/
