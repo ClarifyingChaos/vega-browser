@@ -15,7 +15,6 @@ import VegaSettings
 import VegaUI
 import VegaWeb
 
-@main
 struct VegaApp: App {
     @State private var windowRegistry: WindowRegistry
     @State private var webViewCoordinator = WebViewCoordinator()
