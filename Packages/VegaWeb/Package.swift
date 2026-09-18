@@ -10,7 +10,6 @@ let package = Package(
     dependencies: [
         .package(path: "../VegaTabsCore"),
         .package(path: "../VegaSettings"),
-        .package(path: "../VegaDesign"),
         .package(path: "../VegaBlocker"),
         .package(path: "../VegaTweaks"),
         .package(url: "https://github.com/will-lumley/FaviconFinder.git", from: "5.1.5"),
@@ -23,7 +22,6 @@ let package = Package(
                 "MuteableWKWebView",
                 .product(name: "VegaTabsCore", package: "VegaTabsCore"),
                 .product(name: "VegaSettings", package: "VegaSettings"),
-                .product(name: "VegaDesign", package: "VegaDesign"),
                 .product(name: "VegaBlocker", package: "VegaBlocker"),
                 .product(name: "VegaTweaks", package: "VegaTweaks"),
                 .product(name: "FaviconFinder", package: "FaviconFinder"),
