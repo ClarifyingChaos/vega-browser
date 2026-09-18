@@ -22,7 +22,7 @@ struct ToastView<Content: View>: View {
         content
             .padding(12)
             .fixedSize(horizontal: true, vertical: false)
-            .background(Color(.windowBackgroundColor).opacity(0.35))
+            .background(VegaDesign.Surface.windowBackground.opacity(0.35))
             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))
             .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
     }
