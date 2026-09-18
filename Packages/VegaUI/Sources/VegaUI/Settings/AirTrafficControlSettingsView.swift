@@ -96,8 +96,11 @@ public struct AirTrafficControlSettingsView: View {
                 }
                 HStack(spacing: VegaDesign.Spacing.xs) {
                     if let space {
-                        Image(systemName: space.icon)
-                            .font(VegaDesign.Font.caption)
+                        // Spaces have no icon; the sidebar identifies them by an
+                        // accent dot, so this picker uses the same mark.
+                        Circle()
+                            .fill(space.accentColor)
+                            .frame(width: VegaDesign.Spacing.sm, height: VegaDesign.Spacing.sm)
                         Text(space.name)
                             .font(VegaDesign.Font.caption)
                             .foregroundStyle(.secondary)
