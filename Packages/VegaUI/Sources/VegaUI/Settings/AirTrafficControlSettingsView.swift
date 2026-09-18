@@ -100,7 +100,7 @@ public struct AirTrafficControlSettingsView: View {
                         // accent dot, so this picker uses the same mark.
                         Circle()
                             .fill(space.accentColor)
-                            .frame(width: VegaDesign.Spacing.sm, height: VegaDesign.Spacing.sm)
+                            .frame(width: VegaDesign.Spacing.md, height: VegaDesign.Spacing.md)
                         Text(space.name)
                             .font(VegaDesign.Font.caption)
                             .foregroundStyle(.secondary)
