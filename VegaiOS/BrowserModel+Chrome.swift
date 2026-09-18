@@ -69,4 +69,15 @@ extension BrowserModel {
     func dismissDialog() {
         dialog = nil
     }
+
+    /// Hands-off checks cannot tap the tabs button, so a Debug launch argument
+    /// opens a sheet for screenshotting:
+    /// `xcrun simctl launch <udid> com.gstudios.vega -VegaOpenSheet tabs`.
+    func openDebugSheetIfRequested() {
+        #if DEBUG
+        guard let name = UserDefaults.standard.string(forKey: "VegaOpenSheet"),
+              let requested = ChromeSheet(rawValue: name) else { return }
+        present(requested)
+        #endif
+    }
 }
