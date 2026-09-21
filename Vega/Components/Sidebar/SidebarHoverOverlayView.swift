@@ -47,6 +47,7 @@ struct SidebarHoverOverlayView: View {
                         .environment(windowState)
                         .environment(commandPalette)
                         .environmentObject(browserManager.gradientColorManager)
+                        .environment(\.vegaInsideGlass, true)
                         .frame(maxHeight: .infinity)
                         .background(Color(.windowBackgroundColor).opacity(0.35))
                         .vegaGlassEffect(in: VegaDesign.Radius.shape(cornerRadius))

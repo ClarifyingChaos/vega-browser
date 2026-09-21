@@ -70,26 +70,6 @@ public struct SplitHalfLabel: View {
                 .environment(tabs)
                 .environment(\.tabActions, actions)
         }
-        .background(backgroundColor)
-        .overlay {
-            if isActive {
-                VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                    .strokeBorder(VegaDesign.Surface.hairline, lineWidth: VegaDesign.Size.hairlineWidth)
-            }
-        }
-    }
-
-    private var isActive: Bool {
-        tabs.selectedItemID(in: windowState) == item.id
-    }
-
-    private var backgroundColor: Color {
-        if isActive {
-            return VegaDesign.Surface.raised
-        } else if isHovering {
-            return VegaDesign.Surface.fill
-        } else {
-            return Color.clear
-        }
+        .background(isHovering ? VegaDesign.Surface.fill : Color.clear)
     }
 }
