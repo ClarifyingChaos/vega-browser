@@ -53,7 +53,7 @@ struct SpaceSwitcherTitle: View {
     private func label(_ space: SpaceRecord) -> some View {
         let isDropTarget = dragSession.isDragging && dragSession.activeZone == .target(.pinned(spaceID: space.id))
         return Text(space.name)
-            .font(VegaDesign.Font.bodyRegular)
+            .font(VegaDesign.Font.label)
             .foregroundStyle(.primary)
             .lineLimit(1)
         .padding(.horizontal, VegaDesign.Spacing.sm)

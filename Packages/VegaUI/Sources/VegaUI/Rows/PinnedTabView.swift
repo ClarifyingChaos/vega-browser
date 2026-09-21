@@ -64,12 +64,12 @@ public struct PinnedTabView<Icon: View>: View {
                         Image(systemName: "arrow.uturn.backward")
                             .font(VegaDesign.Font.caption)
                             .foregroundStyle(.secondary)
-                            .frame(width: VegaDesign.Size.rowButton, height: VegaDesign.Size.rowButton)
+                            .frame(width: VegaDesign.Size.cornerButton, height: VegaDesign.Size.cornerButton)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .help("Reset to Pinned URL")
-                    .padding(VegaDesign.Spacing.xs)
+                    .padding(VegaDesign.Spacing.xxs)
                 }
             }
             .frame(maxWidth: .infinity)
