@@ -34,12 +34,12 @@ struct SidebarMenuDownloadsTab: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .font(VegaDesign.Font.title)
-                    .foregroundStyle(.white.opacity(0.3))
+                    .foregroundStyle(.tertiary)
                     .frame(width: 16, height: 16)
                 TextField("Search downloads...", text: $text)
                     .textFieldStyle(.plain)
                     .font(VegaDesign.Font.secondary)
-                    .foregroundColor(.white.opacity(0.3))
+                    .foregroundStyle(.tertiary)
                     .focused($isSearchFocused)
 
                 if !text.isEmpty {
@@ -57,7 +57,7 @@ struct SidebarMenuDownloadsTab: View {
             .padding(.vertical, 10)
             .frame(height: 38)
             .frame(maxWidth: .infinity)
-            .background(isHovering ? .white.opacity(0.08) : .white.opacity(0.05))
+            .background(isHovering ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill)
             .animation(VegaDesign.Motion.quick, value: isHovering)
             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
             .onHoverTracking { state in
@@ -118,13 +118,13 @@ struct DownloadItem: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(download.suggestedFilename)
                     .font(VegaDesign.Font.body)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
 
                 Text(download.originalURL.absoluteString)
                     .font(VegaDesign.Font.secondary)
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(.tertiary)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -149,11 +149,11 @@ struct DownloadItem: View {
                     Button {} label: {
                         Image(systemName: "ellipsis")
                             .font(VegaDesign.Font.label)
-                            .foregroundColor(.white.opacity(0.6))
+                            .foregroundStyle(.secondary)
                             .frame(width: 16, height: 16)
                     }
                     .padding(8)
-                    .background(isIconHovered ? .white.opacity(0.1) : .clear)
+                    .background(isIconHovered ? VegaDesign.Surface.fillPressed : .clear)
                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -166,7 +166,7 @@ struct DownloadItem: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 12)
-        .background(isHovering ? .white.opacity(0.2) : .clear)
+        .background(isHovering ? VegaDesign.Surface.fillPressed : .clear)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))
         .animation(VegaDesign.Motion.quick, value: isHovering)
         .onHoverTracking { state in

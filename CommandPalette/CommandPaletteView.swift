@@ -274,8 +274,6 @@ struct CommandPaletteView: View {
                         .padding(10)
                         .frame(maxWidth: .infinity)
                         .frame(width: effectiveCommandPaletteWidth)
-                        .background(Color(.windowBackgroundColor).opacity(0.35))
-                        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xxl))
                         .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.xxl))
                         .animation(
                             VegaDesign.Motion.quick,
@@ -377,7 +375,7 @@ struct CommandPaletteView: View {
                             VegaDesign.Radius.shape(VegaDesign.Radius.sm)
                         )
                         .font(VegaDesign.Font.label)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(selectedIndex == index ? .white : .primary)
                         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                         .onHoverTracking { hovering in
                             withAnimation(VegaDesign.Motion.quick) {

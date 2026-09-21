@@ -201,7 +201,7 @@ struct SidebarMenuHoverDownloadItem: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(download.suggestedFilename)
                     .font(VegaDesign.Font.label)
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                     .truncationMode(.middle)
 
@@ -211,11 +211,11 @@ struct SidebarMenuHoverDownloadItem: View {
                             "\(download.formattedDownloadedSize)/\(download.formattedFileSize) • \(download.formattedTimeRemaining)"
                         )
                         .font(VegaDesign.Font.secondary)
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(.secondary)
                     } else {
                         Text(statusText)
                             .font(VegaDesign.Font.secondary)
-                            .foregroundStyle(.white.opacity(0.5))
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
@@ -227,7 +227,7 @@ struct SidebarMenuHoverDownloadItem: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(isHovering ? .white.opacity(0.2) : .clear)
+        .background(isHovering ? VegaDesign.Surface.fillPressed : .clear)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .animation(VegaDesign.Motion.quick, value: isHovering)
         .onHoverTracking { state in

@@ -20,19 +20,19 @@ public struct CopyURLToast: View {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(VegaDesign.Font.secondary)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .frame(width: 14, height: 14)
                     .padding(4)
-                    .background(Color.white.opacity(0.2))
+                    .background(VegaDesign.Surface.fill)
                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                     .overlay {
                         VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                            .stroke(.white.opacity(0.4), lineWidth: 1)
+                            .stroke(VegaDesign.Surface.hairline, lineWidth: 1)
                     }
 
                 Text("Copied Current URL")
                     .font(VegaDesign.Font.secondary)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
             }
         }
         .transition(.toast)
