@@ -67,7 +67,7 @@ struct URLBarView: View {
                             copyURLToClipboard(session.url.absoluteString)
                         }
                         .labelStyle(.iconOnly)
-                        .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.rowButton, radius: VegaDesign.Radius.sm))
+                        .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.iconButton, radius: VegaDesign.Radius.sm))
                         .foregroundStyle(Color.primary)
                         .transition(.opacity.combined(with: .scale(scale: 0.9)))
                         .contentTransition(.symbolEffect(.replace))
@@ -82,7 +82,7 @@ struct URLBarView: View {
                                 .font(VegaDesign.Font.secondary)
                                 .foregroundStyle(textColor.opacity(session.hasPiPActive ? 1.0 : 0.7))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.iconButton, radius: VegaDesign.Radius.sm))
                         .help(session.hasPiPActive ? "Exit Picture in Picture" : "Enter Picture in Picture")
                     }
                     

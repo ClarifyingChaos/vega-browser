@@ -21,11 +21,11 @@ struct ExtensionLibraryButton: View {
     @State private var anchorView: NSView?
 
     var body: some View {
-        Button("Extensions", systemImage: "square.grid.2x2") {
+        Button("More", systemImage: "ellipsis") {
             togglePanel()
         }
         .labelStyle(.iconOnly)
-        .buttonStyle(VegaIconButtonStyle(size: 28, radius: VegaDesign.Radius.lg))
+        .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.iconButton, radius: VegaDesign.Radius.sm))
         .foregroundStyle(Color.primary)
         .background(ButtonAnchorCapture(window: $capturedWindow, anchorView: $anchorView))
         .onChange(of: windowState.isExtensionLibraryVisible) { _, visible in
