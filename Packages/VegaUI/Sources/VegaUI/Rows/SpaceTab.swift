@@ -150,12 +150,10 @@ public struct SpaceTab: View {
                 if isRenaming {
                     VegaDesign.Radius.shape(VegaDesign.Radius.md)
                         .strokeBorder(accentColor, lineWidth: VegaDesign.Size.hairlineWidth)
-                } else if isCurrentTab {
-                    VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                        .strokeBorder(VegaDesign.Surface.hairline, lineWidth: VegaDesign.Size.hairlineWidth)
                 }
             }
             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+            .vegaRowSelection(isCurrentTab)
             .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
         }
         .buttonStyle(PlainButtonStyle())
@@ -195,7 +193,7 @@ public struct SpaceTab: View {
 
     private var backgroundColor: Color {
         if isCurrentTab {
-            return VegaDesign.Surface.raised
+            return Color.clear
         } else if isHovering {
             return VegaDesign.Surface.fill
         } else {

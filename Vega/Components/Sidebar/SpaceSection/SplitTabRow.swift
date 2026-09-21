@@ -30,14 +30,9 @@ struct SplitTabRow: View {
             SplitHalfTab(item: right, zoneID: zoneID)
         }
         .frame(height: VegaDesign.Size.row)
-        .background(isActive ? VegaDesign.Surface.raised : Color.clear)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-        .overlay {
-            if isActive {
-                VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                    .strokeBorder(VegaDesign.Surface.hairline, lineWidth: VegaDesign.Size.hairlineWidth)
-            }
-        }
+        .vegaRowSelection(isActive)
+        .vegaElevation(isActive ? .raised : .flat)
     }
 }
 
