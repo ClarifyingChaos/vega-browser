@@ -116,6 +116,11 @@ DerivedData/
 *.p12
 *.cer
 *.certSigningRequest
+*.pem
+*.key
+*.mobileprovision
+.env
+.env.*
 .worktrees
 
 # repowise index
