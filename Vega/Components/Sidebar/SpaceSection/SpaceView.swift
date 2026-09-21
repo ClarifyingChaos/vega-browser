@@ -198,7 +198,7 @@ struct SpaceView: View {
             SpaceSeparator(
                 isHovering: $isSidebarHovered,
                 onClear: { tabs.close(looseTabs) },
-                onOrganize: vegaSettings.tabOrganizerEnabled ? {
+                onOrganize: vegaSettings.tabOrganizerEnabled && tabOrganizerManager.isAvailable ? {
                     Task {
                         await tabOrganizerManager.organizeTabs(in: spaceID, using: tabs)
                     }
