@@ -16,6 +16,7 @@ public struct SpaceSeparator: View {
     let tabCount: Int
     @State private var isClearHovered: Bool = false
     @State private var isOrganizeHovered: Bool = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         isHovering: Binding<Bool>,
@@ -34,19 +35,33 @@ public struct SpaceSeparator: View {
     public var body: some View {
         let hasTabs = tabCount > 0
         HStack(spacing: 0) {
-            Capsule()
-                .fill(VegaDesign.Surface.hairline)
-                .frame(height: VegaDesign.Size.hairlineWidth)
-                .padding(.horizontal, VegaDesign.Spacing.md)
-                .animation(VegaDesign.Motion.quick, value: isHovering)
+            // The rule itself is the progress indicator: it ripples while the organizer works.
+            TimelineView(.animation(paused: !isWaving)) { timeline in
+                WaveLine(
+                    amplitude: isWaving ? VegaDesign.Size.waveAmplitude : 0,
+                    phase: timeline.date.timeIntervalSinceReferenceDate
+                        .truncatingRemainder(dividingBy: VegaDesign.Motion.wavePeriod)
+                        / VegaDesign.Motion.wavePeriod * 2 * .pi
+                )
+                .stroke(
+                    isWaving ? Color.accentColor : VegaDesign.Surface.hairline,
+                    style: StrokeStyle(lineWidth: VegaDesign.Size.hairlineWidth, lineCap: .round)
+                )
+            }
+            .padding(.horizontal, VegaDesign.Spacing.md)
+            .animation(VegaDesign.Motion.settle, value: isWaving)
+            .animation(VegaDesign.Motion.quick, value: isHovering)
 
             // Organize button (trailing side)
             if hasTabs && tabCount >= 5 && isHovering {
                 if isOrganizing {
-                    ProgressView()
-                        .controlSize(.mini)
-                        .padding(.horizontal, VegaDesign.Spacing.xs)
-                        .transition(.blur.animation(VegaDesign.Motion.quick))
+                    // Reduce Motion keeps the spinner in place of the wave.
+                    if reduceMotion {
+                        ProgressView()
+                            .controlSize(.mini)
+                            .padding(.horizontal, VegaDesign.Spacing.xs)
+                            .transition(.blur.animation(VegaDesign.Motion.quick))
+                    }
                 } else if let onOrganize {
                     Button(action: onOrganize) {
                         HStack(spacing: VegaDesign.Spacing.xs) {
@@ -89,6 +104,38 @@ public struct SpaceSeparator: View {
         }
         .frame(height: VegaDesign.Size.rowGlyph + VegaDesign.Spacing.xxs)
         .frame(maxWidth: .infinity)
+    }
+
+    private var isWaving: Bool { isOrganizing && !reduceMotion }
+}
+
+// MARK: - WaveLine
+
+/// A horizontal rule that bends into a travelling sine wave. Both ends stay pinned to the
+/// centre line, and at amplitude 0 it is a straight hairline.
+private struct WaveLine: Shape {
+    var amplitude: CGFloat
+    var phase: CGFloat
+
+    var animatableData: CGFloat {
+        get { amplitude }
+        set { amplitude = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+        guard amplitude > 0, rect.width > 0 else {
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+            return path
+        }
+        for x in stride(from: CGFloat(0), through: rect.width, by: 2) {
+            let envelope = sin(.pi * x / rect.width)
+            let wave = sin(2 * .pi * x / VegaDesign.Size.waveLength - phase)
+            path.addLine(to: CGPoint(x: rect.minX + x, y: rect.midY + amplitude * envelope * wave))
+        }
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        return path
     }
 }
  
