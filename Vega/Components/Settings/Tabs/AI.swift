@@ -48,6 +48,15 @@ struct SettingsAITab: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    Toggle(isOn: $settings.autoRenamePinnedTabs) {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text("Rename Pinned Tabs")
+                                .font(VegaDesign.Font.body)
+                            Text("Shortens a tab's title when you pin it to a space")
+                                .font(VegaDesign.Font.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             } header: {
                 Text("Tab Organizer")
