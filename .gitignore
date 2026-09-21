@@ -135,6 +135,7 @@ build-release-signed/
 # notes. adblocker-architecture.md is the one committed doc, referenced by the maintainer notes.
 docs/*
 !docs/adblocker-architecture.md
+tasks/
 .superpowers/
 .playwright-mcp/
 build-ios/
