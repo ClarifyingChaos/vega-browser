@@ -13,6 +13,13 @@ struct SplitTabRow: View {
     /// The drop zone the halves drag from.
     let zoneID: DropZoneID
 
+    @Environment(BrowserWindowState.self) private var windowState
+
+    /// The whole row is the selection while the window shows the pair.
+    private var isActive: Bool {
+        windowState.selectedItemID == left.id || windowState.selectedItemID == right.id
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             SplitHalfTab(item: left, zoneID: zoneID)
@@ -23,7 +30,14 @@ struct SplitTabRow: View {
             SplitHalfTab(item: right, zoneID: zoneID)
         }
         .frame(height: VegaDesign.Size.row)
+        .background(isActive ? VegaDesign.Surface.raised : Color.clear)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .overlay {
+            if isActive {
+                VegaDesign.Radius.shape(VegaDesign.Radius.md)
+                    .strokeBorder(VegaDesign.Surface.hairline, lineWidth: VegaDesign.Size.hairlineWidth)
+            }
+        }
     }
 }
 
