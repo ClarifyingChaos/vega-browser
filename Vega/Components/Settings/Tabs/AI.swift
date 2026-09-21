@@ -14,7 +14,6 @@ struct SettingsAITab: View {
     @Environment(\.vegaSettings) var vegaSettings
     @Environment(AIConfigService.self) var configService
     @Environment(MCPManager.self) var mcpManager
-    @Environment(TabOrganizerManager.self) var tabOrganizerManager
 
     @State private var openRouterSearch: String = ""
     @State private var testingConnection: Bool = false
@@ -22,7 +21,6 @@ struct SettingsAITab: View {
     @State private var newMCPServerName: String = ""
     @State private var newMCPServerCommand: String = ""
     @State private var newMCPServerArgs: String = ""
-    @State private var showDownloadConfirmation: Bool = false
     @State private var showAddMCPServer: Bool = false
     @State private var showAddCustomProvider: Bool = false
     @State private var customProviderName: String = ""
@@ -36,104 +34,29 @@ struct SettingsAITab: View {
         Form {
             // MARK: - Tab Organizer
             Section {
-                Toggle(isOn: Binding(
-                    get: { vegaSettings.tabOrganizerEnabled },
-                    set: { newValue in
-                        if newValue && !vegaSettings.tabOrganizerModelDownloaded {
-                            showDownloadConfirmation = true
-                        } else {
-                            vegaSettings.tabOrganizerEnabled = newValue
-                        }
-                    }
-                )) {
-                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
-                        Text("Tab Organizer")
-                            .font(VegaDesign.Font.body)
-                        Text("Uses a small on-device AI model to group, rename, sort, and deduplicate tabs")
-                            .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                if vegaSettings.tabOrganizerEnabled {
-                    if case .downloading(let progress) = tabOrganizerManager.engine.status {
-                        HStack(spacing: VegaDesign.Spacing.md) {
-                            ProgressView(value: progress)
-                                .frame(maxWidth: .infinity)
-                            Text("\(Int(progress * 100))%")
-                                .font(VegaDesign.Font.caption.monospaced())
-                                .foregroundStyle(.secondary)
-                        }
-                        Text("Downloading model (~350 MB)...")
-                            .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.secondary)
-                    } else if case .loading = tabOrganizerManager.engine.status {
-                        HStack(spacing: VegaDesign.Spacing.md) {
-                            ProgressView().controlSize(.small)
-                            Text("Loading model...")
-                                .font(VegaDesign.Font.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    } else if case .error(let message) = tabOrganizerManager.engine.status {
-                        HStack(spacing: VegaDesign.Spacing.md) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
-                                .font(VegaDesign.Font.secondary)
-                            Text(message)
-                                .font(VegaDesign.Font.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Button("Retry Download") {
-                            Task { try? await tabOrganizerManager.engine.ensureDownloaded() }
-                        }
+                if let note = TabOrganizationModel.unavailableNote {
+                    Text(note)
                         .font(VegaDesign.Font.caption)
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    } else if vegaSettings.tabOrganizerModelDownloaded {
-                        HStack(spacing: VegaDesign.Spacing.sm) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                                .font(VegaDesign.Font.secondary)
-                            Text("Model ready")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Toggle(isOn: $settings.tabOrganizerEnabled) {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text("Tab Organizer")
+                                .font(VegaDesign.Font.body)
+                            Text("Uses Apple Intelligence on this Mac to group, rename, sort, and deduplicate tabs")
                                 .font(VegaDesign.Font.caption)
                                 .foregroundStyle(.secondary)
-                            Spacer()
-                            Button("Delete Model") {
-                                tabOrganizerManager.engine.unload()
-                                // TODO: delete cached model files
-                                vegaSettings.tabOrganizerModelDownloaded = false
-                                vegaSettings.tabOrganizerEnabled = false
-                            }
-                            .font(VegaDesign.Font.caption)
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
                         }
                     }
                 }
             } header: {
                 Text("Tab Organizer")
             } footer: {
-                if vegaSettings.tabOrganizerEnabled {
+                if vegaSettings.tabOrganizerEnabled, TabOrganizationModel.unavailableNote == nil {
                     Text("Right-click a space or press \u{2318}\u{21E7}\u{2325}O to organize tabs")
                         .font(VegaDesign.Font.caption)
                         .foregroundStyle(.tertiary)
                 }
-            }
-            .alert("Download AI Model?", isPresented: $showDownloadConfirmation) {
-                Button("Download") {
-                    vegaSettings.tabOrganizerEnabled = true
-                    Task {
-                        do {
-                            try await tabOrganizerManager.engine.ensureDownloaded()
-                            vegaSettings.tabOrganizerModelDownloaded = true
-                        } catch {
-                            vegaSettings.tabOrganizerEnabled = false
-                        }
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Tab Organizer requires a one-time download of a small AI model (~350 MB). The model runs entirely on your device — no data is sent to any server.")
             }
 
             // MARK: - Providers
