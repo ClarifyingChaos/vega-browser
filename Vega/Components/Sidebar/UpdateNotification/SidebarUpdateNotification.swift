@@ -53,7 +53,7 @@ struct SidebarUpdateNotification: View {
                 VStack(spacing: 0) {
                     Text("New version of Vega available")
                         .font(VegaDesign.Font.secondary)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.primary)
                         .offset(y: isExpanded ? -25 : 0)
                         .zIndex(2)
 
@@ -93,10 +93,7 @@ struct SidebarUpdateNotification: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(
-                    VegaDesign.Radius.shape(VegaDesign.Radius.lg)
-                        .fill(Color.gray.opacity(0.2))
-                )
+                .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
                 .frame(maxWidth: .infinity)
                 .onHoverTracking { hovering in
                     isHovering = hovering
