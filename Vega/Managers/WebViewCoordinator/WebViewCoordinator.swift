@@ -194,9 +194,9 @@ class WebViewCoordinator {
         webView.stopLoading()
         let controller = webView.configuration.userContentController
         let handlerNames = [
-            "linkHover", "commandHover", "commandClick", "pipStateChange",
+            "linkHover", "commandHover", "pipStateChange",
             "mediaStateChange_\(itemID.uuidString)", "backgroundColor_\(itemID.uuidString)",
-            "historyStateDidChange", "VegaIdentity", "vegaShortcutDetect",
+            "historyStateDidChange", "vegaShortcutDetect",
         ]
         for name in handlerNames {
             controller.removeScriptMessageHandler(forName: name)
