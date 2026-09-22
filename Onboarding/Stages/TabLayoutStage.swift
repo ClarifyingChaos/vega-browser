@@ -7,6 +7,7 @@
 //
 
 import VegaSettings
+import VegaDesign
 import SwiftUI
 
 struct TabLayoutStage: View {
@@ -34,9 +35,9 @@ struct TabLayoutStage: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 180, height: 140)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 8)
+                        VegaDesign.Radius.shape(VegaDesign.Radius.md)
                             .stroke(.black.opacity(0.2), lineWidth: selectedLayout == layout ? 4 : 0)
                     }
                     .animation(.easeInOut(duration: 0.1), value: selectedLayout == layout)

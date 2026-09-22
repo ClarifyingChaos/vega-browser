@@ -24,18 +24,18 @@ struct SidebarMenuTab: View {
         VStack(spacing: 8) {
             Image(systemName: isActive ? activeImage : image)
                 .font(VegaDesign.Font.titleLarge)
-                .foregroundStyle(isActive ? .green : .white)
+                .foregroundStyle(isActive ? .green : .primary)
                 .symbolRenderingMode(.hierarchical)
                 .symbolEffect(.wiggle, value: shouldWiggle)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
 
             Text(title)
                 .font(VegaDesign.Font.secondary)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
         }
         .frame(height: 80)
         .frame(maxWidth: .infinity)
-        .background(isActive ?.white.opacity(0.1) : isHovering ? .white.opacity(0.05) : .clear)
+        .background(isActive ? VegaDesign.Surface.fillPressed : isHovering ? VegaDesign.Surface.fill : .clear)
         .animation(VegaDesign.Motion.quick, value: isHovering)
         .animation(VegaDesign.Motion.standard, value: isActive)
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))

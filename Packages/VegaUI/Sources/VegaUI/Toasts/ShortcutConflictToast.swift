@@ -36,14 +36,14 @@ public struct ShortcutConflictToast: View {
                 // Keyboard icon
                 Image(systemName: "keyboard")
                     .font(VegaDesign.Font.body)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .frame(width: 18, height: 18)
                     .padding(5)
-                    .background(Color.white.opacity(0.2))
+                    .background(VegaDesign.Surface.fill)
                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
                     .overlay {
                         VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                            .stroke(.white.opacity(0.4), lineWidth: 1)
+                            .stroke(VegaDesign.Surface.hairline, lineWidth: 1)
                     }
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -51,23 +51,23 @@ public struct ShortcutConflictToast: View {
                     HStack(spacing: 4) {
                         Text(shortcut)
                             .font(VegaDesign.Font.secondary)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                         Text("used by")
                             .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(.secondary)
                         Text(websiteName)
                             .font(VegaDesign.Font.secondary)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                     }
                     
                     // Subtitle: press again for Vega
                     HStack(spacing: 4) {
                         Text("Press again for")
                             .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.white.opacity(0.7))
+                            .foregroundStyle(.secondary)
                         Text(vegaActionName)
                             .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.white.opacity(0.9))
+                            .foregroundStyle(.primary)
                     }
                 }
             }

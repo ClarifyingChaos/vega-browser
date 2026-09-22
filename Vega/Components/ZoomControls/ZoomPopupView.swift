@@ -29,15 +29,15 @@ struct ZoomPopupView: View {
             }) {
                 Image(systemName: "minus")
                     .font(VegaDesign.Font.secondary)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.primary)
                     .frame(width: 28, height: 28)
                     .background(
                         VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                            .fill(.white.opacity(0.15))
+                            .fill(VegaDesign.Surface.fill)
                     )
                     .overlay(
                         VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                            .stroke(.white.opacity(0.3), lineWidth: 1)
+                            .stroke(VegaDesign.Surface.hairline, lineWidth: 1)
                     )
             }
             .buttonStyle(PlainButtonStyle())
@@ -50,16 +50,16 @@ struct ZoomPopupView: View {
             }) {
                 Text(zoomManager.getZoomPercentageDisplay())
                     .font(VegaDesign.Font.label)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.primary)
                     .frame(minWidth: 50, maxHeight: 28)
                     .padding(.horizontal, 8)
                     .background(
                         VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                            .fill(.white.opacity(0.2))
+                            .fill(VegaDesign.Surface.fillPressed)
                     )
                     .overlay(
                         VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                            .stroke(.white.opacity(0.4), lineWidth: 1)
+                            .stroke(VegaDesign.Surface.hairline, lineWidth: 1)
                     )
             }
             .buttonStyle(PlainButtonStyle())
@@ -71,15 +71,15 @@ struct ZoomPopupView: View {
             }) {
                 Image(systemName: "plus")
                     .font(VegaDesign.Font.secondary)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.primary)
                     .frame(width: 28, height: 28)
                     .background(
                         VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                            .fill(.white.opacity(0.15))
+                            .fill(VegaDesign.Surface.fill)
                     )
                     .overlay(
                         VegaDesign.Radius.shape(VegaDesign.Radius.sm)
-                            .stroke(.white.opacity(0.3), lineWidth: 1)
+                            .stroke(VegaDesign.Surface.hairline, lineWidth: 1)
                     )
             }
             .buttonStyle(PlainButtonStyle())
@@ -87,24 +87,7 @@ struct ZoomPopupView: View {
         }
         .padding(12)
         .frame(maxWidth: 160)
-        .background(
-            VegaDesign.Radius.shape(VegaDesign.Radius.lg)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: "2A3A1F"),
-                            Color(hex: "1F2A17")
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            VegaDesign.Radius.shape(VegaDesign.Radius.lg)
-                .stroke(.white.opacity(0.2), lineWidth: 1)
-        )
-        .vegaElevation(.floating)
+        .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .scaleEffect(isVisible ? 1.0 : 0.8)
         .opacity(isVisible ? 1.0 : 0.0)
         .animation(VegaDesign.Motion.spring, value: isVisible)

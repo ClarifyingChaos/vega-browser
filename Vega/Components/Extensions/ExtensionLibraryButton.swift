@@ -5,8 +5,6 @@
 //
 
 import SwiftUI
-import AppKit
-import os
 import VegaDesign
 import VegaWeb
 import VegaUI
@@ -15,93 +13,14 @@ struct ExtensionLibraryButton: View {
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(BrowserWindowState.self) private var windowState
 
-    private static let logger = Logger(subsystem: "com.vega.browser", category: "ExtensionLibraryButton")
-
-    @State private var capturedWindow: NSWindow?
-    @State private var anchorView: NSView?
-
     var body: some View {
-        Button("Extensions", systemImage: "square.grid.2x2") {
-            togglePanel()
+        Button("More", systemImage: "ellipsis") {
+            windowState.isExtensionLibraryVisible.toggle()
         }
         .labelStyle(.iconOnly)
-        .buttonStyle(VegaIconButtonStyle(size: 28, radius: VegaDesign.Radius.lg))
+        .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.iconButton, radius: VegaDesign.Radius.sm))
         .foregroundStyle(Color.primary)
-        .background(ButtonAnchorCapture(window: $capturedWindow, anchorView: $anchorView))
-        .onChange(of: windowState.isExtensionLibraryVisible) { _, visible in
-            if !visible && panelController.isVisible {
-                panelController.dismiss()
-            }
-        }
-        .onChange(of: windowState.selectedItemID) { _, _ in
-            if panelController.isVisible {
-                panelController.dismiss()
-                windowState.isExtensionLibraryVisible = false
-            }
-        }
-    }
-
-    private var panelController: ExtensionLibraryPanelController {
-        if windowState.extensionLibraryPanelController == nil {
-            windowState.extensionLibraryPanelController = ExtensionLibraryPanelController()
-        }
-        return windowState.extensionLibraryPanelController!
-    }
-
-    private func togglePanel() {
-        guard let window = capturedWindow ?? windowState.window,
-              let settings = browserManager.vegaSettings else {
-            Self.logger.error("Early return — no window or settings")
-            return
-        }
-
-        windowState.isExtensionLibraryVisible.toggle()
-
-        if windowState.isExtensionLibraryVisible {
-            // Get anchor frame from the button's parent view in window coordinates
-            // The anchorView itself is zero-sized; its superview is the button's frame
-            let anchor: CGRect
-            if let view = anchorView, let superview = view.superview {
-                let buttonFrame = superview.convert(superview.bounds, to: nil) // nil = window coordinates
-                anchor = buttonFrame
-            } else {
-                // Last resort fallback
-                let contentFrame = window.contentView?.bounds ?? window.frame
-                anchor = CGRect(x: contentFrame.maxX - 50, y: contentFrame.maxY, width: 50, height: 40)
-            }
-
-            Self.logger.info("Opening panel — anchor=\(anchor.debugDescription, privacy: .public)")
-
-            panelController.show(
-                anchorFrame: anchor,
-                in: window,
-                browserManager: browserManager,
-                windowState: windowState,
-                settings: settings
-            )
-        } else {
-            panelController.dismiss()
-        }
-    }
-}
-
-// MARK: - Button Anchor Capture
-
-/// Captures the NSWindow and NSView from the SwiftUI view hierarchy for positioning.
-private struct ButtonAnchorCapture: NSViewRepresentable {
-    @Binding var window: NSWindow?
-    @Binding var anchorView: NSView?
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        view.setFrameSize(.zero)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async {
-            self.window = nsView.window
-            self.anchorView = nsView
-        }
+        // The overlay in WindowView hangs off this frame.
+        .anchorPreference(key: ExtensionLibraryAnchorKey.self, value: .bounds) { $0 }
     }
 }
