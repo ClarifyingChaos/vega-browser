@@ -68,8 +68,7 @@ struct SpacesSideBarView: View {
         return VStack(spacing: VegaDesign.Spacing.sectionGap) {
             // Space title: shares the traffic-light row on the left, its own row on the right.
             if vegaSettings.sidebarPosition != .left {
-                spaceSwitcherTitle
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                titleRow
                     .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
             }
 
@@ -134,9 +133,10 @@ struct SpacesSideBarView: View {
         .padding(.top, vegaSettings.sidebarPosition == .left ? VegaDesign.Spacing.sidebarTop : VegaDesign.Spacing.sidebarInset)
         .overlay(alignment: .topLeading) {
             if vegaSettings.sidebarPosition == .left {
-                spaceSwitcherTitle
+                titleRow
                     .frame(height: VegaDesign.Spacing.sidebarTop)
                     .padding(.leading, VegaDesign.Spacing.trafficLights)
+                    .padding(.trailing, VegaDesign.Spacing.sidebarInset)
             }
         }
         .padding(.bottom, VegaDesign.Spacing.sidebarInset)
@@ -358,6 +358,20 @@ struct SpacesSideBarView: View {
             .environmentObject(browserManager.splitManager)
             .id(space.id.uuidString + "-w\(Int(windowState.sidebarContentWidth))")
             Spacer()
+        }
+    }
+
+    /// The space name, then back, forward and reload unless the URL bar mode has them.
+    private var titleRow: some View {
+        HStack(spacing: 0) {
+            spaceSwitcherTitle
+                .layoutPriority(1)
+            Spacer(minLength: 0)
+            if !vegaSettings.topBarAddressView {
+                SidebarHistoryButtons()
+                    .environmentObject(browserManager)
+                    .environment(windowState)
+            }
         }
     }
 
