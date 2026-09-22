@@ -104,6 +104,12 @@ struct SpacesSideBarView: View {
                 .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
                 .padding(.bottom, VegaDesign.Spacing.sidebarInset)
 
+            SidebarWhatsNewCard()
+                .environmentObject(browserManager)
+                .environment(windowState)
+                .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
+                .padding(.bottom, VegaDesign.Spacing.sidebarInset)
+
             // Video left playing in another tab, directly above the media controls
             SidebarPiPView()
                 .environmentObject(browserManager)
