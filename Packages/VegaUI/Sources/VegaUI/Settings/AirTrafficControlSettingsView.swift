@@ -31,7 +31,6 @@ public struct AirTrafficControlSettingsView: View {
                     ForEach(vegaSettings.siteRoutingRules) { rule in
                         ruleRow(rule)
                     }
-                    .onDelete(perform: deleteRules)
                 }
             } header: {
                 Text("Rules")
@@ -76,16 +75,26 @@ public struct AirTrafficControlSettingsView: View {
         let space = tabs.space(rule.targetSpaceId)
 
         return LabeledContent {
-            Toggle("Enabled", isOn: Binding(
-                get: { rule.isEnabled },
-                set: { newValue in
-                    var updated = rule
-                    updated.isEnabled = newValue
-                    siteRouting?.updateRule(updated)
+            HStack(spacing: VegaDesign.Spacing.md) {
+                Toggle("Enabled", isOn: Binding(
+                    get: { rule.isEnabled },
+                    set: { newValue in
+                        var updated = rule
+                        updated.isEnabled = newValue
+                        siteRouting?.updateRule(updated)
+                    }
+                ))
+                .toggleStyle(.switch)
+                .labelsHidden()
+
+                Button {
+                    siteRouting?.deleteRule(id: rule.id)
+                } label: {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundStyle(.red)
                 }
-            ))
-            .toggleStyle(.switch)
-            .labelsHidden()
+                .buttonStyle(.plain)
+            }
         } label: {
             VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
                 HStack(spacing: VegaDesign.Spacing.xs) {
@@ -119,12 +128,6 @@ public struct AirTrafficControlSettingsView: View {
         }
     }
 
-    private func deleteRules(at offsets: IndexSet) {
-        for index in offsets {
-            let rule = vegaSettings.siteRoutingRules[index]
-            siteRouting?.deleteRule(id: rule.id)
-        }
-    }
 }
 
 // MARK: - Add/Edit Sheet
