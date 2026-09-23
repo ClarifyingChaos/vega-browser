@@ -29,13 +29,13 @@ public extension View {
         self.glassEffect(.regular.tint(tint), in: .circle)
     }
 
-    /// The selected sidebar row. Branch-free (`.identity` when idle) so view identity is stable
-    /// and the change animates.
-    func vegaRowSelection(_ isSelected: Bool) -> some View {
-        modifier(SidebarGlass(isOn: isSelected, shape: VegaDesign.Radius.shape(VegaDesign.Radius.md)))
+    /// The selected sidebar row or pinned tile. Branch-free (`.identity` when idle) so view
+    /// identity is stable and the change animates.
+    func vegaRowSelection(_ isSelected: Bool, radius: CGFloat = VegaDesign.Radius.md) -> some View {
+        modifier(SidebarGlass(isOn: isSelected, shape: VegaDesign.Radius.shape(radius)))
     }
 
-    /// A button group in the sidebar's title row (back, forward, reload).
+    /// A sidebar chrome control or group: history, sidebar and AI toggles, bottom bar buttons.
     func vegaControlGlass<S: InsettableShape>(in shape: S) -> some View {
         modifier(SidebarGlass(isOn: true, shape: shape))
     }

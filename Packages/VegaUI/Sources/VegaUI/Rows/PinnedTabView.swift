@@ -52,11 +52,6 @@ public struct PinnedTabView<Icon: View>: View {
                 tabIcon
                     .frame(height: VegaDesign.Size.essentialsFavicon)
                     .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
-
-                if isActive {
-                    VegaDesign.Radius.shape(VegaDesign.Radius.lg)
-                        .strokeBorder(VegaDesign.Surface.hairline, lineWidth: VegaDesign.Size.hairlineWidth)
-                }
             }
             .overlay(alignment: .topTrailing) {
                 if hasLeftPinnedURL && isHovered {
@@ -76,6 +71,7 @@ public struct PinnedTabView<Icon: View>: View {
             .frame(height: VegaDesign.Size.essentialsTile)
             .frame(minWidth: VegaDesign.Size.essentialsTile)
             .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+            .vegaRowSelection(isActive, radius: VegaDesign.Radius.lg)
             .vegaElevation(isActive ? .raised : .flat)
         }
         .buttonStyle(.plain)
@@ -85,7 +81,8 @@ public struct PinnedTabView<Icon: View>: View {
     }
 
     //MARK: - Colors
+    /// Clear when selected: the glass is the surface, and a fill in front of it would flatten it.
     private var backgroundColor: Color {
-        isActive ? VegaDesign.Surface.raised : (isHovered ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill)
+        isActive ? .clear : (isHovered ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill)
     }
 }

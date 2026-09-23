@@ -49,22 +49,23 @@ struct SidebarWindowControlsView: View {
     @Environment(\.vegaSettings) var vegaSettings
 
     var body: some View {
-        HStack(spacing: VegaDesign.Spacing.md) {
-            Button("Toggle Sidebar", systemImage: vegaSettings.sidebarPosition == .left ? "sidebar.left" : "sidebar.right") {
-                browserManager.toggleSidebar(for: windowState)
+        HStack(spacing: 0) {
+            // One glass pill, the way the system groups neighbouring toolbar buttons.
+            HStack(spacing: 0) {
+                Button("Toggle Sidebar", systemImage: vegaSettings.sidebarPosition == .left ? "sidebar.left" : "sidebar.right") {
+                    browserManager.toggleSidebar(for: windowState)
+                }
+
+                if vegaSettings.showAIAssistant {
+                    Button("Toggle AI Assistant", systemImage: "sparkle") {
+                        browserManager.toggleAISidebar(for: windowState)
+                    }
+                }
             }
             .labelStyle(.iconOnly)
-            .buttonStyle(VegaIconButtonStyle())
+            .buttonStyle(VegaIconButtonStyle(radius: VegaDesign.Size.iconButton / 2))
             .foregroundStyle(Color.primary)
-
-            if vegaSettings.showAIAssistant {
-                Button("Toggle AI Assistant", systemImage: "sparkle") {
-                    browserManager.toggleAISidebar(for: windowState)
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(VegaIconButtonStyle())
-                .foregroundStyle(Color.primary)
-            }
+            .vegaControlGlass(in: Capsule())
 
             Spacer()
         }

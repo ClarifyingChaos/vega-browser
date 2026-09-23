@@ -49,8 +49,9 @@ struct SidebarBottomBar: View {
                 onMenuTap()
             }
             .labelStyle(.iconOnly)
-            .buttonStyle(VegaIconButtonStyle())
+            .buttonStyle(VegaIconButtonStyle(radius: VegaDesign.Size.iconButton / 2))
             .foregroundStyle(Color.primary)
+            .vegaControlGlass(in: Circle())
             .onHoverTracking { isHovered in
                 isMenuButtonHovered = isHovered
                 onMenuHover(isHovered)
@@ -83,7 +84,8 @@ struct SidebarBottomBar: View {
                 .labelStyle(.iconOnly)
         }
         .menuStyle(.button)
-        .buttonStyle(VegaIconButtonStyle())
+        .buttonStyle(VegaIconButtonStyle(radius: VegaDesign.Size.iconButton / 2))
         .foregroundStyle(Color.primary)
+        .vegaControlGlass(in: Circle())
     }
 }
