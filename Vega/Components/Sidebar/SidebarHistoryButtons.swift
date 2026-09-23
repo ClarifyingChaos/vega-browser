@@ -37,10 +37,8 @@ struct SidebarHistoryButtons: View {
             }
         }
         // Dividers take any height offered; the group is the buttons' height.
-        .frame(height: VegaDesign.Size.iconButton)
-        .labelStyle(.iconOnly)
-        .buttonStyle(VegaIconButtonStyle(radius: VegaDesign.Size.iconButton / 2))
-        .vegaControlGlass(in: Capsule())
+        .frame(height: VegaDesign.Size.glassControl)
+        .vegaGlassControls(in: Capsule())
     }
 
     private var divider: some View {

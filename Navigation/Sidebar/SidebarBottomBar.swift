@@ -48,10 +48,7 @@ struct SidebarBottomBar: View {
             Button("Menu", systemImage: "archivebox") {
                 onMenuTap()
             }
-            .labelStyle(.iconOnly)
-            .buttonStyle(VegaIconButtonStyle(radius: VegaDesign.Size.iconButton / 2))
-            .foregroundStyle(Color.primary)
-            .vegaControlGlass(in: Circle())
+            .vegaGlassControls(in: Circle())
             .onHoverTracking { isHovered in
                 isMenuButtonHovered = isHovered
                 onMenuHover(isHovered)
@@ -81,11 +78,8 @@ struct SidebarBottomBar: View {
             }
         } label:{
             Label("Actions", systemImage: "plus")
-                .labelStyle(.iconOnly)
         }
         .menuStyle(.button)
-        .buttonStyle(VegaIconButtonStyle(radius: VegaDesign.Size.iconButton / 2))
-        .foregroundStyle(Color.primary)
-        .vegaControlGlass(in: Circle())
+        .vegaGlassControls(in: Circle())
     }
 }

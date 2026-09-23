@@ -11,13 +11,14 @@ import VegaDesign
 import VegaWeb
 import VegaUI
 
-/// Header section of the sidebar (window controls, URL bar). Back, forward and reload sit in the
-/// title row above it.
+/// Header section of the sidebar (window controls and space name, URL bar). Back, forward and
+/// reload sit in the title row above it.
 struct SidebarHeader: View {
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(\.vegaSettings) var vegaSettings
     let isSidebarHovered: Bool
+    let onNewSpace: () -> Void
 
     var body: some View {
         VStack(spacing: VegaDesign.Spacing.sectionGap) {
@@ -30,7 +31,7 @@ struct SidebarHeader: View {
     }
 
     private var windowControls: some View {
-        SidebarWindowControlsView()
+        SidebarWindowControlsView(onNewSpace: onNewSpace)
             .environmentObject(browserManager)
             .environment(windowState)
             .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
@@ -43,10 +44,12 @@ struct SidebarHeader: View {
 }
 
 // MARK: - Sidebar Window Controls
+/// The sidebar and AI toggles, with the space name at the trailing edge.
 struct SidebarWindowControlsView: View {
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(\.vegaSettings) var vegaSettings
+    let onNewSpace: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
@@ -62,14 +65,15 @@ struct SidebarWindowControlsView: View {
                     }
                 }
             }
-            .labelStyle(.iconOnly)
-            .buttonStyle(VegaIconButtonStyle(radius: VegaDesign.Size.iconButton / 2))
-            .foregroundStyle(Color.primary)
-            .vegaControlGlass(in: Capsule())
+            .vegaGlassControls(in: Capsule())
 
-            Spacer()
+            Spacer(minLength: 0)
+
+            // Gives way before the pill: a long name fades out.
+            SpaceSwitcherTitle(onNewSpace: onNewSpace)
+                .layoutPriority(1)
         }
-        .frame(height: VegaDesign.Size.navRow)
+        .frame(height: VegaDesign.Size.glassControl)
         .background(DoubleClickView { NSApp.keyWindow?.performZoom(nil) })
     }
 }
