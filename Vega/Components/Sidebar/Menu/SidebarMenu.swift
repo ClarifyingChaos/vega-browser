@@ -11,12 +11,12 @@ import VegaDesign
 import VegaWeb
 import VegaUI
 
-typealias Tabs = SidebarMenuTab
-
 struct SidebarMenu: View {
     @Environment(BrowserWindowState.self) private var windowState
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(\.vegaSettings) var vegaSettings
+
+    private let tabColumnWidth: CGFloat = 110
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
@@ -44,7 +44,7 @@ struct SidebarMenu: View {
         VStack {
 
             Spacer()
-            VStack(spacing: 20) {
+            VStack(spacing: VegaDesign.Spacing.xxl) {
                 SidebarMenuTab(
                     image: "clock",
                     activeImage: "clock.fill",
@@ -75,16 +75,14 @@ struct SidebarMenu: View {
                         windowState.sidebarContentWidth = max(restoredWidth - 16, 0)
                     }
                 }
-                .labelStyle(.iconOnly)
-                .buttonStyle(VegaIconButtonStyle())
-                .foregroundStyle(Color.primary)
+                .vegaGlassControls(in: Circle())
                 Spacer()
             }
-            .padding(.leading, 8)
-            .padding(.bottom, 8)
+            .padding(.leading, VegaDesign.Spacing.md)
+            .padding(.bottom, VegaDesign.Spacing.md)
         }
-        .padding(8)
-        .frame(width: 110)
+        .padding(VegaDesign.Spacing.md)
+        .frame(width: tabColumnWidth)
         .frame(maxHeight: .infinity)
         .background(VegaDesign.Surface.fill)
     }

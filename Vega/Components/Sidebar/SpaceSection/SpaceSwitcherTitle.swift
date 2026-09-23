@@ -63,13 +63,7 @@ struct SpaceSwitcherTitle: View {
             title
             title
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                .mask {
-                    HStack(spacing: 0) {
-                        Color.black
-                        LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
-                            .frame(width: VegaDesign.Spacing.titleFade)
-                    }
-                }
+                .vegaTrailingFade()
         }
         .padding(.horizontal, VegaDesign.Spacing.sm)
         .frame(height: VegaDesign.Size.row)

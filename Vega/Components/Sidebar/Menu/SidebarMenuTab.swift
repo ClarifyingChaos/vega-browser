@@ -20,8 +20,23 @@ struct SidebarMenuTab: View {
     @State private var isHovering: Bool = false
     @State private var shouldWiggle: Bool = false
 
+    private let height: CGFloat = 80
+
     var body: some View {
-        VStack(spacing: 8) {
+        Button {
+            action()
+            shouldWiggle.toggle()
+        } label: {
+            label
+        }
+        .buttonStyle(.plain)
+        .onHoverTracking { state in
+            isHovering = state
+        }
+    }
+
+    private var label: some View {
+        VStack(spacing: VegaDesign.Spacing.md) {
             Image(systemName: isActive ? activeImage : image)
                 .font(VegaDesign.Font.titleLarge)
                 .foregroundStyle(isActive ? .green : .primary)
@@ -33,18 +48,13 @@ struct SidebarMenuTab: View {
                 .font(VegaDesign.Font.secondary)
                 .foregroundStyle(.primary)
         }
-        .frame(height: 80)
+        .frame(height: height)
         .frame(maxWidth: .infinity)
-        .background(isActive ? VegaDesign.Surface.fillPressed : isHovering ? VegaDesign.Surface.fill : .clear)
+        // The chosen tab is glass, like the selected sidebar row, so it takes no fill of its own.
+        .background(!isActive && isHovering ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+        .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+        .vegaRowSelection(isActive, radius: VegaDesign.Radius.xl)
         .animation(VegaDesign.Motion.quick, value: isHovering)
         .animation(VegaDesign.Motion.standard, value: isActive)
-        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))
-        .onHoverTracking { state in
-            isHovering = state
-        }
-        .onTapGesture {
-            action()
-            shouldWiggle.toggle()
-        }
     }
 }
