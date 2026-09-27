@@ -74,6 +74,5 @@ struct SidebarWindowControlsView: View {
                 .layoutPriority(1)
         }
         .frame(height: VegaDesign.Size.glassControl)
-        .background(DoubleClickView { NSApp.keyWindow?.performZoom(nil) })
     }
 }
