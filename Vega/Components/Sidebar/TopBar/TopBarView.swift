@@ -30,20 +30,11 @@ struct TopBarView: View {
     var body: some View {
         let cornerRadius: CGFloat = vegaSettings.hideWebContentBorder ? 0 : VegaDesign.Radius.md
 
-        let currentTab = browserManager.tabs.selectedSession(in: windowState)
-        let hasPiPControl =
-            currentTab?.hasVideoContent == true
-            || currentTab?.hasPiPActive == true
-
         ZStack {
             // Main content
             ZStack {
                 HStack(spacing: 8) {
                     navigationControls
-
-                    if hasPiPControl, let tab = currentTab {
-                        pipButton(for: tab)
-                    }
 
                     urlBar
 
@@ -470,26 +461,6 @@ struct TopBarView: View {
             titlePart.foregroundColor = urlBarTextColor.opacity(0.35)
             return (AttributedString(cleanHost), titlePart)
         }
-    }
-
-    private func pipButton(for tab: PageSession) -> some View {
-        Button(action: {
-            tab.requestPictureInPicture()
-        }) {
-            Image(
-                systemName: tab.hasPiPActive
-                    ? "pip.exit" : "pip.enter"
-            )
-            .font(VegaDesign.Font.secondary)
-            .foregroundStyle(urlBarTextColor)
-            .animation(
-                shouldAnimateColorChange ? VegaDesign.Motion.standard : nil,
-                value: urlBarTextColor
-            )
-            .frame(width: 16, height: 16)
-            .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
