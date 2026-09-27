@@ -24,6 +24,12 @@ public extension View {
             .vegaElevation(.floating)
     }
 
+    /// Controls over video, as in the system PiP window: clear glass bends the picture rather
+    /// than frosting it, and reacts to the pointer.
+    func vegaMediaGlass<S: Shape>(in shape: S) -> some View {
+        glassEffect(.clear.interactive(), in: shape)
+    }
+
     @ViewBuilder
     func vegaClearGlassEffect(tint: Color) -> some View {
         self.glassEffect(.regular.tint(tint), in: .circle)
