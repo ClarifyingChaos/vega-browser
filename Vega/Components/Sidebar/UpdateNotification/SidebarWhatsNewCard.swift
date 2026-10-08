@@ -58,7 +58,7 @@ struct SidebarWhatsNewCard: View {
                     .padding(VegaDesign.Spacing.xs)
                 }
             }
-            .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
             .onHoverTracking { isHovering = $0 }
             .animation(VegaDesign.Motion.quick, value: isHovering)
             .transition(.opacity.combined(with: .move(edge: .bottom)))

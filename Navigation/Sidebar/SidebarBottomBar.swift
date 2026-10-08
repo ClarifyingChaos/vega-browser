@@ -50,7 +50,7 @@ struct SidebarBottomBar: View {
             }
             // A finished download bounces the button its icon flew into.
             .symbolEffect(.bounce, value: browserManager.downloadManager.completedCount)
-            .vegaGlassControls(in: Circle())
+            .vegaIconButtons()
             .anchorPreference(key: DownloadsButtonAnchorKey.self, value: .bounds) { $0 }
             .onHoverTracking { isHovered in
                 isMenuButtonHovered = isHovered
@@ -83,6 +83,6 @@ struct SidebarBottomBar: View {
             Label("Actions", systemImage: "plus")
         }
         .menuStyle(.button)
-        .vegaGlassControls(in: Circle())
+        .vegaIconButtons()
     }
 }

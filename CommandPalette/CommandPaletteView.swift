@@ -274,7 +274,7 @@ struct CommandPaletteView: View {
                         .padding(10)
                         .frame(maxWidth: .infinity)
                         .frame(width: effectiveCommandPaletteWidth)
-                        .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.xxl))
+                        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xxl))
                         .animation(
                             VegaDesign.Motion.quick,
                             value: searchManager.suggestions.count

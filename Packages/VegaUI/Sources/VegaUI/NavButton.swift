@@ -50,26 +50,25 @@ public struct VegaIconButtonStyle: ButtonStyle {
 }
 
 public extension View {
-    /// Icon buttons as sidebar glass chrome: toolbar-sized, round hover fills, large symbols.
-    func vegaGlassControls<S: InsettableShape>(in shape: S) -> some View {
+    /// Standalone icon buttons, Vega's one button look: no container, a fill only on hover.
+    func vegaIconButtons() -> some View {
         labelStyle(.iconOnly)
-            .imageScale(.large)
-            .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.glassControl, radius: VegaDesign.Size.glassControl / 2))
-            .vegaControlGlass(in: shape)
+            .buttonStyle(VegaIconButtonStyle())
+            .foregroundStyle(.primary)
     }
 }
 
 /// Rectangular, labeled variant of VegaIconButtonStyle that allows custom widths
 /// Use this for buttons that need to be wider than square (e.g., "New Space" button)
-struct RectNavButtonStyle: ButtonStyle {
+public struct RectNavButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.isEnabled) var isEnabled
     @Environment(\.controlSize) var controlSize
     @State private var isHovering: Bool = false
 
-    init() {}
+    public init() {}
 
-    func makeBody(configuration: Configuration) -> some View {
+    public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(.primary)
             .padding(.horizontal, horizontalPadding)

@@ -87,7 +87,7 @@ struct ZoomPopupView: View {
         }
         .padding(12)
         .frame(maxWidth: 160)
-        .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .scaleEffect(isVisible ? 1.0 : 0.8)
         .opacity(isVisible ? 1.0 : 0.0)
         .animation(VegaDesign.Motion.spring, value: isVisible)

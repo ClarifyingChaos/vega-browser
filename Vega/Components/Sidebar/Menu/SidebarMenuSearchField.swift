@@ -7,7 +7,7 @@
 import SwiftUI
 import VegaDesign
 
-/// The history and downloads search field: a glass capsule the height of the sidebar's controls.
+/// The history and downloads search field: a filled squircle the height of the sidebar's controls.
 struct SidebarMenuSearchField: View {
     let prompt: LocalizedStringKey
     @Binding var text: String
@@ -36,10 +36,10 @@ struct SidebarMenuSearchField: View {
             }
         }
         .padding(.horizontal, VegaDesign.Spacing.lg)
-        .frame(height: VegaDesign.Size.glassControl)
+        .frame(height: VegaDesign.Size.chromeControl)
         .frame(maxWidth: .infinity)
-        .contentShape(Capsule())
+        .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .onTapGesture { isFocused = true }
-        .vegaControlGlass(in: Capsule())
+        .vegaControlSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
     }
 }

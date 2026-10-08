@@ -32,8 +32,8 @@ struct SidebarMenuHoverDownloads: View {
             }
         }
         .padding(VegaDesign.Spacing.xs)
-        // The recent downloads card that opens above the bottom bar on hover.
-        .vegaControlGlass(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+        // The recent downloads card that opens over the tab list on hover.
+        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
         .onAppear {
             updateItemsVisible(count: downloads.count)

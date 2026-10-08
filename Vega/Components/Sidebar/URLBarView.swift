@@ -99,12 +99,12 @@ struct URLBarView: View {
                 }
                 .padding(.horizontal, VegaDesign.Spacing.rowPadding)
         }
-        .frame(maxWidth: .infinity, minHeight: VegaDesign.Size.glassControl, maxHeight: VegaDesign.Size.glassControl)
+        .frame(maxWidth: .infinity, minHeight: VegaDesign.Size.chromeControl, maxHeight: VegaDesign.Size.chromeControl)
         .overlay(alignment: .bottom) {
             PageLoadingProgressBar(session: session)
         }
-        .clipShape(Capsule())
-        .vegaControlGlass(in: Capsule())
+        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .vegaControlSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
         // Report the frame in the window space so we can overlay the mini palette above all content
         .background(
             GeometryReader { proxy in

@@ -75,7 +75,7 @@ struct SidebarMenu: View {
                         windowState.sidebarContentWidth = max(restoredWidth - 16, 0)
                     }
                 }
-                .vegaGlassControls(in: Circle())
+                .vegaIconButtons()
                 Spacer()
             }
             .padding(.leading, VegaDesign.Spacing.md)

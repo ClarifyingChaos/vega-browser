@@ -727,7 +727,7 @@ final class SidebarPiPCropView: NSView {
 
 // MARK: - Controls
 
-/// The system PiP window's controls: glass circles at its sizes, scaled down below a 300pt-wide
+/// The system PiP window's controls: scrim squircles at its sizes, scaled down below a 300pt-wide
 /// player. Close sends the video back to its tab still playing, which the media bar then holds.
 private struct PiPControls: View {
     weak var controller: SidebarPiPController?
@@ -751,9 +751,9 @@ private struct PiPControls: View {
                 }
 
                 HStack {
-                    button("Close", "xmark", VegaDesign.Size.glassControl * scale, action: onClose)
+                    button("Close", "xmark", VegaDesign.Size.chromeControl * scale, action: onClose)
                     Spacer()
-                    button(corner.label, corner.symbol, VegaDesign.Size.glassControl * scale, action: corner.action)
+                    button(corner.label, corner.symbol, VegaDesign.Size.chromeControl * scale, action: corner.action)
                 }
                 .padding(VegaDesign.Spacing.sm * scale)
                 .frame(maxHeight: .infinity, alignment: .top)
@@ -776,11 +776,11 @@ private struct PiPControls: View {
                 .font(.system(size: diameter * 0.4, weight: .semibold))
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: diameter, height: diameter)
-                .contentShape(Circle())
+                .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         }
         .buttonStyle(.plain)
         .foregroundStyle(.white)
-        .vegaMediaGlass(in: Circle())
+        .vegaMediaControl(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .help(label)
         .accessibilityLabel(label)
         .background(GeometryReader {

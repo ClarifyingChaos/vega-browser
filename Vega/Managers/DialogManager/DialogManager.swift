@@ -173,7 +173,7 @@ struct DialogCard<Content: View>: View {
         content
             .padding(VegaDesign.Spacing.xl)
             .frame(maxWidth: VegaDesign.Size.dialogMaxWidth, alignment: .leading)
-            .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
     }
 }
 
@@ -236,7 +236,6 @@ struct DialogHeader: View {
             ZStack {
                 Circle()
                     .fill(gradientColorManager.accentColor.opacity(0.1))
-                    .vegaClearGlassEffect(tint: gradientColorManager.accentColor.opacity(0.2))
                     .frame(width: 48, height: 48)
 
                 Image(systemName: icon)

@@ -93,7 +93,7 @@ struct SidebarUpdateNotification: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+                .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
                 .frame(maxWidth: .infinity)
                 .onHoverTracking { hovering in
                     isHovering = hovering

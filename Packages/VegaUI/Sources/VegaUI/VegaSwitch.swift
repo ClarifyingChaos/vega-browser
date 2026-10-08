@@ -12,7 +12,7 @@ import VegaDesign
 /// A switch that shows its on state regardless of window emphasis. AppKit draws `.switch` in a
 /// non-key window unemphasized, so a system toggle inside a floating panel reads as grey and off.
 /// Panels stay non-key on purpose: a key borderless panel gets a heavier window shadow that cuts
-/// a hard edge around its glass.
+/// a hard edge around its card.
 public struct VegaSwitchToggleStyle: ToggleStyle {
     private let trackWidth: CGFloat = 38
     private let trackHeight: CGFloat = 22

@@ -47,9 +47,9 @@ struct SidebarHoverOverlayView: View {
                         .environment(windowState)
                         .environment(commandPalette)
                         .environmentObject(browserManager.gradientColorManager)
-                        .environment(\.vegaInsideGlass, true)
                         .frame(maxHeight: .infinity)
-                        .vegaGlassEffect(in: VegaDesign.Radius.shape(cornerRadius))
+                        .background(sidebarBackground)
+                        .vegaFloatingSurface(in: VegaDesign.Radius.shape(cornerRadius))
                         .alwaysArrowCursor()
                         .padding(vegaSettings.sidebarPosition == .left ? .leading : .trailing, horizontalInset)
                         .padding(.vertical, verticalInset)
@@ -62,5 +62,12 @@ struct SidebarHoverOverlayView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: vegaSettings.sidebarPosition == .left ? .topLeading : .topTrailing)
             // Container remains passive; only overlay/hotspot intercept
         }
+    }
+
+    /// The docked sidebar's own background, so the overlay reads as the same sidebar.
+    private var sidebarBackground: some View {
+        let accent = windowState.isIncognito ? SpaceGradient.incognito.primaryColor : browserManager.gradientColorManager.accentColor
+        return VegaDesign.Surface.containerGradient(accent: accent, isActive: true)
+            .overlay(windowState.isIncognito ? VegaDesign.Surface.privateTint : Color.clear)
     }
 }

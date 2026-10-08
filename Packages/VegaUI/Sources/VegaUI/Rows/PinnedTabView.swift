@@ -81,7 +81,7 @@ public struct PinnedTabView<Icon: View>: View {
     }
 
     //MARK: - Colors
-    /// Clear when selected: the glass is the surface, and a fill in front of it would flatten it.
+    /// Clear when selected: `vegaRowSelection` draws the raised surface.
     private var backgroundColor: Color {
         isActive ? .clear : (isHovered ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill)
     }

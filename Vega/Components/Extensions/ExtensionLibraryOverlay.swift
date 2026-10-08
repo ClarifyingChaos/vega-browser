@@ -19,9 +19,8 @@ struct ExtensionLibraryAnchorKey: PreferenceKey {
 }
 
 /// The extension library and its overflow menu, drawn inside the window rather than in an
-/// `NSPanel`. Only the key window renders the active Liquid Glass appearance, so a panel is
-/// always foggy, and a key panel gets a heavier window shadow that squares off at its own edge.
-/// In-window has neither problem and needs no event monitors to dismiss.
+/// `NSPanel`: a key panel gets a heavier window shadow that squares off at its own edge, and
+/// in-window needs no event monitors to dismiss.
 struct ExtensionLibraryOverlay: View {
     let anchor: Anchor<CGRect>?
 
@@ -53,7 +52,7 @@ struct ExtensionLibraryOverlay: View {
                             onShowMoreMenu: { isShowingMoreMenu.toggle() }
                         )
                         .frame(width: menuWidth)
-                        .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+                        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
 
                         if isShowingMoreMenu {
                             MoreMenuView(
@@ -61,7 +60,7 @@ struct ExtensionLibraryOverlay: View {
                                 windowState: windowState,
                                 onDismiss: { isShowingMoreMenu = false }
                             )
-                            .vegaGlassEffect(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+                            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
                             .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)))
                         }
                     }

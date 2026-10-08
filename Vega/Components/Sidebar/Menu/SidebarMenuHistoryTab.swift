@@ -59,7 +59,7 @@ struct SidebarMenuHistoryTab: View {
                 .padding(.horizontal, VegaDesign.Spacing.md)
                 .padding(.bottom, VegaDesign.Spacing.md)
         }
-        // The rows scroll under the search field and filters, which float as glass with the
+        // The rows scroll under the search field and filters, which float as filled controls with the
         // system's soft blur at the edge behind them, the way a macOS 26 toolbar does.
         .safeAreaBar(edge: .top, spacing: 0) {
             header
@@ -87,7 +87,6 @@ struct SidebarMenuHistoryTab: View {
                 Button {
                     isShowingFilters.toggle()
                 } label: {
-                    // Always glass, like the search field beside it: both float over the list.
                     HStack(spacing: VegaDesign.Spacing.xs) {
                         Image(systemName: isShowingFilters ? "line.horizontal.3.decrease.circle.fill" : "line.horizontal.3.decrease.circle")
                             .font(VegaDesign.Font.title)
@@ -96,9 +95,9 @@ struct SidebarMenuHistoryTab: View {
                     }
                     .foregroundStyle(isShowingFilters || isFiltersHovered ? .primary : .secondary)
                     .padding(.horizontal, VegaDesign.Spacing.lg)
-                    .frame(height: VegaDesign.Size.glassControl)
-                    .contentShape(Capsule())
-                    .vegaControlGlass(in: Capsule())
+                    .frame(height: VegaDesign.Size.chromeControl)
+                    .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+                    .background(isShowingFilters || isFiltersHovered ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
                 }
                 .buttonStyle(.plain)
                 .animation(VegaDesign.Motion.quick, value: isShowingFilters)
@@ -450,14 +449,12 @@ struct FiltersSelectView: View {
     }
 }
 
-/// A filter chip. Every chip is glass, since the row floats over the list; the chosen one is
-/// tinted with the space's accent.
+/// A filter chip: a fill on hover, the selected row's surface when chosen.
 struct FiltersSelectButton: View {
     var text: String
     var isActive: Bool
     var action: () -> Void
 
-    @EnvironmentObject var gradientColorManager: GradientColorManager
     @State private var isHovering: Bool = false
 
     var body: some View {
@@ -470,8 +467,9 @@ struct FiltersSelectButton: View {
                 .lineLimit(1)
                 .padding(.horizontal, VegaDesign.Spacing.lg)
                 .frame(height: VegaDesign.Size.iconButton)
-                .contentShape(Capsule())
-                .vegaControlGlass(tint: isActive ? gradientColorManager.accentColor : nil, in: Capsule())
+                .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+                .background(!isActive && isHovering ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+                .vegaRowSelection(isActive)
         }
         .buttonStyle(.plain)
         .animation(VegaDesign.Motion.quick, value: isHovering)

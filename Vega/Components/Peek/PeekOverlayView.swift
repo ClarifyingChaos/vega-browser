@@ -86,31 +86,26 @@ struct PeekOverlayView: View {
         }
     }
 
-    /// Close, split and new tab as one glass group, like the sidebar's history buttons.
+    /// Close, split and new tab: standalone icon buttons on one floating card, readable over any page.
     private var actionButtons: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: VegaDesign.Spacing.xxs) {
             Button(action: { peek.dismissPeek() }) {
                 Image(systemName: "xmark")
             }
-            divider
             // Disabled while the window is already split.
             Button(action: { peek.moveToSplitView() }) {
                 Image(systemName: "square.split.2x1")
             }
             .disabled(!peek.canEnterSplitView)
-            divider
             Button(action: { peek.moveToNewTab() }) {
                 Image(systemName: "plus.square.on.square")
             }
         }
-        // Dividers take any width offered; the group is the buttons' width.
-        .frame(width: VegaDesign.Size.glassControl)
-        .vegaGlassControls(in: Capsule())
+        .vegaIconButtons()
+        .padding(VegaDesign.Spacing.xxs)
+        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
     }
 
-    private var divider: some View {
-        Divider().padding(.horizontal, VegaDesign.Spacing.sm)
-    }
 
     // MARK: - Layout Calculation
 

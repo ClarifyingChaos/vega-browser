@@ -3,7 +3,7 @@
 //  SplitPaneView.swift
 //  Vega
 //
-//  One pane of the split view: the page, with glass controls floating over it. The compositor keeps
+//  One pane of the split view: the page, with controls floating over it. The compositor keeps
 //  panes across refreshes so a web view never leaves its superview while the pair holds.
 //
 
@@ -113,14 +113,14 @@ private struct SplitPaneTitle: View {
             }
             .padding(.horizontal, VegaDesign.Spacing.rowPadding)
             .frame(height: VegaDesign.Size.navRow)
-            .contentShape(Capsule())
+            .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
             .onTapGesture { tabs.select(itemID, in: windowState) }
-            .vegaGlassEffect(in: Capsule())
+            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
         }
     }
 }
 
-/// Separate and close, floating at the pane's top trailing corner in one glass capsule.
+/// Separate and close, floating at the pane's top trailing corner in one group.
 private struct SplitPaneButtons: View {
     let itemID: UUID
 
@@ -139,7 +139,7 @@ private struct SplitPaneButtons: View {
         }
         .padding(.horizontal, VegaDesign.Spacing.xs)
         .frame(height: VegaDesign.Size.navRow)
-        .vegaGlassEffect(in: Capsule())
+        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
     }
 }
 
