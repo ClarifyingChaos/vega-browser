@@ -84,7 +84,9 @@ public final class AdvancedRulesEngine {
             + "window.__vegaCosmeticConfig = \(json);\n"
             + "window.__vegaRedirects = \(redirects);"
         if let scriptlets, !scriptlets.isEmpty {
-            source += "\nif(!window.__vegaScriptletsRan){window.__vegaScriptletsRan=true;try{\n\(scriptlets)\n}catch(e){}}"
+            // uBO's library reads a `scriptletGlobals` object its own injector defines; without it
+            // prevent-xhr and each page's first scriptlet throw. The function keeps helpers off `window`.
+            source += "\nif(!window.__vegaScriptletsRan){window.__vegaScriptletsRan=true;try{(function(){const scriptletGlobals={};\n\(scriptlets)\n})()}catch(e){}}"
         }
         return WKUserScript(
             source: source,
