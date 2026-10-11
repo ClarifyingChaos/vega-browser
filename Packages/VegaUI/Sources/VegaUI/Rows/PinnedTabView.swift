@@ -58,7 +58,7 @@ public struct PinnedTabView<Icon: View>: View {
                     Button(action: onResetToPinnedURL) {
                         Image(systemName: "arrow.uturn.backward")
                             .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.primary)
                             .frame(width: VegaDesign.Size.cornerButton, height: VegaDesign.Size.cornerButton)
                             .contentShape(Rectangle())
                     }
