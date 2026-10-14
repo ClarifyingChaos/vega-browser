@@ -684,6 +684,20 @@ class BrowserManager: ObservableObject {
         }
     }
 
+    /// Opens the right column on a dev tab, or closes it when that tab is already showing.
+    func toggleDevPanel(_ tab: DevPanelTab) {
+        guard vegaSettings?.developerModeEnabled == true, let windowState = windowRegistry?.activeWindow else { return }
+        withAnimation(VegaDesign.Motion.standard) {
+            if windowState.isSidebarAIChatVisible, windowState.devPanelTab == tab {
+                windowState.isSidebarAIChatVisible = false
+            } else {
+                windowState.devPanelTab = tab
+                windowState.isSidebarAIChatVisible = true
+                windowState.isSidebarMenuVisible = false
+            }
+        }
+    }
+
     func toggleAISidebar(for windowState: BrowserWindowState) {
         guard vegaSettings?.showAIAssistant == true else { return }
 
