@@ -58,7 +58,8 @@ struct SpaceView: View {
 
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: VegaDesign.Spacing.sectionGap) {
-                if !pinned.isEmpty {
+                // An empty pinned section shows a drop slot only while a drag is on.
+                if !pinned.isEmpty || dragSession.isDragging {
                     sectionList(.pinned(spaceID: spaceID), rows: pinned, split: split, showsTail: false)
                         .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
                 }
@@ -68,7 +69,7 @@ struct SpaceView: View {
                     sectionList(.tabs(spaceID: spaceID), rows: regular, split: split, showsTail: true)
                 }
             }
-            .animation(VegaDesign.Motion.standard, value: pinned.isEmpty)
+            .animation(VegaDesign.Motion.standard, value: pinned.isEmpty && !dragSession.isDragging)
             .frame(minWidth: 0, maxWidth: innerWidth, alignment: .leading)
         }
         .contentShape(Rectangle())
@@ -114,6 +115,10 @@ struct SpaceView: View {
                     }
                 }
 
+                if allRows.isEmpty, !showsTail {
+                    emptySectionSlot(isActive: dragSession.activeZone == zone)
+                }
+
                 if showsTail {
                     Color.clear
                         .contentShape(Rectangle())
@@ -132,6 +137,15 @@ struct SpaceView: View {
                 }
             }
         }
+    }
+
+    private func emptySectionSlot(isActive: Bool) -> some View {
+        VegaDesign.Radius.shape(VegaDesign.Radius.md)
+            .strokeBorder(style: StrokeStyle(lineWidth: VegaDesign.Size.hairlineWidth, dash: [VegaDesign.Spacing.sm, VegaDesign.Spacing.xs]))
+            .foregroundStyle(isActive ? VegaDesign.Surface.dropBorderActive : VegaDesign.Surface.dropBorderIdle)
+            .background(VegaDesign.Radius.shape(VegaDesign.Radius.md).fill(isActive ? VegaDesign.Surface.fillPressed : Color.clear))
+            .frame(height: VegaDesign.Size.row)
+            .animation(VegaDesign.Motion.quick, value: isActive)
     }
 
     /// Leading inset of a drop line. The overlay spans the row including its depth padding.
