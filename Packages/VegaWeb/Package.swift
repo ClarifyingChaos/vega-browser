@@ -28,6 +28,7 @@ let package = Package(
                 .product(name: "VegaTweaks", package: "VegaTweaks"),
                 .product(name: "FaviconFinder", package: "FaviconFinder"),
             ],
+            resources: [.copy("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

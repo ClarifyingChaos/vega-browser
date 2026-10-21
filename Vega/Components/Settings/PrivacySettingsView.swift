@@ -104,6 +104,10 @@ struct PrivacySettingsView: View {
                     .onChange(of: vegaSettings.blockCrossSiteTracking) { _, enabled in
                         browserManager.contentBlockerManager.setEnabled(enabled)
                     }
+                Toggle("Search Page Text in History", isOn: $settings.searchPageTextInHistory)
+                    .onChange(of: vegaSettings.searchPageTextInHistory) { _, enabled in
+                        if !enabled { browserManager.historyManager.erasePageText() }
+                    }
             }
 
             Section("Website Data") {
