@@ -74,6 +74,17 @@ public struct SpaceTab: View {
                 ItemFavicon(item: item, session: session)
                     .frame(width: VegaDesign.Size.favicon, height: VegaDesign.Size.favicon)
                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
+                    .overlay(alignment: .bottomTrailing) {
+                        // The agent's tabs, and the person's tabs an agent drove in the last 30 s.
+                        if windowState.isAgent || tabs.agentTouched.contains(item.id) {
+                            Image(systemName: "sparkle")
+                                .font(VegaDesign.Font.micro)
+                                .foregroundStyle(.primary)
+                                .padding(VegaDesign.Spacing.xxs / 2)
+                                .background(.background, in: Circle())
+                                .offset(x: VegaDesign.Spacing.xs, y: VegaDesign.Spacing.xs)
+                        }
+                    }
                 if let session, session.hasAudioContent || session.hasPlayingAudio || session.isAudioMuted {
                     Button(action: { session.toggleMute() }) {
                         Image(systemName: session.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")

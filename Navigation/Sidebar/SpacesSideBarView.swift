@@ -114,6 +114,13 @@ struct SpacesSideBarView: View {
                 .environmentObject(browserManager)
                 .environment(windowState)
 
+            if !windowState.isAgent, let agent = tabs.agentWindow, !tabs.displayOrder(in: agent).isEmpty {
+                AgentWindowRow(tabCount: tabs.displayOrder(in: agent).count, busy: tabs.agentCallsInFlight > 0) {
+                    browserManager.setAgentWindowShown(!browserManager.isAgentWindowShown)
+                }
+                .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
+            }
+
             // Media controls. Hides itself while the video is showing above it.
             MediaControlsView()
                 .environmentObject(browserManager)
@@ -427,5 +434,38 @@ struct SpacesSideBarView: View {
     private var menuTransition: AnyTransition {
         .move(edge: vegaSettings.sidebarPosition == .left ? .leading : .trailing)
             .combined(with: .opacity)
+    }
+}
+
+/// The DevMCP agent's window, while it has tabs: a click shows or hides it, and the icon
+/// pulses while a tool call runs.
+private struct AgentWindowRow: View {
+    let tabCount: Int
+    let busy: Bool
+    let toggle: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: VegaDesign.Spacing.md) {
+                Image(systemName: "sparkle")
+                    .font(.system(size: VegaDesign.Size.rowGlyph, weight: .medium))
+                    .frame(width: VegaDesign.Size.favicon)
+                    .symbolEffect(.pulse, isActive: busy)
+                Text("Agent · \(tabCount) \(tabCount == 1 ? "tab" : "tabs")")
+                    .font(VegaDesign.Font.body)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(isHovering ? .secondary : .tertiary)
+            .padding(.horizontal, VegaDesign.Spacing.rowPadding)
+            .frame(height: VegaDesign.Size.row)
+            .background(isHovering ? VegaDesign.Surface.fill : Color.clear)
+            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+            .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        }
+        .buttonStyle(.plain)
+        .onHoverTracking { hovering in
+            withAnimation(VegaDesign.Motion.quick) { isHovering = hovering }
+        }
     }
 }
