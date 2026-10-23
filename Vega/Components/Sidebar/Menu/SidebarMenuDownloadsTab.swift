@@ -54,11 +54,10 @@ struct SidebarMenuDownloadsTab: View {
             .padding(.bottom, VegaDesign.Spacing.md)
         }
         // Rows scroll under the floating search field, as in the history tab.
-        .safeAreaBar(edge: .top, spacing: 0) {
+        .vegaScrollHeader {
             SidebarMenuSearchField(prompt: "Search downloads...", text: $text)
                 .padding(VegaDesign.Spacing.md)
         }
-        .scrollEdgeEffectStyle(.soft, for: .top)
     }
 }
 

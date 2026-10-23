@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "VegaUI",
-    platforms: [.macOS("26.0"), .iOS("26.0")],
+    platforms: [.macOS("15.5"), .iOS("26.0")],
     products: [
         .library(name: "VegaUI", targets: ["VegaUI"]),
     ],
