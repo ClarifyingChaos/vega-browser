@@ -139,13 +139,6 @@ struct SidebarAIChat: View {
 
     private var headerView: some View {
         HStack(spacing: 8) {
-            Button("Close", systemImage: "xmark") {
-                withAnimation(VegaDesign.Motion.standard) {
-                    windowState.isSidebarAIChatVisible = false
-                }
-            }
-            .vegaIconButtons()
-
             if !aiService.messages.isEmpty {
                 Text("Ask Vega")
                     .font(VegaDesign.Font.title)
@@ -163,6 +156,14 @@ struct SidebarAIChat: View {
                     showClearMessagesDialog()
                 }
                 .disabled(aiService.messages.isEmpty)
+                // With Developer Mode on, the panel's tab bar has the close button.
+                if !vegaSettings.developerModeEnabled {
+                    Button("Close", systemImage: "xmark") {
+                        withAnimation(VegaDesign.Motion.standard) {
+                            windowState.isSidebarAIChatVisible = false
+                        }
+                    }
+                }
             }
             .vegaIconButtons()
         }

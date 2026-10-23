@@ -69,14 +69,12 @@ struct DevPanelColumn: View {
                 .buttonStyle(.plain)
             }
             Spacer()
-            if selectedTab != .agent {
-                Button("Close", systemImage: "xmark") {
-                    withAnimation(VegaDesign.Motion.standard) {
-                        windowState.isSidebarAIChatVisible = false
-                    }
+            Button("Close", systemImage: "xmark") {
+                withAnimation(VegaDesign.Motion.standard) {
+                    windowState.isSidebarAIChatVisible = false
                 }
-                .vegaIconButtons()
             }
+            .vegaIconButtons()
         }
         .padding(.horizontal, VegaDesign.Spacing.md)
         .padding(.top, VegaDesign.Spacing.md)
