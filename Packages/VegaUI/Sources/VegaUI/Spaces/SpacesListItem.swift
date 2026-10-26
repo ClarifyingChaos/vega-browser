@@ -81,7 +81,7 @@ struct SpacesListItem: View {
             Image(systemName: "sparkles")
                 .font(.system(size: VegaDesign.Size.spaceIcon, weight: .semibold))
                 .foregroundStyle(VegaDesign.Surface.agentGradient)
-                .opacity(isActive ? 1 : VegaDesign.Surface.agentIconInactiveOpacity)
+                .opacity(VegaDesign.Surface.agentIconInactiveOpacity + (1 - VegaDesign.Surface.agentIconInactiveOpacity) * selection)
                 .animation(VegaDesign.Motion.standard, value: isActive)
         } else {
             plainDot
