@@ -12,12 +12,9 @@ import VegaSettings
 import SwiftUI
 
 private struct VegaSettingsServiceKey: EnvironmentKey {
+    // SwiftUI reads the default even where the real service is injected; build it once.
     @MainActor
-    static var defaultValue: VegaSettingsService {
-        // Never reached in either app: both targets inject the real service at
-        // the root. EnvironmentKey requires a default, so this is it.
-        return VegaSettingsService()
-    }
+    static let defaultValue = VegaSettingsService()
 }
 
 extension EnvironmentValues {
