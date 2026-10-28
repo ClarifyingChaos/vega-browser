@@ -21,9 +21,16 @@ public struct PinnedTabView<Icon: View>: View {
     var onResetToPinnedURL: () -> Void = {}
     /// The space theme's tile colors, as in Arc. Nil falls back to the neutral fills.
     var colors: SpaceTheme.TileColors?
+    /// Host whose blurred favicon glows behind the tile. Nil for neutral tiles.
+    var glowHost: String?
+    /// The window is inactive.
+    var isDimmed: Bool = false
     var action: () -> Void
 
     @State private var isHovered: Bool = false
+    @State private var glow: CGImage?
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     public init(
         tabName: String,
@@ -34,6 +41,8 @@ public struct PinnedTabView<Icon: View>: View {
         hasLeftPinnedURL: Bool = false,
         onResetToPinnedURL: @escaping () -> Void = {},
         colors: SpaceTheme.TileColors? = nil,
+        glowHost: String? = nil,
+        isDimmed: Bool = false,
         action: @escaping () -> Void
     ) {
         self.tabName = tabName
@@ -44,6 +53,8 @@ public struct PinnedTabView<Icon: View>: View {
         self.hasLeftPinnedURL = hasLeftPinnedURL
         self.onResetToPinnedURL = onResetToPinnedURL
         self.colors = colors
+        self.glowHost = glowHost
+        self.isDimmed = isDimmed
         self.action = action
     }
 
@@ -53,9 +64,23 @@ public struct PinnedTabView<Icon: View>: View {
                 VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                     .fill(backgroundColor)
                     .animation(VegaDesign.Motion.quick, value: isHovered)
+                if let glow, colors != nil {
+                    glowImage(glow)
+                        .opacity(VegaDesign.Surface.favoriteGlowOpacity(dark: colorScheme == .dark, hovered: isHovered, dimmed: isDimmed))
+                        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+                        .allowsHitTesting(false)
+                }
                 if isActive, let colors {
-                    VegaDesign.Radius.shape(VegaDesign.Radius.lg)
-                        .strokeBorder(Color(colors.selectedBorder), lineWidth: VegaDesign.Size.favoriteBorder)
+                    if let glow, !isDimmed {
+                        glowImage(glow)
+                            .mask(VegaDesign.Radius.shape(VegaDesign.Radius.lg)
+                                .strokeBorder(Color.black, lineWidth: VegaDesign.Size.favoriteBorder))
+                            .allowsHitTesting(false)
+                    } else {
+                        VegaDesign.Radius.shape(VegaDesign.Radius.lg)
+                            .strokeBorder(Color(colors.selectedBorder).opacity(isDimmed ? VegaDesign.Surface.favoriteDimmedBorderOpacity : 1),
+                                          lineWidth: VegaDesign.Size.favoriteBorder)
+                    }
                 }
 
                 tabIcon
@@ -86,13 +111,27 @@ public struct PinnedTabView<Icon: View>: View {
         .onHoverTracking { hovering in
             self.isHovered = hovering
         }
+        .task(id: wantsGlow ? glowHost : nil) {
+            glow = nil
+            guard wantsGlow, let glowHost else { return }
+            glow = await FaviconGlow.shared.image(forHost: glowHost)
+        }
+    }
+
+    private var wantsGlow: Bool { colors != nil && !reduceTransparency }
+
+    private func glowImage(_ image: CGImage) -> some View {
+        Image(decorative: image, scale: VegaDesign.Size.favoriteGlowScale)
+            .resizable()
+            .scaledToFill()
     }
 
     //MARK: - Colors
     /// Unthemed and selected: clear, since `vegaRowSelection` draws the raised surface.
     private var backgroundColor: Color {
         if let colors {
-            return Color(isActive ? colors.selectedFill : (isHovered ? colors.hoverFill : colors.fill))
+            if isActive { return VegaDesign.Surface.favoriteSelectedFill(dark: colorScheme == .dark, dimmed: isDimmed) }
+            return Color(isHovered ? colors.hoverFill : colors.fill)
         }
         return isActive ? .clear : (isHovered ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill)
     }
