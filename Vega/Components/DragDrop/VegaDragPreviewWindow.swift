@@ -60,8 +60,8 @@ final class VegaDragPreviewWindow: NSWindow {
         let rowWidth = sourceWasTile
             ? manager.sidebarScreenFrame.width - VegaDesign.Spacing.sidebarInset * 2
             : manager.sourceRowFrame.width
-        let cardWidth = isTile ? VegaDesign.Size.essentialsTile : max(VegaDesign.Size.iconButton, rowWidth)
-        let cardHeight = isTile ? VegaDesign.Size.essentialsTile : VegaDesign.Tab.height
+        let cardWidth = isTile ? VegaDesign.Size.favoriteTile : max(VegaDesign.Size.iconButton, rowWidth)
+        let cardHeight = isTile ? VegaDesign.Size.favoriteTile : VegaDesign.Tab.height
         let grabFraction = manager.sourceRowFrame.width > 0 ? manager.grabOffset.x / manager.sourceRowFrame.width : 0.5
         // Follow both pointer axes, including inside the sidebar. Drop targets choose
         // the insertion slot; they must never pin the floating card to the sidebar edge.
