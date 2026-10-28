@@ -6,6 +6,8 @@
 
 import SwiftUI
 import AppKit
+import VegaTabsCore
+import VegaWeb
 
 // MARK: - Drag Source Coordinator (NSDraggingSource)
 
@@ -14,6 +16,9 @@ final class VegaDragSourceCoordinator: NSObject, NSDraggingSource {
     var item: VegaDragItem
     var icon: Image?
     var zoneID: DropZoneID
+    var theme: SpaceTheme?
+    var accent: Color = .gray
+    var colorScheme: ColorScheme = .light
     let manager: VegaDragSessionManager
 
     init(item: VegaDragItem, icon: Image?, zoneID: DropZoneID, manager: VegaDragSessionManager) {
@@ -36,9 +41,7 @@ final class VegaDragSourceCoordinator: NSObject, NSDraggingSource {
     }
 
     func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
-        if operation == [] {
-            manager.cancelDrag()
-        }
+        manager.nativeDragEnded()
     }
 }
 
@@ -61,7 +64,7 @@ final class VegaDragSourceNSView: NSView {
         registrationId = nil
     }
 
-    func initiateDrag(with event: NSEvent) {
+    func initiateDrag(with event: NSEvent, mouseDownEvent: NSEvent?) {
         guard let coordinator = coordinator else { return }
 
         // Capture screen position from the event for preview window positioning
@@ -76,7 +79,13 @@ final class VegaDragSourceNSView: NSView {
             item: coordinator.item,
             icon: coordinator.icon,
             from: coordinator.zoneID,
-            cursorScreenPoint: screenPoint
+            cursorScreenPoint: screenPoint,
+            grabScreenPoint: mouseDownEvent.flatMap { window?.convertPoint(toScreen: $0.locationInWindow) } ?? screenPoint,
+            sourceFrame: window?.convertToScreen(convert(bounds, to: nil)) ?? .zero,
+            window: window,
+            theme: coordinator.theme,
+            accent: coordinator.accent,
+            colorScheme: coordinator.colorScheme
         )
 
         let pasteboardItem = NSPasteboardItem()
@@ -104,10 +113,16 @@ private struct DragSourceAnchor: NSViewRepresentable {
     let icon: Image?
     let zoneID: DropZoneID
     let manager: VegaDragSessionManager
+    let theme: SpaceTheme?
+    let accent: Color
+    let colorScheme: ColorScheme
 
     func makeNSView(context: Context) -> VegaDragSourceNSView {
         let view = VegaDragSourceNSView()
         view.coordinator = context.coordinator
+        context.coordinator.theme = theme
+        context.coordinator.accent = accent
+        context.coordinator.colorScheme = colorScheme
         view.registerWithManager()
         return view
     }
@@ -116,6 +131,9 @@ private struct DragSourceAnchor: NSViewRepresentable {
         context.coordinator.item = item
         context.coordinator.icon = icon
         context.coordinator.zoneID = zoneID
+        context.coordinator.theme = theme
+        context.coordinator.accent = accent
+        context.coordinator.colorScheme = colorScheme
     }
 
     static func dismantleNSView(_ nsView: VegaDragSourceNSView, coordinator: VegaDragSourceCoordinator) {
@@ -135,6 +153,13 @@ struct VegaDragSourceView<Content: View>: View {
     let zoneID: DropZoneID
     let manager: VegaDragSessionManager
     @ViewBuilder let content: () -> Content
+    @Environment(TabsController.self) private var tabs
+    @Environment(BrowserWindowState.self) private var windowState
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var space: SpaceRecord? {
+        windowState.isIncognito ? nil : windowState.spaceID.flatMap { tabs.space($0) }
+    }
 
     var body: some View {
         content()
@@ -143,7 +168,10 @@ struct VegaDragSourceView<Content: View>: View {
                     item: item,
                     icon: icon,
                     zoneID: zoneID,
-                    manager: manager
+                    manager: manager,
+                    theme: space?.theme,
+                    accent: space?.accentColor ?? .gray,
+                    colorScheme: colorScheme
                 )
             )
     }

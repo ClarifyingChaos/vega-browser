@@ -50,6 +50,14 @@ public struct VegaIconButtonStyle: ButtonStyle {
 }
 
 public extension View {
+    /// Larger navigation and footer symbols, without changing tab or URL-bar controls.
+    func vegaSidebarIconButtons() -> some View {
+        labelStyle(.iconOnly)
+            .font(.system(size: VegaDesign.SidebarChrome.icon, weight: .regular))
+            .buttonStyle(VegaIconButtonStyle(size: VegaDesign.SidebarChrome.button))
+            .foregroundStyle(.primary)
+    }
+
     /// Standalone icon buttons, Vega's one button look: no container, a fill only on hover.
     func vegaIconButtons() -> some View {
         labelStyle(.iconOnly)

@@ -58,7 +58,7 @@ public struct TabFolderView: View {
 
                 if isRenaming {
                     TextField("", text: $draftName)
-                        .font(VegaDesign.Font.label)
+                        .font(VegaDesign.Tab.font)
                         .foregroundStyle(.primary)
                         .textFieldStyle(PlainTextFieldStyle())
                         .autocorrectionDisabled()
@@ -71,7 +71,7 @@ public struct TabFolderView: View {
                         .onEscapeKey { cancelRename() }
                 } else {
                     Text(item.displayTitle)
-                        .font(VegaDesign.Font.label)
+                        .font(VegaDesign.Tab.font)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -102,16 +102,12 @@ public struct TabFolderView: View {
                 }
             }
             .padding(.horizontal, VegaDesign.Spacing.rowPadding)
-            .frame(height: VegaDesign.Size.row)
+            .frame(height: VegaDesign.Tab.height)
             .frame(maxWidth: .infinity)
-            .background(
-                VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                    .fill(isDropTarget ? VegaDesign.Surface.fillPressed : (isHovering ? VegaDesign.Surface.fill : Color.clear))
-            )
-            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+            .vegaTabSurface(selected: isDropTarget, hovered: isHovering)
         }
-        .buttonStyle(PlainButtonStyle())
-        .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .buttonStyle(VegaTabButtonStyle())
+        .padding(.vertical, VegaDesign.Tab.verticalInset)
         .onHoverTracking { hovering in
             withAnimation(VegaDesign.Motion.quick) {
                 isHovering = hovering

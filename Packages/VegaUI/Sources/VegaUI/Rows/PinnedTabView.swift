@@ -8,6 +8,7 @@
 
 import SwiftUI
 import VegaDesign
+import VegaTabsCore
 
 public struct PinnedTabView<Icon: View>: View {
     var tabName: String
@@ -18,9 +19,18 @@ public struct PinnedTabView<Icon: View>: View {
     /// The favorite's open page has left its pinned URL; hovering shows a reset button.
     var hasLeftPinnedURL: Bool = false
     var onResetToPinnedURL: () -> Void = {}
+    /// The space theme's tile colors, as in Arc. Nil falls back to the neutral fills.
+    var colors: SpaceTheme.TileColors?
+    /// Host whose blurred favicon glows behind the tile. Nil for neutral tiles.
+    var glowHost: String?
+    /// The window is inactive.
+    var isDimmed: Bool = false
     var action: () -> Void
 
     @State private var isHovered: Bool = false
+    @State private var glow: CGImage?
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     public init(
         tabName: String,
@@ -30,6 +40,9 @@ public struct PinnedTabView<Icon: View>: View {
         isUnloaded: Bool = false,
         hasLeftPinnedURL: Bool = false,
         onResetToPinnedURL: @escaping () -> Void = {},
+        colors: SpaceTheme.TileColors? = nil,
+        glowHost: String? = nil,
+        isDimmed: Bool = false,
         action: @escaping () -> Void
     ) {
         self.tabName = tabName
@@ -39,6 +52,9 @@ public struct PinnedTabView<Icon: View>: View {
         self.isUnloaded = isUnloaded
         self.hasLeftPinnedURL = hasLeftPinnedURL
         self.onResetToPinnedURL = onResetToPinnedURL
+        self.colors = colors
+        self.glowHost = glowHost
+        self.isDimmed = isDimmed
         self.action = action
     }
 
@@ -48,6 +64,24 @@ public struct PinnedTabView<Icon: View>: View {
                 VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                     .fill(backgroundColor)
                     .animation(VegaDesign.Motion.quick, value: isHovered)
+                if let glow, colors != nil {
+                    glowImage(glow)
+                        .opacity(VegaDesign.Surface.favoriteGlowOpacity(dark: colorScheme == .dark, hovered: isHovered, dimmed: isDimmed))
+                        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+                        .allowsHitTesting(false)
+                }
+                if isActive, let colors {
+                    if let glow, !isDimmed {
+                        glowImage(glow)
+                            .mask(VegaDesign.Radius.shape(VegaDesign.Radius.lg)
+                                .strokeBorder(Color.black, lineWidth: VegaDesign.Size.favoriteBorder))
+                            .allowsHitTesting(false)
+                    } else {
+                        VegaDesign.Radius.shape(VegaDesign.Radius.lg)
+                            .strokeBorder(Color(colors.selectedBorder).opacity(isDimmed ? VegaDesign.Surface.favoriteDimmedBorderOpacity : 1),
+                                          lineWidth: VegaDesign.Size.favoriteBorder)
+                    }
+                }
 
                 tabIcon
                     .frame(height: VegaDesign.Size.essentialsFavicon)
@@ -68,21 +102,59 @@ public struct PinnedTabView<Icon: View>: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: VegaDesign.Size.essentialsTile)
-            .frame(minWidth: VegaDesign.Size.essentialsTile)
+            .frame(height: VegaDesign.Size.favoriteTile)
+            .frame(minWidth: VegaDesign.Size.favoriteTile)
             .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
-            .vegaRowSelection(isActive, radius: VegaDesign.Radius.lg)
-            .vegaElevation(isActive ? .raised : .flat)
+            .modifier(TileSelection(isActive: isActive, themed: colors != nil))
         }
         .buttonStyle(.plain)
         .onHoverTracking { hovering in
             self.isHovered = hovering
         }
+        .task(id: wantsGlow ? glowHost : nil) {
+            glow = nil
+            guard wantsGlow, let glowHost else { return }
+            glow = await FaviconGlow.shared.image(forHost: glowHost)
+        }
+    }
+
+    private var wantsGlow: Bool { colors != nil && !reduceTransparency }
+
+    private func glowImage(_ image: CGImage) -> some View {
+        // Fills the tile's own frame; on its own, scaledToFill grows the tile with the sidebar's width.
+        Color.clear
+            .overlay {
+                Image(decorative: image, scale: VegaDesign.Size.favoriteGlowScale)
+                    .resizable()
+                    .scaledToFill()
+            }
+            .clipped()
     }
 
     //MARK: - Colors
-    /// Clear when selected: `vegaRowSelection` draws the raised surface.
+    /// Unthemed and selected: clear, since `vegaRowSelection` draws the raised surface.
     private var backgroundColor: Color {
-        isActive ? .clear : (isHovered ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill)
+        if let colors {
+            if isActive { return VegaDesign.Surface.favoriteSelectedFill(dark: colorScheme == .dark, dimmed: isDimmed) }
+            return Color(isHovered ? colors.hoverFill : colors.fill)
+        }
+        return isActive ? .clear : (isHovered ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill)
+    }
+}
+
+/// A themed tile is flat: fill and border only, no blur, no shadow. Without a theme it keeps
+/// the raised selection.
+private struct TileSelection: ViewModifier {
+    let isActive: Bool
+    let themed: Bool
+
+    func body(content: Content) -> some View {
+        if themed {
+            content
+        } else {
+            content
+                .vegaRowSelection(isActive, radius: VegaDesign.Radius.lg)
+                .vegaElevation(isActive ? .raised : .flat)
+        }
     }
 }

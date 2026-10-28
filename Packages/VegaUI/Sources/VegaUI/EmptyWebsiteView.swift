@@ -14,6 +14,7 @@ public struct EmptyWebsiteView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(WindowRegistry.self) var windowRegistry
+    @Environment(TabsController.self) private var tabs
     @Environment(\.tabActions) private var actions
 
     public init() {}
@@ -25,7 +26,8 @@ public struct EmptyWebsiteView: View {
                 let accent = windowState.isIncognito ? VegaDesign.Surface.incognitoAccent : (actions?.accentColor ?? .accentColor)
                 let isActive = windowRegistry.activeWindowId == windowState.id
 
-                VegaDesign.Surface.containerGradient(accent: accent, isActive: isActive)
+                let theme = windowState.isIncognito ? nil : windowState.spaceDraftTheme ?? windowState.spaceID.flatMap { tabs.space($0)?.theme }
+                SpaceChromeBackground(theme: theme, accent: accent, isActive: isActive)
                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
                     .vegaElevation(.raised)
                     .animation(VegaDesign.Motion.standard, value: isActive)

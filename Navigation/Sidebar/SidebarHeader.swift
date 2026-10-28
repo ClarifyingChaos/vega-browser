@@ -11,67 +11,18 @@ import VegaDesign
 import VegaWeb
 import VegaUI
 
-/// Header section of the sidebar (window controls and space name, URL bar). Back, forward and
-/// reload sit in the title row above it.
+/// Header section of the sidebar: the URL bar. Back, forward and reload sit in the title row
+/// above it; the space name sits under the favorites.
 struct SidebarHeader: View {
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(\.vegaSettings) var vegaSettings
     let isSidebarHovered: Bool
-    let onNewSpace: () -> Void
 
     var body: some View {
-        VStack(spacing: VegaDesign.Spacing.sectionGap) {
-            windowControls
-
-            if !vegaSettings.topBarAddressView {
-                urlBar
-            }
+        if !vegaSettings.topBarAddressView {
+            URLBarView(isSidebarHovered: isSidebarHovered)
+                .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
         }
-    }
-
-    private var windowControls: some View {
-        SidebarWindowControlsView(onNewSpace: onNewSpace)
-            .environmentObject(browserManager)
-            .environment(windowState)
-            .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
-    }
-
-    private var urlBar: some View {
-        URLBarView(isSidebarHovered: isSidebarHovered)
-            .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
-    }
-}
-
-// MARK: - Sidebar Window Controls
-/// The sidebar and AI toggles, with the space name at the trailing edge.
-struct SidebarWindowControlsView: View {
-    @EnvironmentObject var browserManager: BrowserManager
-    @Environment(BrowserWindowState.self) private var windowState
-    @Environment(\.vegaSettings) var vegaSettings
-    let onNewSpace: () -> Void
-
-    var body: some View {
-        HStack(spacing: 0) {
-            HStack(spacing: VegaDesign.Spacing.xxs) {
-                Button("Toggle Sidebar", systemImage: vegaSettings.sidebarPosition == .left ? "sidebar.left" : "sidebar.right") {
-                    browserManager.toggleSidebar(for: windowState)
-                }
-
-                if vegaSettings.showAIAssistant {
-                    Button("Toggle AI Assistant", systemImage: "sparkle") {
-                        browserManager.toggleAISidebar(for: windowState)
-                    }
-                }
-            }
-            .vegaIconButtons()
-
-            Spacer(minLength: 0)
-
-            // Gives way before the buttons: a long name fades out.
-            SpaceSwitcherTitle(onNewSpace: onNewSpace)
-                .layoutPriority(1)
-        }
-        .frame(height: VegaDesign.Size.chromeControl)
     }
 }

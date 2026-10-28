@@ -25,6 +25,7 @@ public struct SpaceTab: View {
     @FocusState private var isTextFieldFocused: Bool
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(\.tabActions) private var actions
+    @Environment(\.vegaSettings) private var vegaSettings
     private let renameState = SidebarRenameState.shared
 
     @Environment(TabsController.self) private var tabs
@@ -85,6 +86,7 @@ public struct SpaceTab: View {
                                 .offset(x: VegaDesign.Spacing.xs, y: VegaDesign.Spacing.xs)
                         }
                     }
+                    .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
                 if let session, session.hasAudioContent || session.hasPlayingAudio || session.isAudioMuted {
                     Button(action: { session.toggleMute() }) {
                         Image(systemName: session.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
@@ -98,8 +100,9 @@ public struct SpaceTab: View {
 
                 if isRenaming {
                     TextField("", text: $draftName)
-                        .font(VegaDesign.Font.body)
-                        .foregroundStyle(isUnloaded ? .secondary : .primary)
+                        .font(VegaDesign.Tab.font)
+                        .foregroundStyle(.primary)
+                        .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
                         .textFieldStyle(.plain)
                         .onSubmit { commitRename() }
                         .onEscapeKey { renameState.itemID = nil }
@@ -112,13 +115,13 @@ public struct SpaceTab: View {
                     // Hidden shrinkable copy sizes the row; the visible copy is laid out at
                     // full width and faded, so long titles never widen the row.
                     Text(title)
-                        .font(VegaDesign.Font.body)
+                        .font(VegaDesign.Tab.font)
                         .lineLimit(1)
                         .hidden()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .overlay(alignment: .leading) {
-                            Text(title)
-                                .font(VegaDesign.Font.body)
+                            label(title)
+                                .font(VegaDesign.Tab.font)
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
@@ -130,6 +133,7 @@ public struct SpaceTab: View {
                         // On hover the text ends before the close button.
                         .vegaTrailingFade(reserving: isHovering ? VegaDesign.Size.row + (showsReset ? VegaDesign.Size.rowButton : 0) : 0)
                         .textSelection(.disabled)
+                        .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
                 }
             }
             .overlay(alignment: .trailing) {
@@ -154,6 +158,8 @@ public struct SpaceTab: View {
                         let useUnload = tabs.isSynced(item.id) && !isUnloaded
                         Button(action: {
                             if useUnload { tabs.unload(item.id) } else { tabs.remove(item.id) }
+                            // The next row slides under the pointer; let it show its close button.
+                            HoverResync.request(after: VegaDesign.Motion.tabCloseDuration)
                         }) {
                             Image(systemName: useUnload ? "minus" : "xmark")
                                 .font(VegaDesign.Font.secondary)
@@ -171,20 +177,25 @@ public struct SpaceTab: View {
                 }
             }
             .padding(.horizontal, VegaDesign.Spacing.rowPadding)
-            .frame(height: VegaDesign.Size.row)
+            .frame(height: VegaDesign.Tab.height)
             .frame(minWidth: 0, maxWidth: .infinity)
-            .background(backgroundColor)
             .overlay {
                 if isRenaming {
-                    VegaDesign.Radius.shape(VegaDesign.Radius.md)
+                    VegaDesign.Radius.shape(VegaDesign.Tab.radius)
                         .strokeBorder(accentColor, lineWidth: VegaDesign.Size.hairlineWidth)
                 }
             }
-            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-            .vegaRowSelection(isCurrentTab)
-            .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
+            .vegaTabSurface(selected: isCurrentTab, hovered: isHovering)
+            // Developer Mode on this tab's site, marked as Arc marks it.
+            .overlay {
+                if vegaSettings.isDeveloperSite(tabs.currentURL(for: item)?.host) {
+                    VegaDesign.Radius.shape(VegaDesign.Tab.radius)
+                        .strokeBorder(Color.yellow, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                }
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(VegaTabButtonStyle())
+        .padding(.vertical, VegaDesign.Tab.verticalInset)
         .onHoverTracking { hovering in
             withAnimation(VegaDesign.Motion.quick) {
                 isHovering = hovering
@@ -210,26 +221,22 @@ public struct SpaceTab: View {
                 .environment(tabs)
                 .environment(\.tabActions, actions)
         }
-        .vegaElevation(isCurrentTab ? .raised : .flat)
     }
 
     private var accentColor: Color { actions?.accentColor ?? .accentColor }
+
+    /// The row text: tidied (`TidyTitles`), and a search page's site in a softer tone after its query.
+    private func label(_ title: String) -> Text {
+        let tidy = tabs.tidyTitle(for: item)
+        guard tidy.showsSite, let site = tidy.siteName else { return Text(tidy.title) }
+        return Text(tidy.title) + Text("  " + site).foregroundColor(.secondary)
+    }
 
     private var isCurrentTab: Bool {
         tabs.selectedItemID(in: windowState) == item.id
     }
 
     private var showsReset: Bool { tabs.hasLeftHome(item.id) }
-
-    private var backgroundColor: Color {
-        if isCurrentTab {
-            return Color.clear
-        } else if isHovering {
-            return VegaDesign.Surface.fill
-        } else {
-            return Color.clear
-        }
-    }
 
     private func startRename(_ title: String) {
         draftName = title
