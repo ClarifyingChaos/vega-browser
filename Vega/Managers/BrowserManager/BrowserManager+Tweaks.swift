@@ -3,7 +3,7 @@
 //  BrowserManager+Tweaks.swift
 //  Vega
 //
-//  Created by Claude on 17/09/2026.
+//  Created by Bain Gurley on 17/09/2026.
 //
 //  The app side of VegaTweaks' two seams: window and space work for Air Traffic
 //  Control, and the download path for the social media download button.
