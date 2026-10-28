@@ -55,11 +55,13 @@ public extension View {
         background(shape.fill(VegaDesign.Surface.mediaScrim))
     }
 
-    /// The selected sidebar row or pinned tile: Arc's translucent white, no outline, so the
-    /// space's color carries through. Branch-free so view identity is stable and the change
-    /// animates; the row applies its own `.raised` elevation.
+    /// Anything chosen from a set outside the tab list (Settings sidebar, library tabs, history):
+    /// a solid raised fill and hairline, readable on plain backgrounds. Tab rows use
+    /// `vegaTabSurface`. Branch-free; the row applies its own `.raised` elevation.
     func vegaRowSelection(_ isSelected: Bool, radius: CGFloat = VegaDesign.Radius.md) -> some View {
-        background(VegaDesign.Radius.shape(radius).fill(isSelected ? VegaDesign.Surface.selection : .clear))
+        let shape = VegaDesign.Radius.shape(radius)
+        return background(shape.fill(isSelected ? VegaDesign.Surface.raised : .clear))
+            .overlay(shape.strokeBorder(VegaDesign.Surface.hairline.opacity(isSelected ? 1 : 0), lineWidth: VegaDesign.Size.hairlineWidth))
     }
 
     /// A sidebar chrome control or group: history, sidebar and AI toggles, bottom bar buttons,
