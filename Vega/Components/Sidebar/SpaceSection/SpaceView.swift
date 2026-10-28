@@ -7,7 +7,7 @@
 //
 //  A space's sidebar outline: pinned section rows, the separator and new-tab button, then
 //  tabs section rows. Rows come flattened from `TabsController.rows(space:)`; each section is
-//  one drop zone whose rows all share `Size.row` height and `Spacing.rowGap` spacing, which the
+//  one drop zone whose rows all share `Tab.stride` height (including vertical card insets), which the
 //  drop position math in `VegaDragSessionManager` relies on.
 //
 
@@ -29,6 +29,9 @@ struct SpaceView: View {
     @Environment(\.vegaSettings) private var vegaSettings
     @ObservedObject private var dragSession = VegaDragSessionManager.shared
     @State private var isNewTabHovering = false
+    @State private var isUserScrolling = false
+    @State private var showsScrollIndicator = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(spaceID: UUID, isActive: Bool, isSidebarHovered: Binding<Bool>) {
         self.spaceID = spaceID
@@ -56,10 +59,10 @@ struct SpaceView: View {
         let regular = rows.filter { $0.section == .tabs }
         let split = splitPair(in: rows)
 
-        ScrollView(.vertical, showsIndicators: false) {
+        ScrollView(.vertical) {
             VStack(spacing: VegaDesign.Spacing.sectionGap) {
                 // An empty pinned section shows a drop slot only while a drag is on.
-                if !pinned.isEmpty || dragSession.isDragging {
+                if !pinned.isEmpty {
                     sectionList(.pinned(spaceID: spaceID), rows: pinned, split: split, showsTail: false)
                         .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
                 }
@@ -69,11 +72,32 @@ struct SpaceView: View {
                     sectionList(.tabs(spaceID: spaceID), rows: regular, split: split, showsTail: true)
                 }
             }
-            .animation(VegaDesign.Motion.standard, value: pinned.isEmpty && !dragSession.isDragging)
+            .animation(reduceMotion || dragSession.isDragging ? nil : VegaDesign.Motion.tabClose, value: pinned.isEmpty)
             .frame(minWidth: 0, maxWidth: innerWidth, alignment: .leading)
+            // Inset the rows, not the scroll viewport: the indicator belongs at the sidebar edge.
+            .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
+        }
+        .contentMargins(.trailing, 0, for: .scrollIndicators)
+        .scrollIndicators(showsScrollIndicator && !windowState.isSidebarResizeHovered ? .visible : .hidden)
+        .onScrollPhaseChange { _, phase in
+            // Tracking alone (a finger resting on the pad) is not scrolling.
+            isUserScrolling = phase == .interacting || phase == .decelerating
+            if isUserScrolling { showsScrollIndicator = true }
+        }
+        .task(id: isUserScrolling) {
+            guard !isUserScrolling else { return }
+            do {
+                try await Task.sleep(for: .milliseconds(650))
+                showsScrollIndicator = false
+            } catch {
+                // A new scroll cancels the pending hide.
+            }
+        }
+        .onDisappear {
+            isUserScrolling = false
+            showsScrollIndicator = false
         }
         .contentShape(Rectangle())
-        .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
         .frame(minWidth: 0, maxWidth: outerWidth, alignment: .leading)
     }
 
@@ -84,6 +108,14 @@ struct SpaceView: View {
         let rows = split.map { split in allRows.filter { !split.contains($0.id) || $0.id == split.anchorID } } ?? allRows
         let zone = DropZoneID.section(section)
         let position = dragSession.dropPosition?.zone == zone ? dragSession.dropPosition : nil
+        let isSource = dragSession.isDragging && dragSession.sourceZone == zone
+        let isDestination = position != nil || (isSource && dragSession.dropPosition == nil && dragSession.activeZone == zone)
+        let boundary = position.map { $0.index + ($0.placement == .after ? 1 : 0) }
+        let preview = TabReorderPreview(
+            rows: rows, draggedID: dragSession.draggedItem?.tabId ?? spaceID,
+            destinationBoundary: boundary, sourceInThisSection: isSource,
+            isDestination: isDestination, isIntoFolder: position?.placement == .into
+        )
         return VegaDropZoneHostView(
             zoneID: zone,
             layout: .rows(rows),
@@ -92,27 +124,34 @@ struct SpaceView: View {
                 tabs.drop(itemID, at: position, section: section, rows: rows)
             }
         ) {
-            VStack(spacing: VegaDesign.Spacing.rowGap) {
-                LazyVStack(spacing: VegaDesign.Spacing.rowGap) {
+            VStack(spacing: 0) {
+                let content = Group {
                     ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                         rowView(row, zone: zone, split: split, isDropTarget: position == DropPosition(zone: zone, index: index, placement: .into))
                             .padding(.leading, CGFloat(row.depth) * VegaDesign.Spacing.folderIndent)
-                            // The line is indented to the level the drop lands at (dropDepth), so a
-                            // line that puts the item inside a folder is always drawn inside it.
-                            .overlay(alignment: .top) {
-                                if position == DropPosition(zone: zone, index: index, placement: .before) {
-                                    dropLine.offset(y: -VegaDesign.Spacing.rowGap)
-                                        .padding(.leading, dropLineIndent)
-                                }
-                            }
-                            .overlay(alignment: .bottom) {
-                                if position == DropPosition(zone: zone, index: index, placement: .after)
-                                    || (index == rows.count - 1 && position == DropPosition(zone: zone, index: rows.count, placement: .before)) {
-                                    dropLine.offset(y: VegaDesign.Spacing.rowGap)
-                                        .padding(.leading, dropLineIndent)
-                                }
-                            }
+                            .transition(.asymmetric(
+                                insertion: .identity,
+                                removal: .opacity
+                            ))
+                            // Zen keeps a dimmed source in place while its floating card
+                            // follows the pointer freely; only the insertion marker moves.
+                            .opacity(preview.containsDraggedRow(id: row.id) ? (dragSession.isFinishingDrag ? 0 : 0.3) : 1)
+                            // Only release makes the neighboring rows move aside, in sync
+                            // with the native floating card's 100ms landing animation.
+                            .offset(y: dragSession.isFinishingDrag ? CGFloat(preview.rowOffset(for: row.id)) * VegaDesign.Tab.stride : 0)
+                            .animation(reduceMotion ? nil : VegaDesign.Motion.tabReorder, value: dragSession.isFinishingDrag)
                     }
+                }
+                if dragSession.isDragging {
+                    VStack(spacing: 0) { content }
+                } else {
+                    LazyVStack(spacing: 0) { content }
+                        // Keep row identities stable so remaining tabs slide into the gap.
+                        // Apply the same layout animation to temporary and pinned rows.
+                        .animation(reduceMotion ? nil : VegaDesign.Motion.tabClose, value: rows.map(\.id))
+                }
+                if dragSession.isFinishingDrag, !isSource, isDestination, preview.gapIndex != nil, !rows.isEmpty {
+                    Color.clear.frame(height: VegaDesign.Tab.stride)
                 }
 
                 if allRows.isEmpty, !showsTail {
@@ -127,6 +166,15 @@ struct SpaceView: View {
                 }
             }
             .frame(minWidth: 0, maxWidth: innerWidth, alignment: .leading)
+            .overlay(alignment: .topLeading) {
+                if !dragSession.isFinishingDrag, let gap = boundary, preview.gapIndex != nil {
+                    dropLine
+                        .padding(.leading, dropLineIndent)
+                        .offset(y: CGFloat(gap) * VegaDesign.Tab.stride)
+                        .animation(reduceMotion ? nil : VegaDesign.Motion.tabReorder, value: gap)
+                        .allowsHitTesting(false)
+                }
+            }
             .contentShape(Rectangle())
             // Rows have their own menus; this one covers the gaps and the tail of the section.
             .contextMenu {
@@ -144,7 +192,8 @@ struct SpaceView: View {
             .strokeBorder(style: StrokeStyle(lineWidth: VegaDesign.Size.hairlineWidth, dash: [VegaDesign.Spacing.sm, VegaDesign.Spacing.xs]))
             .foregroundStyle(isActive ? VegaDesign.Surface.dropBorderActive : VegaDesign.Surface.dropBorderIdle)
             .background(VegaDesign.Radius.shape(VegaDesign.Radius.md).fill(isActive ? VegaDesign.Surface.fillPressed : Color.clear))
-            .frame(height: VegaDesign.Size.row)
+            .frame(height: VegaDesign.Tab.height)
+            .padding(.vertical, VegaDesign.Tab.verticalInset)
             .animation(VegaDesign.Motion.quick, value: isActive)
     }
 
@@ -154,10 +203,16 @@ struct SpaceView: View {
     }
 
     private var dropLine: some View {
-        Rectangle()
-            .fill(VegaDesign.Surface.dropBorderActive)
-            .frame(height: VegaDesign.Spacing.rowGap)
-            .clipShape(Capsule())
+        HStack(spacing: 0) {
+            Circle()
+                .strokeBorder(Color.primary.opacity(0.7), lineWidth: VegaDesign.Tab.dropIndicatorHeight)
+                .frame(width: VegaDesign.Tab.dropIndicatorDot, height: VegaDesign.Tab.dropIndicatorDot)
+            Capsule()
+                .fill(Color.primary.opacity(0.7))
+                .frame(height: VegaDesign.Tab.dropIndicatorHeight)
+        }
+        .frame(height: VegaDesign.Tab.dropIndicatorDot)
+        .offset(y: -VegaDesign.Tab.dropIndicatorDot / 2)
     }
 
     @ViewBuilder
@@ -178,7 +233,6 @@ struct SpaceView: View {
                     SpaceTab(item: row.item, hasChildren: row.hasChildren)
                 }
             }
-            .opacity(dragSession.draggedItem?.tabId == row.item.id ? VegaDesign.Surface.unloadedOpacity : 1)
             .id(row.item.id)
         }
     }
@@ -223,7 +277,13 @@ struct SpaceView: View {
             )
             .padding(.horizontal, VegaDesign.Spacing.md)
 
-            newTabButton
+            if tabs.rows(space: spaceID).allSatisfy({ $0.section != .pinned }), dragSession.isDragging {
+                // Reuse the New Tab slot, so revealing an empty pin target cannot push the
+                // whole list down beneath the pointer at the start of a drag.
+                sectionList(.pinned(spaceID: spaceID), rows: [], split: nil, showsTail: false)
+            } else {
+                newTabButton
+            }
         }
     }
 
@@ -235,7 +295,7 @@ struct SpaceView: View {
                 Image(systemName: "plus")
                     .font(.system(size: VegaDesign.Size.favicon, weight: .medium))
                 Text("New Tab")
-                    .font(VegaDesign.Font.body)
+                    .font(VegaDesign.Tab.font)
                 Spacer(minLength: 0)
                 if isNewTabHovering {
                     Text("⌘T")
@@ -245,13 +305,14 @@ struct SpaceView: View {
             }
             .foregroundStyle(isNewTabHovering ? .secondary : .tertiary)
             .padding(.horizontal, VegaDesign.Spacing.rowPadding)
-            .frame(height: VegaDesign.Size.row)
+            .frame(height: VegaDesign.Tab.height)
             .frame(maxWidth: .infinity)
             .background(isNewTabHovering ? VegaDesign.Surface.fill : Color.clear)
             .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
             .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+            .padding(.vertical, VegaDesign.Tab.verticalInset)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(VegaTabButtonStyle())
         .onHoverTracking { hovering in
             withAnimation(VegaDesign.Motion.quick) { isNewTabHovering = hovering }
         }

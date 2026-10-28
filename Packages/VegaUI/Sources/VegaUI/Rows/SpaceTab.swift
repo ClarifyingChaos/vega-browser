@@ -86,6 +86,7 @@ public struct SpaceTab: View {
                                 .offset(x: VegaDesign.Spacing.xs, y: VegaDesign.Spacing.xs)
                         }
                     }
+                    .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
                 if let session, session.hasAudioContent || session.hasPlayingAudio || session.isAudioMuted {
                     Button(action: { session.toggleMute() }) {
                         Image(systemName: session.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
@@ -99,8 +100,9 @@ public struct SpaceTab: View {
 
                 if isRenaming {
                     TextField("", text: $draftName)
-                        .font(VegaDesign.Font.body)
-                        .foregroundStyle(isUnloaded ? .secondary : .primary)
+                        .font(VegaDesign.Tab.font)
+                        .foregroundStyle(.primary)
+                        .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
                         .textFieldStyle(.plain)
                         .onSubmit { commitRename() }
                         .onEscapeKey { renameState.itemID = nil }
@@ -113,13 +115,13 @@ public struct SpaceTab: View {
                     // Hidden shrinkable copy sizes the row; the visible copy is laid out at
                     // full width and faded, so long titles never widen the row.
                     Text(title)
-                        .font(VegaDesign.Font.body)
+                        .font(VegaDesign.Tab.font)
                         .lineLimit(1)
                         .hidden()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .overlay(alignment: .leading) {
                             label(title)
-                                .font(VegaDesign.Font.body)
+                                .font(VegaDesign.Tab.font)
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
@@ -131,6 +133,7 @@ public struct SpaceTab: View {
                         // On hover the text ends before the close button.
                         .vegaTrailingFade(reserving: isHovering ? VegaDesign.Size.row + (showsReset ? VegaDesign.Size.rowButton : 0) : 0)
                         .textSelection(.disabled)
+                        .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
                 }
             }
             .overlay(alignment: .trailing) {
@@ -172,27 +175,25 @@ public struct SpaceTab: View {
                 }
             }
             .padding(.horizontal, VegaDesign.Spacing.rowPadding)
-            .frame(height: VegaDesign.Size.row)
+            .frame(height: VegaDesign.Tab.height)
             .frame(minWidth: 0, maxWidth: .infinity)
-            .background(backgroundColor)
             .overlay {
                 if isRenaming {
-                    VegaDesign.Radius.shape(VegaDesign.Radius.md)
+                    VegaDesign.Radius.shape(VegaDesign.Tab.radius)
                         .strokeBorder(accentColor, lineWidth: VegaDesign.Size.hairlineWidth)
                 }
             }
-            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-            .vegaRowSelection(isCurrentTab)
+            .vegaTabSurface(selected: isCurrentTab, hovered: isHovering)
             // Developer Mode on this tab's site, marked as Arc marks it.
             .overlay {
                 if vegaSettings.isDeveloperSite(tabs.currentURL(for: item)?.host) {
-                    VegaDesign.Radius.shape(VegaDesign.Radius.md)
+                    VegaDesign.Radius.shape(VegaDesign.Tab.radius)
                         .strokeBorder(Color.yellow, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
                 }
             }
-            .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(VegaTabButtonStyle())
+        .padding(.vertical, VegaDesign.Tab.verticalInset)
         .onHoverTracking { hovering in
             withAnimation(VegaDesign.Motion.quick) {
                 isHovering = hovering
@@ -218,7 +219,6 @@ public struct SpaceTab: View {
                 .environment(tabs)
                 .environment(\.tabActions, actions)
         }
-        .vegaElevation(isCurrentTab ? .raised : .flat)
     }
 
     private var accentColor: Color { actions?.accentColor ?? .accentColor }
@@ -234,16 +234,6 @@ public struct SpaceTab: View {
     }
 
     private var showsReset: Bool { tabs.hasLeftHome(item.id) }
-
-    private var backgroundColor: Color {
-        if isCurrentTab {
-            return Color.clear
-        } else if isHovering {
-            return VegaDesign.Surface.fill
-        } else {
-            return Color.clear
-        }
-    }
 
     private func startRename(_ title: String) {
         draftName = title

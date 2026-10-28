@@ -14,6 +14,7 @@ import VegaUI
 
 /// Bottom bar of the sidebar containing menu button, spaces list, and new space button
 struct SidebarBottomBar: View {
+    @Environment(\.vegaSettings) private var vegaSettings
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(TabsController.self) private var tabs
     @Environment(BrowserWindowState.self) private var windowState
@@ -24,10 +25,18 @@ struct SidebarBottomBar: View {
     let onMenuHover: (Bool) -> Void
     
     var body: some View {
-        HStack(alignment: .center, spacing: VegaDesign.Spacing.xxs) {
+        HStack(alignment: .center, spacing: VegaDesign.SidebarChrome.gap) {
             // Above the space dots, so its hint draws over them.
             menuButton
                 .zIndex(1)
+
+            if vegaSettings.showAIAssistant {
+                Button("Toggle AI Assistant", systemImage: "sparkle") {
+                    browserManager.toggleAISidebar(for: windowState)
+                }
+                .vegaSidebarIconButtons()
+                .help("Toggle AI Assistant")
+            }
 
             // Hide spaces list in incognito windows (only one ephemeral space)
             if !windowState.isIncognito {
@@ -40,6 +49,8 @@ struct SidebarBottomBar: View {
             // Hide new space button in incognito windows
             if !windowState.isIncognito {
                 newSpaceButton
+            } else {
+                Spacer(minLength: 0)
             }
         }
         .frame(height: VegaDesign.Size.bottomBar)
@@ -53,7 +64,7 @@ struct SidebarBottomBar: View {
             }
             // A finished download bounces the button its icon flew into.
             .symbolEffect(.bounce, value: browserManager.downloadManager.completedCount)
-            .vegaIconButtons()
+            .vegaSidebarIconButtons()
             .anchorPreference(key: DownloadsButtonAnchorKey.self, value: .bounds) { $0 }
             .onHoverTracking { isHovered in
                 isMenuButtonHovered = isHovered
@@ -69,7 +80,7 @@ struct SidebarBottomBar: View {
                         .frame(height: VegaDesign.Size.iconButton)
                         .background(Color.black.opacity(0.85), in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
                         .fixedSize()
-                        .offset(x: VegaDesign.Size.iconButton + VegaDesign.Spacing.xs)
+                        .offset(x: VegaDesign.SidebarChrome.button + VegaDesign.Spacing.xs)
                         .allowsHitTesting(false)
                         .transition(.opacity.combined(with: .offset(x: -4)))
                 }
@@ -135,7 +146,7 @@ struct SidebarBottomBar: View {
             Label("Actions", systemImage: "plus")
         }
         .menuStyle(.button)
-        .vegaIconButtons()
+        .vegaSidebarIconButtons()
     }
 
     private var selectedPageIsWeb: Bool {

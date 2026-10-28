@@ -50,8 +50,12 @@ struct SidebarHoverOverlayView: View {
                         .environment(commandPalette)
                         .environmentObject(browserManager.gradientColorManager)
                         .frame(maxHeight: .infinity)
-                        .background(sidebarBackground)
-                        .vegaFloatingSurface(in: VegaDesign.Radius.shape(cornerRadius))
+                        // Clip the floating surface, not descendants: the expanded address
+                        // panel is anchored here but deliberately extends over the page.
+                        .background {
+                            sidebarBackground
+                                .vegaFloatingSurface(in: VegaDesign.Radius.shape(cornerRadius))
+                        }
                         .alwaysArrowCursor()
                         .padding(vegaSettings.sidebarPosition == .left ? .leading : .trailing, horizontalInset)
                         .padding(.vertical, verticalInset)

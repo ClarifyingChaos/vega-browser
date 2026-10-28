@@ -34,7 +34,7 @@ public struct SplitHalfLabel: View {
                     .frame(width: VegaDesign.Size.favicon, height: VegaDesign.Size.favicon)
                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
                 Text(title)
-                    .font(VegaDesign.Font.body)
+                    .font(VegaDesign.Tab.font)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .truncationMode(.tail)

@@ -14,6 +14,7 @@ struct SplitTabRow: View {
     let zoneID: DropZoneID
 
     @Environment(BrowserWindowState.self) private var windowState
+    @State private var isHovering = false
 
     /// The whole row is the selection while the window shows the pair.
     private var isActive: Bool {
@@ -29,10 +30,10 @@ struct SplitTabRow: View {
                 .padding(.vertical, VegaDesign.Spacing.sm)
             SplitHalfTab(item: right, zoneID: zoneID)
         }
-        .frame(height: VegaDesign.Size.row)
-        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-        .vegaRowSelection(isActive)
-        .vegaElevation(isActive ? .raised : .flat)
+        .frame(height: VegaDesign.Tab.height)
+        .vegaTabSurface(selected: isActive, hovered: isHovering)
+        .padding(.vertical, VegaDesign.Tab.verticalInset)
+        .onHoverTracking { isHovering = $0 }
     }
 }
 

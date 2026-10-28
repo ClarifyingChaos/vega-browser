@@ -11,7 +11,7 @@ import VegaDesign
 import VegaWeb
 import VegaUI
 
-/// Header section of the sidebar (window controls and space name, URL bar). Back, forward and
+/// Header section of the sidebar (space name, URL bar). Back, forward and
 /// reload sit in the title row above it.
 struct SidebarHeader: View {
     @EnvironmentObject var browserManager: BrowserManager
@@ -32,8 +32,6 @@ struct SidebarHeader: View {
 
     private var windowControls: some View {
         SidebarWindowControlsView(onNewSpace: onNewSpace)
-            .environmentObject(browserManager)
-            .environment(windowState)
             .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
     }
 
@@ -43,34 +41,17 @@ struct SidebarHeader: View {
     }
 }
 
-// MARK: - Sidebar Window Controls
-/// The sidebar and AI toggles, with the space name at the trailing edge.
+// MARK: - Space name row
+/// The space name, which opens the space list. The sidebar toggle sits in the title row beside
+/// the traffic lights.
 struct SidebarWindowControlsView: View {
-    @EnvironmentObject var browserManager: BrowserManager
-    @Environment(BrowserWindowState.self) private var windowState
-    @Environment(\.vegaSettings) var vegaSettings
     let onNewSpace: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
-            HStack(spacing: VegaDesign.Spacing.xxs) {
-                Button("Toggle Sidebar", systemImage: vegaSettings.sidebarPosition == .left ? "sidebar.left" : "sidebar.right") {
-                    browserManager.toggleSidebar(for: windowState)
-                }
-
-                if vegaSettings.showAIAssistant {
-                    Button("Toggle AI Assistant", systemImage: "sparkle") {
-                        browserManager.toggleAISidebar(for: windowState)
-                    }
-                }
-            }
-            .vegaIconButtons()
-
-            Spacer(minLength: 0)
-
-            // Gives way before the buttons: a long name fades out.
             SpaceSwitcherTitle(onNewSpace: onNewSpace)
                 .layoutPriority(1)
+            Spacer(minLength: 0)
         }
         .frame(height: VegaDesign.Size.chromeControl)
     }
