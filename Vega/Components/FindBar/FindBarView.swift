@@ -3,7 +3,7 @@
 //  FindBarView.swift
 //  Vega
 //
-//  Created by Assistant on 28/12/2024.
+//  Created by Jonathan Caudill on 28/12/2024.
 //
 
 import SwiftUI
