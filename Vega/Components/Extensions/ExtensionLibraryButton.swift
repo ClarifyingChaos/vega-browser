@@ -14,8 +14,11 @@ struct ExtensionLibraryButton: View {
     @Environment(BrowserWindowState.self) private var windowState
 
     var body: some View {
-        Button("More", systemImage: "ellipsis") {
-            windowState.isExtensionLibraryVisible.toggle()
+        // Arc's site controls button; the panel springs out of it.
+        Button("Site Controls", systemImage: "slider.horizontal.3") {
+            withAnimation(.interpolatingSpring(Spring(response: 0.3, dampingRatio: 0.86))) {
+                windowState.isExtensionLibraryVisible.toggle()
+            }
         }
         .labelStyle(.iconOnly)
         .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.iconButton, radius: VegaDesign.Radius.sm))

@@ -28,7 +28,7 @@ struct TopBarView: View {
     @State private var previousTabId: UUID? = nil
 
     var body: some View {
-        let cornerRadius: CGFloat = vegaSettings.hideWebContentBorder ? 0 : VegaDesign.Radius.md
+        let cornerRadius: CGFloat = vegaSettings.hideWebContentBorder ? 0 : VegaDesign.Radius.page
 
         ZStack {
             // Main content

@@ -179,11 +179,12 @@ struct WebsiteView: View {
     private let dragCoordinateSpace = "splitPreview"
 
     private var cornerRadius: CGFloat {
-        vegaSettings.hideWebContentBorder ? 0 : VegaDesign.Radius.md
+        vegaSettings.hideWebContentBorder ? 0 : VegaDesign.Radius.page
     }
 
     private var webViewClipShape: AnyShape {
-        let hasTopBar = vegaSettings.topBarAddressView
+        // The top bar and the developer bar both sit flush on the page.
+        let hasTopBar = vegaSettings.topBarAddressView || browserManager.showsDeveloperBar(in: windowState)
 
         if hasTopBar {
             return AnyShape(UnevenRoundedRectangle(
@@ -217,7 +218,7 @@ struct WebsiteView: View {
                             compositorVersion: windowState.compositorVersion,
                             selectedItemID: windowState.selectedItemID,
                             cornerRadius: cornerRadius,
-                            squareTopCorners: vegaSettings.topBarAddressView
+                            squareTopCorners: vegaSettings.topBarAddressView || browserManager.showsDeveloperBar(in: windowState)
                         )
                         .coordinateSpace(name: dragCoordinateSpace)
                         // The shadow comes from this opaque shape behind the webview, and the
@@ -274,6 +275,15 @@ struct WebsiteView: View {
                 BlockedPageView(session: session)
             }
 
+            // Link Previews: Shift held over a link in the page.
+            if vegaSettings.linkPreviews, !shouldShowSplit,
+               let session = browserManager.tabs.controllableSession(in: windowState) {
+                LinkPreviewHost(
+                    session: session,
+                    zoom: browserManager.getWebView(for: session.itemID, in: windowState.id)?.pageZoom ?? 1)
+                    .id(session.itemID)
+            }
+
             // The unselected split pane can be translated from its context menu too.
             if shouldShowSplit, let other = [splitManager.leftTabId(for: windowState.id), splitManager.rightTabId(for: windowState.id)]
                 .compactMap({ $0 }).first(where: { $0 != windowState.selectedItemID }),
@@ -290,6 +300,15 @@ struct WebsiteView: View {
                         Spacer()
                     }
                 }
+            }
+
+            // History, as a page over the web content (Cmd-Y).
+            if windowState.isHistoryPageVisible {
+                HistoryPageView()
+                    .environmentObject(browserManager)
+                    .environment(windowState)
+                    .clipShape(webViewClipShape)
+                    .transition(.opacity.combined(with: .scale(scale: 0.99)))
             }
 
             // Split preview overlay - shows cards during drag operations

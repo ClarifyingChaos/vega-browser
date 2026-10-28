@@ -57,6 +57,24 @@ struct SettingsAITab: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    Toggle(isOn: $settings.linkPreviews) {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text("Link Previews")
+                                .font(VegaDesign.Font.body)
+                            Text("Hold Shift while hovering a link to see a short summary of the page")
+                                .font(VegaDesign.Font.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Toggle(isOn: $settings.tidyDownloads) {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text("Tidy Downloads")
+                                .font(VegaDesign.Font.body)
+                            Text("Renames downloads with meaningless names, such as 387494876.pdf, after the page they came from")
+                                .font(VegaDesign.Font.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             } header: {
                 Text("Tab Organizer")

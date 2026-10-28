@@ -23,17 +23,17 @@ struct SidebarMenuHoverDownloads: View {
             ForEach(Array(downloads.enumerated()), id: \.element.id) { index, download in
                 let shown = index < itemsVisible.count && itemsVisible[index]
                 SidebarMenuHoverDownloadItem(download: download)
-                    .offset(y: shown ? 0 : 50)
+                    .offset(y: shown ? 0 : 16)
                     .opacity(shown ? 1 : 0)
+                    .blur(radius: shown ? 0 : 4)
                     .animation(
-                        VegaDesign.Motion.quick.delay(Double(downloads.count - index) * 0.01),
+                        .interpolatingSpring(Spring(response: 0.32, dampingRatio: 0.86))
+                            .delay(Double(downloads.count - index) * 0.04),
                         value: shown
                     )
             }
         }
-        .padding(VegaDesign.Spacing.xs)
-        // The recent downloads card that opens over the tab list on hover.
-        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+        // Arc's recent downloads: rows straight on the sidebar, no card, rising in one by one.
         .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
         .onAppear {
             updateItemsVisible(count: downloads.count)
@@ -91,24 +91,12 @@ struct SidebarMenuHoverDownloadItem: View {
     @State private var isHovering: Bool = false
     let download: Download
 
-    private let iconSize: CGFloat = 32
+    private let iconSize: CGFloat = 40
 
+    /// "40 minutes ago", in full as Arc writes it.
     private var timeAgoText: String {
-        let now = Date()
-        let timeInterval = now.timeIntervalSince(download.startDate)
-
-        if timeInterval < 60 {
-            return "Just now"
-        } else if timeInterval < 3600 {
-            let minutes = Int(timeInterval / 60)
-            return "\(minutes) min ago"
-        } else if timeInterval < 86400 {
-            let hours = Int(timeInterval / 3600)
-            return "\(hours)h ago"
-        } else {
-            let days = Int(timeInterval / 86400)
-            return "\(days)d ago"
-        }
+        guard Date().timeIntervalSince(download.startDate) >= 60 else { return "Just now" }
+        return download.startDate.formatted(.relative(presentation: .named, unitsStyle: .wide))
     }
 
     private var statusText: String {
@@ -132,19 +120,30 @@ struct SidebarMenuHoverDownloadItem: View {
                 if download.state == .downloading {
                     CircularProgressView(progress: download.progress)
                 } else {
+                    // A page-like tile: the file's own preview filling a small rounded card.
                     Image(nsImage: download.downloadThumbnail ?? download.icon)
                         .resizable()
-                        .scaledToFit()
+                        .aspectRatio(contentMode: download.downloadThumbnail == nil ? .fit : .fill)
+                        .frame(width: iconSize, height: iconSize)
+                        .background(download.downloadThumbnail == nil ? Color.clear : Color.white)
+                        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
+                        .overlay(VegaDesign.Radius.shape(VegaDesign.Radius.sm).strokeBorder(VegaDesign.Surface.hairline))
                 }
             }
             .frame(width: iconSize, height: iconSize)
+            .task(id: download.destinationURL) {
+                if download.downloadThumbnail == nil, download.state == .completed { await download.loadThumbnail() }
+            }
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(download.suggestedFilename)
-                    .font(VegaDesign.Font.label)
+                Text(download.displayName)
+                    .id(download.displayName)
+                    .transition(.blurReplace)
+                    .font(VegaDesign.Font.title)
+                    .fontWeight(.medium)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                    .truncationMode(.middle)
+                    .truncationMode(.tail)
 
                 // Bytes while they are moving; otherwise the state in a word.
                 Group {
@@ -156,7 +155,7 @@ struct SidebarMenuHoverDownloadItem: View {
                         Text(statusText)
                     }
                 }
-                .font(VegaDesign.Font.secondary)
+                .font(VegaDesign.Font.body)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             }
@@ -164,18 +163,17 @@ struct SidebarMenuHoverDownloadItem: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, VegaDesign.Spacing.rowPadding)
-        .padding(.vertical, VegaDesign.Spacing.sm)
+        .padding(.horizontal, VegaDesign.Spacing.xs)
+        .padding(.vertical, VegaDesign.Spacing.xs)
         .background(isHovering ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .animation(VegaDesign.Motion.quick, value: isHovering)
         .onHoverTracking { state in
             isHovering = state
         }
+        // Opens in place, as Arc does, rather than in Finder.
         .onTapGesture {
-            if let file = download.completedFile {
-                NSWorkspace.shared.activateFileViewerSelecting([file])
-            }
+            if download.completedFile != nil { DownloadManager.shared.previewing = download }
         }
         .onDrag {
             download.dragItemProvider()

@@ -1,0 +1,60 @@
+// Licensed under GPL-3.0. See LICENSE.
+//
+//  BoostOverlay.swift
+//  Vega
+//
+
+import SwiftUI
+import VegaDesign
+import VegaSettings
+import VegaTweaks
+import VegaUI
+import VegaWeb
+
+/// The Boost panel, drawn in the window over the page's top-right corner. Only the panel takes
+/// clicks, so the page stays usable for Zap. In-window like `ExtensionLibraryOverlay`.
+struct BoostOverlay: View {
+    @EnvironmentObject var browserManager: BrowserManager
+    @Environment(BrowserWindowState.self) private var windowState
+
+    private var session: PageSession? { browserManager.tabs.selectedSession(in: windowState) }
+
+    var body: some View {
+        if windowState.isBoostPanelVisible, let settings = browserManager.vegaSettings, let session,
+           case let host = Boost.normalizeHost(session.url.host ?? ""), !host.isEmpty
+        {
+            BoostPanel(
+                settings: settings,
+                host: host,
+                onPreview: { draft in
+                    guard let webView = session.webView else { return }
+                    BoostTweaks.preview(for: session.url, in: webView, settings: settings, draft: draft)
+                },
+                onZap: {
+                    guard let webView = session.webView else { return nil }
+                    return await BoostTweaks.pickElement(in: webView)
+                },
+                onCancelZap: { session.webView.map { BoostTweaks.cancelPick(in: $0) } },
+                onFinish: { close(session, settings) }
+            )
+            // A different site is a different panel, with its own draft.
+            .id(host)
+            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+            .padding(VegaDesign.Spacing.lg)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .padding(.top, VegaDesign.Size.row)
+            .transition(.opacity)
+            .onChange(of: windowState.selectedItemID) { _, _ in close(session, settings) }
+        }
+    }
+
+    /// Whatever was not saved goes away: the page shows the saved Boosts again, and the scripts
+    /// used for later loads catch up with them.
+    private func close(_ session: PageSession, _ settings: VegaSettingsService) {
+        if let webView = session.webView {
+            BoostTweaks.preview(for: session.url, in: webView, settings: settings)
+            BoostTweaks.apply(for: session.url, in: webView, settings: settings)
+        }
+        windowState.isBoostPanelVisible = false
+    }
+}

@@ -33,77 +33,85 @@ struct ExtensionLibraryView: View {
         currentTab?.url.host
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
-            // MARK: - Utility Buttons
-            utilityButtonsSection
-
-            Divider().opacity(0.15)
-
-            // MARK: - Extensions Grid
-            extensionsSection
-
-            Divider().opacity(0.15)
-
-            // MARK: - Site Settings
-            siteSettingsSection
-
-            // MARK: - Footer
-            footerSection
-        }
-        .frame(width: 300)
-        .background(.clear)
+    /// Only web pages can be Boosted.
+    private var boostHost: String? {
+        guard let url = currentTab?.url, url.scheme == "http" || url.scheme == "https" else { return nil }
+        let host = Boost.normalizeHost(url.host ?? "")
+        return host.isEmpty ? nil : host
     }
 
-    // MARK: - Utility Buttons
+    private let width: CGFloat = 300
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: VegaDesign.Spacing.sm), count: 4)
 
-    private var utilityButtonsSection: some View {
-        HStack(spacing: 6) {
-            CopyButton(icon: "link", label: "Copy Link") {
-                guard let url = currentTab?.url.absoluteString else { return false }
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(url, forType: .string)
-                return true
+    var body: some View {
+        VStack(alignment: .leading, spacing: VegaDesign.Spacing.lg) {
+            actionTiles
+            extensionsSection
+            settingsSection
+            Rectangle().fill(VegaDesign.Surface.hairline).frame(height: 1)
+            footer
+        }
+        .padding(VegaDesign.Spacing.lg)
+        .frame(width: width)
+    }
+
+    // MARK: - Actions
+
+    /// Arc's top row: share, Boost, capture, sound.
+    private var actionTiles: some View {
+        HStack(spacing: VegaDesign.Spacing.sm) {
+            Menu {
+                Button("Copy Link", systemImage: "link") {
+                    guard let url = currentTab?.url.absoluteString else { return }
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url, forType: .string)
+                    onDismiss()
+                }
+                if let url = currentTab?.url {
+                    ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
+                }
+            } label: {
+                ActionTileLabel(systemImage: "square.and.arrow.up")
             }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .buttonStyle(ActionTileStyle())
+            .help("Share")
             .disabled(currentTab == nil)
 
-            CopyButton(icon: "doc.on.doc", label: "Copy Title") {
-                guard let title = currentTab?.title else { return false }
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(title, forType: .string)
-                return true
+            Button {
+                browserManager.openBoostPanel(in: windowState)
+                onDismiss()
+            } label: {
+                ActionTileLabel(systemImage: "paintbrush.pointed")
             }
+            .buttonStyle(ActionTileStyle())
+            .help("Boost")
+            .disabled(boostHost == nil)
+
+            Button {
+                onDismiss()
+                withAnimation(VegaDesign.Motion.spring) { windowState.isPortraitCaptureVisible = true }
+            } label: {
+                ActionTileLabel(systemImage: "camera")
+            }
+            .buttonStyle(ActionTileStyle())
+            .help("Capture")
             .disabled(currentTab == nil)
 
             MuteButton(tab: currentTab)
-
-            let isPiPActive = currentTab?.hasPiPActive == true
-            UtilityTile(
-                systemImage: isPiPActive ? "pip.exit" : "pip.enter",
-                help: isPiPActive ? "Exit Picture in Picture" : "Enter Picture in Picture"
-            ) {
-                currentTab?.requestPictureInPicture()
-                onDismiss()
-            }
-            .disabled(!(currentTab.map { $0.hasVideoContent || $0.hasPiPActive } ?? false))
         }
-        .padding(12)
     }
 
-    // MARK: - Extensions Grid
+    // MARK: - Extensions
 
     private var extensionsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("EXTENSIONS")
-                .font(VegaDesign.Font.captionStrong)
-                .foregroundStyle(.secondary.opacity(0.6))
-                .tracking(0.4)
-                .padding(.horizontal, 4)
+        VStack(alignment: .leading, spacing: VegaDesign.Spacing.sm) {
+            Text("Extensions")
+                .font(VegaDesign.Font.title)
 
             let extensions = browserManager.extensionManager?.installedExtensions.filter { $0.isEnabled } ?? []
-
-            ScrollView {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+            LazyVGrid(columns: columns, spacing: VegaDesign.Spacing.sm) {
                 ForEach(extensions, id: \.id) { ext in
                     ExtensionGridItem(
                         ext: ext,
@@ -113,131 +121,150 @@ struct ExtensionLibraryView: View {
                         settings: settings
                     )
                 }
-
-                // Add New button
-                Button {
-                    ExtensionManager.shared.showExtensionInstallDialog()
-                } label: {
-                    VStack(spacing: 5) {
-                        VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                            .foregroundStyle(.secondary.opacity(0.2))
-                            .frame(width: 34, height: 34)
-                            .overlay {
-                                Image(systemName: "plus")
-                                    .font(VegaDesign.Font.title)
-                                    .foregroundStyle(.secondary.opacity(0.3))
-                            }
-                        Text("Add New")
-                            .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.secondary.opacity(0.3))
-                    }
+                Button(action: openWebStore) {
+                    ActionTileLabel(systemImage: "plus", compact: true)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ActionTileStyle())
+                .help("Add Extension…")
             }
-            }
-            .frame(maxHeight: 300)
         }
-        .padding(12)
     }
 
-    // MARK: - Site Settings
+    // MARK: - Settings
 
     @State private var contentBlockerEnabled: Bool = true
 
-    private var siteSettingsSection: some View {
-        VStack(spacing: 2) {
-            // Content Blocker Toggle
-            if let host = currentHost, let tab = currentTab {
-                ContentBlockerSiteRow(session: tab, enabled: $contentBlockerEnabled)
-                    .onChange(of: contentBlockerEnabled) { _, enabled in
-                        // Use currentHost (not captured host) to always reference the active tab
-                        guard let activeHost = currentHost else { return }
-                        // Skip if the state already matches (e.g. during sync from tab switch)
-                        let isAllowed = browserManager.contentBlockerManager.isDomainAllowed(activeHost)
-                        guard (!enabled) != isAllowed else { return }
-                        browserManager.contentBlockerManager.allowDomain(activeHost, allowed: !enabled)
-                    }
-                    .onAppear {
-                        contentBlockerEnabled = !browserManager.contentBlockerManager.isDomainAllowed(host)
-                    }
-                    .onChange(of: currentHost) { _, newHost in
-                        if let h = newHost {
-                            contentBlockerEnabled = !browserManager.contentBlockerManager.isDomainAllowed(h)
-                        }
-                    }
+    private var settingsSection: some View {
+        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
+            Text("Settings")
+                .font(VegaDesign.Font.title)
+                .padding(.bottom, VegaDesign.Spacing.xxs)
+
+            if let host = currentHost {
+                SiteSettingRow(
+                    icon: "shield.lefthalf.filled",
+                    title: "Content Blocker",
+                    subtitle: contentBlockerEnabled ? "On" : "Off for this site",
+                    isOn: contentBlockerEnabled
+                ) {
+                    contentBlockerEnabled.toggle()
+                    browserManager.contentBlockerManager.allowDomain(host, allowed: !contentBlockerEnabled)
+                }
+                .onAppear { contentBlockerEnabled = !browserManager.contentBlockerManager.isDomainAllowed(host) }
+                .onChange(of: currentHost) { _, newHost in
+                    if let newHost { contentBlockerEnabled = !browserManager.contentBlockerManager.isDomainAllowed(newHost) }
+                }
+
+                let developer = settings.isDeveloperSite(host)
+                SiteSettingRow(
+                    icon: "hammer.fill",
+                    title: "Developer Mode",
+                    subtitle: developer ? "On" : "Off",
+                    isOn: developer
+                ) {
+                    withAnimation(VegaDesign.Motion.spring) { settings.setDeveloperSite(host, on: !developer) }
+                }
             }
 
-            // Page Zoom
+            SiteSettingRow(
+                icon: "pip",
+                title: "Automatic Picture-in-Picture",
+                subtitle: settings.autoPictureInPicture ? "Allowed" : "Off",
+                isOn: settings.autoPictureInPicture
+            ) {
+                settings.autoPictureInPicture.toggle()
+            }
+
             if currentTab != nil {
                 SiteSettingRow(
-                    icon: "magnifyingglass",
-                    iconColor: .blue,
-                    title: "Page Zoom",
-                    subtitle: nil
+                    icon: "plus.magnifyingglass",
+                    title: "Zoom",
+                    subtitle: "\(browserManager.zoomManager.currentZoomPercentage)%",
+                    isOn: browserManager.zoomManager.currentZoomPercentage != 100,
+                    action: nil
                 ) {
-                    HStack(spacing: 6) {
-                        Button {
-                            zoomOut()
-                        } label: {
-                            Image(systemName: "minus")
-                                .font(VegaDesign.Font.captionStrong)
-                                .frame(width: 22, height: 22)
-                                .background(VegaDesign.Surface.fill)
-                                .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
-                        }
-                        .buttonStyle(.plain)
-
-                        Text("\(browserManager.zoomManager.currentZoomPercentage)%")
-                            .font(VegaDesign.Font.secondary)
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                            .frame(minWidth: 36)
-
-                        Button {
-                            zoomIn()
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(VegaDesign.Font.captionStrong)
-                                .frame(width: 22, height: 22)
-                                .background(VegaDesign.Surface.fill)
-                                .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
-                        }
-                        .buttonStyle(.plain)
+                    HStack(spacing: VegaDesign.Spacing.xxs) {
+                        Button("Zoom Out", systemImage: "minus", action: zoomOut)
+                        Button("Zoom In", systemImage: "plus", action: zoomIn)
                     }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.rowButton + VegaDesign.Spacing.xs))
                 }
             }
         }
-        .padding(12)
     }
 
     // MARK: - Footer
 
-    private var footerSection: some View {
-        HStack {
-            HStack(spacing: 5) {
-                Image(systemName: currentTab?.url.scheme == "https" ? "lock.fill" : "lock.open.fill")
-                    .font(VegaDesign.Font.caption)
-                    .foregroundStyle(.secondary)
-                Text(currentHost ?? "No site loaded")
-                    .font(VegaDesign.Font.secondary)
-                    .foregroundStyle(.primary)
-            }
+    private var footer: some View {
+        let secure = currentTab?.url.scheme == "https"
+        return HStack {
+            Label(secure ? "Secure" : "Not Secure", systemImage: secure ? "lock.fill" : "lock.open.fill")
+                .font(VegaDesign.Font.body)
+                .padding(.horizontal, VegaDesign.Spacing.md)
+                .frame(height: VegaDesign.Size.row)
+                .background(VegaDesign.Surface.fill, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+                .help(currentHost ?? "")
 
             Spacer()
 
-            Button {
-                onShowMoreMenu()
+            Menu {
+                Button("Clear Cache") { clear(cache: true) }
+                    .disabled(currentHost == nil)
+                Button("Clear Cookies") { clear(cache: false) }
+                    .disabled(currentHost == nil)
+                Divider()
+                Button("Manage Boosts…") {
+                    browserManager.openSettings(tab: .tweaks)
+                    onDismiss()
+                }
+                Button("New Boost…") {
+                    browserManager.openBoostPanel(in: windowState)
+                    onDismiss()
+                }
+                .disabled(boostHost == nil)
+                Divider()
+                Button("Manage Extensions…") {
+                    browserManager.openSettings(tab: .extensions)
+                    onDismiss()
+                }
+                Button("Add Extension…", action: openWebStore)
+                Divider()
+                Button("All Site Settings…", action: onShowMoreMenu)
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(VegaDesign.Font.body)
+                    .font(.system(size: VegaDesign.Size.spaceIcon, weight: .semibold))
+                    .frame(width: VegaDesign.Size.iconButton + VegaDesign.Spacing.xs,
+                           height: VegaDesign.Size.iconButton + VegaDesign.Spacing.xs)
+                    .background(VegaDesign.Surface.fillPressed, in: Circle())
+                    .contentShape(Circle())
             }
-            .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.iconButton, radius: VegaDesign.Radius.sm))
-            .foregroundStyle(.primary)
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .buttonStyle(.plain)
+            .fixedSize()
+            .help("More")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(VegaDesign.Surface.fill)
+    }
+
+    /// Extensions come from the Chrome Web Store, whose pages get Vega's install button.
+    private func openWebStore() {
+        browserManager.tabs.open(url: Self.webStoreURL, in: windowState, placement: .newTab)
+        onDismiss()
+    }
+
+    private static let webStoreURL = URL(string: "https://chromewebstore.google.com/category/extensions")!
+
+    private func clear(cache: Bool) {
+        guard let host = currentHost else { return }
+        Task {
+            if cache {
+                await browserManager.cacheManager.clearCacheForDomain(host)
+            } else {
+                await browserManager.cookieManager.deleteCookiesForDomain(host)
+            }
+        }
+        onDismiss()
     }
 
     // MARK: - Zoom Helpers
@@ -253,89 +280,62 @@ struct ExtensionLibraryView: View {
     }
 }
 
+// MARK: - Tiles
+
+/// Arc's square action tile: a raised dark key with a soft top light, pressing in a touch.
+private struct ActionTileStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var isHovering = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(isEnabled ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+            .background {
+                VegaDesign.Radius.shape(VegaDesign.Radius.lg)
+                    .fill(configuration.isPressed ? VegaDesign.Surface.fillPressed
+                          : isHovering && isEnabled ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill)
+                    .overlay(alignment: .top) {
+                        // The light catching the key's top edge.
+                        VegaDesign.Radius.shape(VegaDesign.Radius.lg)
+                            .strokeBorder(LinearGradient(colors: [.white.opacity(0.12), .clear], startPoint: .top, endPoint: .center))
+                    }
+            }
+            .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
+            .animation(VegaDesign.Motion.quick, value: isHovering)
+            .onHoverTracking { isHovering = $0 }
+    }
+}
+
+private struct ActionTileLabel: View {
+    let systemImage: String
+    var compact = false
+
+    var body: some View {
+        Image(systemName: systemImage)
+            .font(.system(size: compact ? VegaDesign.Size.spaceIcon : VegaDesign.Size.spaceIcon + 4, weight: .regular))
+            .contentTransition(.symbolEffect(.replace))
+            .frame(maxWidth: .infinity)
+            .frame(height: VegaDesign.Size.essentialsTile)
+    }
+}
+
 // MARK: - Mute Button (reactive to tab state)
 
 private struct MuteButton: View {
     let tab: PageSession?
 
-    @State private var isMuted = false
-
     var body: some View {
-        UtilityTile(
-            systemImage: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
-            help: isMuted ? "Unmute" : "Mute"
-        ) {
+        let muted = tab?.isAudioMuted ?? false
+        Button {
             tab?.toggleMute()
-            // Update local state immediately for snappy UI
-            if tab != nil { isMuted.toggle() }
+        } label: {
+            ActionTileLabel(systemImage: muted ? "speaker.slash" : "speaker.wave.2")
         }
+        .buttonStyle(ActionTileStyle())
+        .help(muted ? "Unmute" : "Mute")
         .disabled(tab == nil)
-        .onAppear { isMuted = tab?.isAudioMuted ?? false }
-        .onChange(of: tab?.isAudioMuted) { _, newValue in
-            isMuted = newValue ?? false
-        }
-    }
-}
-
-// MARK: - Copy Button (with checkmark feedback)
-
-private struct CopyButton: View {
-    let icon: String
-    let label: String
-    let action: () -> Bool  // returns true if copy succeeded
-
-    @State private var showCheckmark = false
-
-    var body: some View {
-        UtilityTile(
-            systemImage: showCheckmark ? "checkmark" : icon,
-            help: showCheckmark ? "Copied!" : label,
-            tint: showCheckmark ? .green : .primary
-        ) {
-            if action() {
-                withAnimation(VegaDesign.Motion.quick) {
-                    showCheckmark = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    withAnimation(VegaDesign.Motion.quick) {
-                        showCheckmark = false
-                    }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Utility Tile
-
-/// Sized and filled like a favorites tile, icon only; the name is the tooltip.
-private struct UtilityTile: View {
-    let systemImage: String
-    let help: String
-    var tint: Color = .primary
-    let action: () -> Void
-
-    @Environment(\.isEnabled) private var isEnabled
-    @State private var isHovering = false
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(VegaDesign.Font.title)
-                .foregroundStyle(isEnabled ? AnyShapeStyle(tint) : AnyShapeStyle(.tertiary))
-                .contentTransition(.symbolEffect(.replace))
-                .frame(maxWidth: .infinity)
-                .frame(height: VegaDesign.Size.essentialsTile)
-                .background(
-                    isHovering && isEnabled ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill,
-                    in: VegaDesign.Radius.shape(VegaDesign.Radius.lg)
-                )
-                .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
-        }
-        .buttonStyle(.plain)
-        .help(help)
-        .accessibilityLabel(help)
-        .onHoverTracking { isHovering = $0 }
     }
 }
 
@@ -359,62 +359,43 @@ private struct ExtensionGridItem: View {
         Button {
             triggerExtensionAction()
         } label: {
-            VStack(spacing: 5) {
-                ZStack(alignment: .topTrailing) {
-                    Group {
-                        if let iconPath = ext.iconPath,
-                           let nsImage = NSImage(contentsOfFile: iconPath) {
-                            Image(nsImage: nsImage)
-                                .resizable()
-                                .interpolation(.high)
-                                .antialiased(true)
-                                .scaledToFit()
-                        } else {
-                            Image(systemName: "puzzlepiece.extension")
-                                .font(VegaDesign.Font.title)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .frame(width: 34, height: 34)
-                    .background(VegaDesign.Surface.fill)
-                    .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-
-                    if let badge = badgeText, !badge.isEmpty {
-                        Text(badge)
-                            .font(VegaDesign.Font.micro)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.red)
-                            .clipShape(Capsule())
-                            .offset(x: 4, y: -4)
-                    }
-
+            Group {
+                if let iconPath = ext.iconPath, let nsImage = NSImage(contentsOfFile: iconPath) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .frame(width: VegaDesign.Size.essentialsFavicon + 2, height: VegaDesign.Size.essentialsFavicon + 2)
+                } else {
+                    Image(systemName: "puzzlepiece.extension")
+                        .font(VegaDesign.Font.title)
+                        .foregroundStyle(.secondary)
                 }
-
-                Text(ext.name)
-                    .font(VegaDesign.Font.caption)
-                    .foregroundStyle(.secondary.opacity(0.7))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: 72)
             }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 4)
             .frame(maxWidth: .infinity)
-            .background(isHovering ? VegaDesign.Surface.fill : Color.clear)
-            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+            .frame(height: VegaDesign.Size.essentialsTile)
             .overlay(alignment: .topTrailing) {
+                if let badge = badgeText, !badge.isEmpty {
+                    Text(badge)
+                        .font(VegaDesign.Font.micro)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, VegaDesign.Spacing.xs)
+                        .padding(.vertical, 1)
+                        .background(Color.red, in: Capsule())
+                        .padding(VegaDesign.Spacing.xs)
+                }
+            }
+            .overlay(alignment: .bottomTrailing) {
                 if isPinned {
                     Image(systemName: "pin.fill")
-                        .font(VegaDesign.Font.caption)
-                        .foregroundStyle(Color.blue.opacity(0.8))
-                        .rotationEffect(.degrees(45))
-                        .padding(4)
+                        .font(VegaDesign.Font.micro)
+                        .foregroundStyle(.secondary)
+                        .padding(VegaDesign.Spacing.xs)
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ActionTileStyle())
+        .help(ext.name)
         .onHoverTracking { isHovering = $0 }
         .onAppear { refreshBadge() }
         .contextMenu {
@@ -458,58 +439,54 @@ private struct ExtensionGridItem: View {
 
 // MARK: - Site Setting Row
 
-private struct ContentBlockerSiteRow: View {
-    let session: PageSession
-    @Binding var enabled: Bool
+/// Arc's settings row: a round icon, white when the setting is on, a title and its state.
+/// Tapping the row flips it; a row with its own controls passes `action: nil`.
+private struct SiteSettingRow<Trailing: View>: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let isOn: Bool
+    let action: (() -> Void)?
+    @ViewBuilder let trailing: () -> Trailing
 
-    private var subtitle: String {
-        enabled ? "Enabled" : "Disabled for this site"
-    }
+    @State private var isHovering = false
+    private let iconSize: CGFloat = 32
 
     var body: some View {
-        SiteSettingRow(icon: "shield.checkered", iconColor: .green, title: "Content Blocker", subtitle: subtitle) {
-            Toggle("", isOn: $enabled)
-                .toggleStyle(VegaSwitchToggleStyle())
+        HStack(spacing: VegaDesign.Spacing.md) {
+            Image(systemName: icon)
+                .font(.system(size: VegaDesign.Size.spaceIcon, weight: .semibold))
+                // On reads as a filled key in either appearance: primary fill, glyph knocked out.
+                .foregroundStyle(isOn ? AnyShapeStyle(.background) : AnyShapeStyle(.primary))
+                .frame(width: iconSize, height: iconSize)
+                .background(isOn ? Color.primary : Color.primary.opacity(0.16), in: Circle())
+                .contentTransition(.symbolEffect(.replace))
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title)
+                    .font(VegaDesign.Font.label)
+                    .lineLimit(1)
+                Text(subtitle)
+                    .font(VegaDesign.Font.secondary)
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.opacity)
+            }
+            Spacer(minLength: 0)
+            trailing()
         }
+        .padding(.horizontal, VegaDesign.Spacing.xs)
+        .padding(.vertical, VegaDesign.Spacing.xs)
+        .background(isHovering && action != nil ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .onHoverTracking { isHovering = $0 }
+        .onTapGesture { withAnimation(VegaDesign.Motion.quick) { action?() } }
+        .animation(VegaDesign.Motion.quick, value: isOn)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(action == nil ? [] : .isButton)
     }
 }
 
-private struct SiteSettingRow<Control: View>: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let subtitle: String?
-    @ViewBuilder let control: () -> Control
-
-    @State private var isHovering = false
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(VegaDesign.Font.body)
-                .foregroundStyle(iconColor)
-                .frame(width: 28, height: 28)
-                .background(iconColor.opacity(0.12))
-                .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(VegaDesign.Font.body)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(VegaDesign.Font.caption)
-                        .foregroundStyle(.secondary.opacity(0.6))
-                }
-            }
-
-            Spacer()
-
-            control()
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 7)
-        .background(isHovering ? VegaDesign.Surface.fill : Color.clear)
-        .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-        .onHoverTracking { isHovering = $0 }
+extension SiteSettingRow where Trailing == EmptyView {
+    init(icon: String, title: String, subtitle: String, isOn: Bool, action: @escaping () -> Void) {
+        self.init(icon: icon, title: title, subtitle: subtitle, isOn: isOn, action: action) { EmptyView() }
     }
 }
