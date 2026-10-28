@@ -9,6 +9,7 @@
 import SwiftUI
 import WebKit
 
+import VegaDesign
 import VegaSettings
 import VegaWeb
 
@@ -104,7 +105,15 @@ struct PrivacySettingsView: View {
                     .onChange(of: vegaSettings.blockCrossSiteTracking) { _, enabled in
                         browserManager.contentBlockerManager.setEnabled(enabled)
                     }
-                Toggle("Search Page Text in History", isOn: $settings.searchPageTextInHistory)
+                Toggle(isOn: $settings.searchPageTextInHistory) {
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        Text("Search Page Text in History")
+                            .font(VegaDesign.Font.body)
+                        Text("Saves the text of pages you visit on this Mac so history search can find them. Private windows, pages with a password field, and pages that ask not to be stored are skipped.")
+                            .font(VegaDesign.Font.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                     .onChange(of: vegaSettings.searchPageTextInHistory) { _, enabled in
                         if !enabled { browserManager.historyManager.erasePageText() }
                     }
