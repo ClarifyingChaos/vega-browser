@@ -57,7 +57,10 @@ struct VegaApp: App {
                     .environmentObject(browserManager)
                     .environment(browserManager.tabs)
             } viewB: {
-                ContentView(onWindowRegistered: setupApplicationLifecycle)
+                ContentView()
+                    .onWindowRegistered {
+                        setupApplicationLifecycle()
+                    }
                     .ignoresSafeArea(.all)
                     .background(BackgroundWindowModifier())
                     .environmentObject(browserManager)
