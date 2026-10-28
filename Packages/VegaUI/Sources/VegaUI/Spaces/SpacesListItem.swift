@@ -20,6 +20,8 @@ struct SpacesListItem: View {
     let isActive: Bool
     let selection: Double
     let isFaded: Bool
+    /// Draw a plain dot whatever the icon; the Agent space keeps its mark.
+    let forceDot: Bool
 
     @State private var showThemePicker = false
     @State private var showsIconPicker = false
@@ -34,8 +36,10 @@ struct SpacesListItem: View {
         isActive: Bool,
         selection: Double? = nil,
         isFaded: Bool,
-        buttonSize: CGFloat = VegaDesign.Spacing.xxl
+        buttonSize: CGFloat = VegaDesign.Spacing.xxl,
+        forceDot: Bool = false
     ) {
+        self.forceDot = forceDot
         self.space = space
         self.isActive = isActive
         self.selection = selection ?? (isActive ? 1 : 0)
@@ -97,7 +101,7 @@ struct SpacesListItem: View {
                 .foregroundStyle(VegaDesign.Surface.agentGradient)
                 .opacity(VegaDesign.Surface.agentIconInactiveOpacity + (1 - VegaDesign.Surface.agentIconInactiveOpacity) * selection)
                 .animation(VegaDesign.Motion.standard, value: isActive)
-        } else if SpaceIcon.isDot(space.icon) {
+        } else if forceDot || SpaceIcon.isDot(space.icon) {
             plainDot
         } else {
             SpaceIcon(space.icon)
