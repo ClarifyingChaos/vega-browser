@@ -132,10 +132,13 @@ build-release/
 build-release-signed/
 
 # Everything under docs/ stays local: designs, specs, reviews, handoffs, working
-# notes. adblocker-architecture.md is the one committed doc, referenced by the maintainer notes.
+# notes. adblocker-architecture.md is the one committed doc.
 docs/*
 !docs/adblocker-architecture.md
 tasks/
 .superpowers/
 .playwright-mcp/
 build-ios/
+
+# Local maintainer notes
+ASSESSMENT.md
