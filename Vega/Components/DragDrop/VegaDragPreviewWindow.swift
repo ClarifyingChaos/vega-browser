@@ -118,6 +118,13 @@ private struct VegaDragPreviewContent: View {
                             .lineLimit(1)
                             .truncationMode(.tail)
                         Spacer(minLength: 0)
+                        if let count = manager.draggedItem?.count, count > 1 {
+                            Text("\(count)")
+                                .font(VegaDesign.Font.micro)
+                                .padding(.horizontal, VegaDesign.Spacing.sm)
+                                .padding(.vertical, VegaDesign.Spacing.xxs)
+                                .vegaControlSurface(in: Capsule())
+                        }
                     }
                 }
                 .padding(.horizontal, VegaDesign.Spacing.rowPadding)
