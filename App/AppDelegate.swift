@@ -266,6 +266,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             return
         }
 
+        // vega:// commands come only through this event, and never from Vega itself.
+        if url.scheme?.lowercased() == "vega" {
+            let sender = event.attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value
+            guard sender != getpid() else {
+                AppDelegate.log.info("Ignored vega:// link sent by Vega itself")
+                return
+            }
+            handleIncoming(url: url)
+            return
+        }
+
         // Security: Only allow http/https URLs from external automation
         guard let scheme = url.scheme?.lowercased(),
               scheme == "http" || scheme == "https" else {
@@ -286,7 +297,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             return
         }
         Task { @MainActor in
-            manager.presentExternalURL(url)
+            if url.scheme?.lowercased() == "vega" {
+                manager.handleVegaURL(url)
+            } else {
+                manager.presentExternalURL(url)
+            }
         }
     }
 

@@ -28,6 +28,7 @@ public final class VegaSettingsService {
     private let debugToggleUpdateNotificationKey = "settings.debugToggleUpdateNotification"
     private let lastSeenVersionKey = "settings.lastSeenVersion"
     private let askBeforeQuitKey = "settings.askBeforeQuit"
+    private let allowVegaURLsKey = "settings.allowVegaURLs"
     private let sidebarPositionKey = "settings.sidebarPosition"
     private let topBarAddressViewKey = "settings.topBarAddressView"
 
@@ -276,6 +277,13 @@ public final class VegaSettingsService {
         }
     }
     
+    /// Lets other apps drive Vega through vega:// links. Off until the person turns it on.
+    public var allowVegaURLs: Bool {
+        didSet {
+            userDefaults.set(allowVegaURLs, forKey: allowVegaURLsKey)
+        }
+    }
+
     public var askBeforeQuit: Bool {
         didSet {
             userDefaults.set(askBeforeQuit, forKey: askBeforeQuitKey)
@@ -569,6 +577,7 @@ public final class VegaSettingsService {
             adBlockerEnabledKey: false,
             debugToggleUpdateNotificationKey: false,
             askBeforeQuitKey: true,
+            allowVegaURLsKey: false,
             externalLinksInMiniWindowKey: true,
             sidebarPositionKey: SidebarPosition.left.rawValue,
             topBarAddressViewKey: false,
@@ -693,6 +702,7 @@ public final class VegaSettingsService {
         self.lastSeenVersion = userDefaults.string(forKey: lastSeenVersionKey)
         self.externalLinksInMiniWindow = userDefaults.bool(forKey: externalLinksInMiniWindowKey)
         self.askBeforeQuit = userDefaults.bool(forKey: askBeforeQuitKey)
+        self.allowVegaURLs = userDefaults.bool(forKey: allowVegaURLsKey)
         self.sidebarPosition = SidebarPosition(rawValue: userDefaults.string(forKey: sidebarPositionKey) ?? "left") ?? SidebarPosition.left
         self.topBarAddressView = userDefaults.bool(forKey: topBarAddressViewKey)
         self.geminiApiKey = ""  // In-memory only; persistent storage via AIKeychainStorage

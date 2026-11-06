@@ -50,6 +50,16 @@
 </p>
 
 
+## Launchers
+
+Raycast, Alfred and scripts can drive Vega with `vega://` links. They are off until you turn on Allow vega:// links in Settings > Links.
+
+- Open a page: `open "vega://open?url=https://example.com&space=Work&reuse=1"` (`space` and `reuse` are optional; `reuse=1` selects a tab that already shows the page)
+- Search: `open "vega://search?q=swift%20concurrency&space=Work"`
+- Switch space: `open "vega://space?name=Work"`
+
+A space is matched by its exact name (any case) or its UUID. Only `http` and `https` pages open.
+
 ## Getting Started  
 
 ### Download
