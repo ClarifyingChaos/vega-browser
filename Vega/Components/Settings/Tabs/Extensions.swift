@@ -37,6 +37,7 @@ struct ExtensionsSettingsView: View {
                                     browserManager.disableExtension(ext.id)
                                 }
                             },
+                            onPrivateBrowsingChange: { extensionManager.setAllowsPrivateBrowsing(ext.id, allowed: $0) },
                             onUpdate: update.map { info in { install(info, replacing: nil) } },
                             onSwitch: alternative.map { info in { install(info, replacing: ext) } },
                             onOpenOptions: { extensionManager.openOptionsPage(ext.id) },
@@ -241,6 +242,7 @@ private struct ExtensionRowView: View {
     let appName: String?
     let hasOptionsPage: Bool
     let onEnabledChange: (Bool) -> Void
+    let onPrivateBrowsingChange: (Bool) -> Void
     let onUpdate: (() -> Void)?
     let onSwitch: (() -> Void)?
     let onOpenOptions: () -> Void
@@ -263,16 +265,25 @@ private struct ExtensionRowView: View {
             .opacity(`extension`.isEnabled ? 1 : VegaDesign.Surface.unloadedOpacity)
 
             VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
-                Text(`extension`.name)
-                    .font(VegaDesign.Font.label)
-                    .foregroundStyle(`extension`.isEnabled ? .primary : .secondary)
-                    .lineLimit(1)
-                Text(subtitle)
-                    .font(VegaDesign.Font.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                Group {
+                    Text(`extension`.name)
+                        .font(VegaDesign.Font.label)
+                        .foregroundStyle(`extension`.isEnabled ? .primary : .secondary)
+                        .lineLimit(1)
+                    Text(subtitle)
+                        .font(VegaDesign.Font.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .help(`extension`.description ?? "")
+
+                Toggle(
+                    "Allow in Private Browsing",
+                    isOn: Binding(get: { `extension`.allowsPrivateBrowsing }, set: onPrivateBrowsingChange)
+                )
+                .toggleStyle(.checkbox)
+                .font(VegaDesign.Font.caption)
             }
-            .help(`extension`.description ?? "")
 
             Spacer()
 

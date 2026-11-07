@@ -41,6 +41,12 @@ public struct LinksSettingsView: View {
             } footer: {
                 Text("Air Traffic Control rules below take priority.")
             }
+
+            Section {
+                Toggle("Allow vega:// links", isOn: $settings.allowVegaURLs)
+            } footer: {
+                Text("Lets launchers like Raycast and Alfred open pages, search and switch spaces.")
+            }
             #endif
 
             Section {

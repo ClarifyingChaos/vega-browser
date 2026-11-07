@@ -3,7 +3,7 @@
 //  SpaceSwitcherTitle.swift
 //  Vega
 //
-//  A space's name row between its favorites and its pinned tabs, as in Arc. Clicking it lists every space.
+//  A space's name row between its favorites and its pinned tabs, as in Arc. Clicking it folds the pinned tabs.
 //
 
 import SwiftUI
@@ -31,35 +31,86 @@ struct SpaceSwitcherTitle: View {
         if let space = currentSpace {
             // Also the pin target for a space whose pinned section is empty.
             let pinned = Parent.pinned(spaceID: space.id)
+            let isDropTarget = dragSession.isDragging && dragSession.activeZone == .target(pinned)
             VegaDropZoneHostView(zoneID: .target(pinned), manager: dragSession, onDrop: { itemID in
-                tabs.pin(itemID, to: pinned)
-            }) {
-                if windowState.privateTree != nil {
-                    label(space)
+                let group = tabs.selectedItems(in: windowState)
+                if group.contains(itemID) {
+                    tabs.pin(group, to: pinned)
+                    windowState.multiSelection.clear()
                 } else {
-                    Menu {
-                        menuContent(current: space)
-                    } label: {
-                        label(space)
-                    }
-                    .menuStyle(.button)
-                    .buttonStyle(.plain)
-                    .menuIndicator(.hidden)
-                    // Width may shrink so a long name truncates beside the history buttons.
-                    .fixedSize(horizontal: false, vertical: true)
+                    tabs.pin(itemID, to: pinned)
                 }
+            }) {
+                HStack(spacing: 0) {
+                    // As in Arc: the row folds the pinned section, the ellipsis holds the space menu.
+                    Button(action: { toggleCollapsed(space) }) {
+                        HStack(spacing: VegaDesign.Spacing.md) {
+                            leadingIcon(space)
+                                .frame(width: VegaDesign.Size.favicon)
+                            title(space)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    if isHovering, windowState.privateTree == nil {
+                        Menu {
+                            menuContent(current: space)
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: VegaDesign.Size.rowGlyph, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: VegaDesign.Size.favicon, height: VegaDesign.Size.favicon)
+                                .contentShape(Rectangle())
+                        }
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .menuIndicator(.hidden)
+                        .fixedSize()
+                    }
+                }
+                .padding(.horizontal, VegaDesign.Spacing.rowPadding)
+                // Same box and hover fill as a tab row.
+                .frame(height: VegaDesign.Tab.height)
+                .vegaTabSurface(selected: false, hovered: isHovering || isDropTarget)
+                .contentShape(VegaDesign.Radius.shape(VegaDesign.Tab.radius))
+                .onHoverTracking { isHovering = $0 }
             }
         }
     }
 
-    private func label(_ space: SpaceRecord) -> some View {
-        let isDropTarget = dragSession.isDragging && dragSession.activeZone == .target(.pinned(spaceID: space.id))
-        let title = HStack(spacing: VegaDesign.Spacing.xs) {
-            if space.isAgent {
-                Image(systemName: "sparkles").foregroundStyle(VegaDesign.Surface.agentGradient)
-            }
-            Text(space.name).foregroundStyle(.primary)
+    private func hasPinned(_ space: SpaceRecord) -> Bool {
+        !tabs.children(of: .pinned(spaceID: space.id)).isEmpty
+    }
+
+    private func toggleCollapsed(_ space: SpaceRecord) {
+        guard hasPinned(space) else { return }
+        withAnimation(VegaDesign.Motion.standard) {
+            tabs.setPinnedCollapsed(!tabs.isPinnedCollapsed(space: space.id), space: space.id)
         }
+    }
+
+    /// The space icon, a chevron on hover when there are pinned tabs to fold.
+    @ViewBuilder
+    private func leadingIcon(_ space: SpaceRecord) -> some View {
+        if isHovering, hasPinned(space) {
+            Image(systemName: tabs.isPinnedCollapsed(space: space.id) ? "chevron.right" : "chevron.down")
+                .font(.system(size: VegaDesign.Size.rowGlyph, weight: .semibold))
+                .foregroundStyle(.secondary)
+        } else if space.isAgent {
+            Image(systemName: "sparkles").foregroundStyle(VegaDesign.Surface.agentGradient)
+        } else if SpaceIcon.isDot(space.icon) {
+            Circle()
+                .fill(space.accentColor)
+                .frame(width: VegaDesign.Spacing.sm, height: VegaDesign.Spacing.sm)
+        } else {
+            SpaceIcon(space.icon).foregroundStyle(.secondary)
+        }
+    }
+
+    private func title(_ space: SpaceRecord) -> some View {
+        let title = Text(space.name)
+            .foregroundStyle(.primary)
             .font(VegaDesign.Font.label)
             .lineLimit(1)
             .fixedSize()
@@ -70,14 +121,6 @@ struct SpaceSwitcherTitle: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .vegaTrailingFade()
         }
-        .padding(.horizontal, VegaDesign.Spacing.sm)
-        .frame(height: VegaDesign.Size.row)
-        .background(
-            VegaDesign.Radius.shape(VegaDesign.Radius.md)
-                .fill(isHovering || isDropTarget ? VegaDesign.Surface.fill : Color.clear)
-        )
-        .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-        .onHoverTracking { isHovering = $0 }
     }
 
     @ViewBuilder
