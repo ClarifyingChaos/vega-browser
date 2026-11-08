@@ -585,6 +585,13 @@ public final class VegaSettingsService {
     }
 
     public init() {
+        // A new install starts with the blocker on; anyone who has run Vega keeps their choice.
+        // Checked before register(defaults:), which would make both keys read as present.
+        if userDefaults.object(forKey: didFinishOnboardingKey) == nil,
+           userDefaults.object(forKey: adBlockerEnabledKey) == nil {
+            userDefaults.set(true, forKey: adBlockerEnabledKey)
+        }
+
         // Register default values
         userDefaults.register(defaults: [
             searchEngineKey: SearchProvider.google.rawValue,
