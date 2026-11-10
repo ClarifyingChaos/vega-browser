@@ -381,6 +381,12 @@ extension PageSession: WKScriptMessageHandler {
         case "historyStateDidChange":
             // The message is only a signal. The address comes from WebKit, never from the body:
             // a page could otherwise put any URL, lock icon included, in the URL bar.
+            // Shorts hidden: a Shorts page reached inside YouTube opens as the regular video (satyasaibhushan/Vega).
+            if controller?.settings.youTubeHideShorts == true, let url = message.webView?.url,
+               let watch = youTubeShortsWatchURL(url) {
+                message.webView?.load(URLRequest(url: watch))
+                return
+            }
             addressChangedWithoutLoad(in: message.webView)
 
         case "vegaShortcutDetect":
