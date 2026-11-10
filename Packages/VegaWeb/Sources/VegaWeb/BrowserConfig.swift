@@ -81,6 +81,15 @@ public class BrowserConfiguration {
         )
         config.userContentController.addUserScript(passkeySuppress)
 
+        // Keyboard clicking (from satyasaibhushan/Vega): Option-F labels what is clickable in view. See Resources/link-hints.js.
+        // Its own world, so a page cannot see or fake the labels.
+        if let url = Bundle.module.url(forResource: "link-hints", withExtension: "js", subdirectory: "Resources"),
+           let source = try? String(contentsOf: url, encoding: .utf8) {
+            config.userContentController.addUserScript(
+                WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .world(name: "VegaLinkHints"))
+            )
+        }
+
         // FORK: slim page scrollbars, the same thickness as the sidebar's: a 6 pt pill with 3 pt of space around it, on a clear track (the space is a transparent border, so the pill stays round),
         // instead of the system's wide bar. Added at the end of the document's head so the page's own sheets come first.
         config.userContentController.addUserScript(WKUserScript(
