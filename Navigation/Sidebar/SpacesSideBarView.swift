@@ -493,7 +493,7 @@ private struct AgentSpaceRow: View {
                     .font(.system(size: VegaDesign.Size.rowGlyph, weight: .medium))
                     .foregroundStyle(VegaDesign.Surface.agentGradient)
                     .frame(width: VegaDesign.Size.favicon)
-                    .symbolEffect(.pulse, isActive: busy)
+                    .vegaPulse(while: busy)
                 Text("Agent · \(tabCount) \(tabCount == 1 ? "tab" : "tabs")")
                     .font(VegaDesign.Font.body)
                 Spacer(minLength: 0)

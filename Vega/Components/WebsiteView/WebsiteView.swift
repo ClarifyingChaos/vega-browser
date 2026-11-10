@@ -342,18 +342,79 @@ private struct AgentFrame: View {
     let busy: Bool
 
     var body: some View {
-        shape.stroke(VegaDesign.Surface.agentGradient, lineWidth: VegaDesign.Surface.agentFrameWidth)
+        AgentFrameStroke(shape: shape)
             .overlay(alignment: .top) {
-                Label("Agent", systemImage: "sparkles")
+                Label {
+                    Text("Agent")
+                } icon: {
+                    // Styled here: the pulse hosts its view outside this one's environment.
+                    Image(systemName: "sparkles")
+                        .font(VegaDesign.Font.captionStrong)
+                        .foregroundStyle(.white)
+                        .vegaPulse(while: busy)
+                }
                     .font(VegaDesign.Font.captionStrong)
                     .foregroundStyle(.white)
-                    .symbolEffect(.pulse, isActive: busy)
                     .padding(.horizontal, VegaDesign.Spacing.md)
                     .padding(.vertical, VegaDesign.Spacing.xs)
                     .background(VegaDesign.Surface.agentGradient, in: Capsule())
                     .padding(.top, VegaDesign.Spacing.md)
             }
             .allowsHitTesting(false)
+    }
+}
+
+/// The frame's stroke as Core Animation layers, a gradient masked to the outline. As a SwiftUI
+/// shape it was shaded into a page-sized bitmap on the main thread, about 50 ms a tool call.
+private struct AgentFrameStroke: NSViewRepresentable {
+    let shape: AnyShape
+
+    func makeNSView(context: Context) -> StrokeView { StrokeView() }
+
+    func updateNSView(_ view: StrokeView, context: Context) {
+        view.shape = shape
+        view.needsLayout = true
+    }
+
+    final class StrokeView: NSView {
+        var shape = AnyShape(Rectangle())
+        private let gradient = CAGradientLayer()
+        private let outline = CAShapeLayer()
+
+        override init(frame: NSRect) {
+            super.init(frame: frame)
+            wantsLayer = true
+            gradient.colors = VegaDesign.Surface.agentColors.map { NSColor($0).cgColor }
+            gradient.startPoint = CGPoint(x: 0, y: 0)
+            gradient.endPoint = CGPoint(x: 1, y: 1)
+            outline.fillColor = nil
+            outline.strokeColor = NSColor.black.cgColor
+            outline.lineWidth = VegaDesign.Surface.agentFrameWidth
+            gradient.mask = outline
+            layer?.addSublayer(gradient)
+        }
+
+        required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+        // Top-left origin, as the SwiftUI shape and gradient have.
+        override var isFlipped: Bool { true }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        override func layout() {
+            super.layout()
+            // The stroke straddles the page's edge, so the layers reach half its width past it.
+            let reach = outline.lineWidth / 2
+            let frame = bounds.insetBy(dx: -reach, dy: -reach)
+            let path = shape.path(in: CGRect(origin: CGPoint(x: reach, y: reach), size: bounds.size)).cgPath
+            guard gradient.frame != frame || outline.path != path else { return }
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            gradient.frame = frame
+            outline.frame = gradient.bounds
+            outline.path = path
+            CATransaction.commit()
+        }
     }
 }
 
