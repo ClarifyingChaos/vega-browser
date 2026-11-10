@@ -68,7 +68,7 @@ struct URLBarView: View {
         }
         .onDisappear { cancelEditing() }
         .onHoverTracking { hovering in
-            withAnimation(VegaDesign.Motion.quick) {
+            withAnimation(VegaDesign.Motion.hover(hovering)) {
                 isHovering = hovering
             }
         }

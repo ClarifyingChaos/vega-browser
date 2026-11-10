@@ -507,7 +507,7 @@ private struct AgentSpaceRow: View {
         }
         .buttonStyle(.plain)
         .onHoverTracking { hovering in
-            withAnimation(VegaDesign.Motion.quick) { isHovering = hovering }
+            withAnimation(VegaDesign.Motion.hover(hovering)) { isHovering = hovering }
         }
     }
 }

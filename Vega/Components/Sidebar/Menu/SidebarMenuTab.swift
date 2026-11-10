@@ -54,7 +54,7 @@ struct SidebarMenuTab: View {
         .background(!isActive && isHovering ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.xl))
         .vegaRowSelection(isActive, radius: VegaDesign.Radius.xl)
-        .animation(VegaDesign.Motion.quick, value: isHovering)
+        .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
         .animation(VegaDesign.Motion.standard, value: isActive)
     }
 }

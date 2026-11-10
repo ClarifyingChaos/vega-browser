@@ -167,7 +167,7 @@ struct SidebarMenuHoverDownloadItem: View {
         .padding(.vertical, VegaDesign.Spacing.xs)
         .background(isHovering ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-        .animation(VegaDesign.Motion.quick, value: isHovering)
+        .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
         .onHoverTracking { state in
             isHovering = state
         }

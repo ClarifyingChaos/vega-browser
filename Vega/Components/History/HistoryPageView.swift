@@ -309,7 +309,7 @@ private struct HistoryPageRow: View {
         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .padding(.horizontal, VegaDesign.Spacing.sm)
         .onHoverTracking { hovered in
-            withAnimation(VegaDesign.Motion.quick) { isHovered = hovered }
+            withAnimation(VegaDesign.Motion.hover(hovered)) { isHovered = hovered }
         }
         .onTapGesture(perform: onOpen)
         .contextMenu {

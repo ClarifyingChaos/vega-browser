@@ -220,7 +220,7 @@ struct TopBarView: View {
         )
         .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .onHoverTracking { hovering in
-            withAnimation(VegaDesign.Motion.quick) {
+            withAnimation(VegaDesign.Motion.hover(hovering)) {
                 isHovering = hovering
             }
         }

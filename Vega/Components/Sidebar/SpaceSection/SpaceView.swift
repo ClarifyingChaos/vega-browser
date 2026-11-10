@@ -330,7 +330,7 @@ struct SpaceView: View {
         }
         .buttonStyle(VegaTabButtonStyle())
         .onHoverTracking { hovering in
-            withAnimation(VegaDesign.Motion.quick) { isNewTabHovering = hovering }
+            withAnimation(VegaDesign.Motion.hover(hovering)) { isNewTabHovering = hovering }
         }
     }
 }

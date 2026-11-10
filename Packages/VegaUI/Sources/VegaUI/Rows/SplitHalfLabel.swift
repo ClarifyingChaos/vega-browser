@@ -60,7 +60,7 @@ public struct SplitHalfLabel: View {
         }
         .buttonStyle(PlainButtonStyle())
         .onHoverTracking { hovering in
-            withAnimation(VegaDesign.Motion.quick) {
+            withAnimation(VegaDesign.Motion.hover(hovering)) {
                 isHovering = hovering
             }
         }

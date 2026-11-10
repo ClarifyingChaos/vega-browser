@@ -360,7 +360,6 @@ struct CommandPaletteView: View {
                 selectedSuggestionIndex = count - 1
             }
         }
-        .animation(VegaDesign.Motion.quick, value: selectedSuggestionIndex)
         .onChange(of: commandPalette.prefilledText) { _, newValue in
             if isVisible {
                 text = newValue
@@ -402,7 +401,7 @@ struct CommandPaletteView: View {
                         .foregroundStyle(.primary)
                         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
                         .onHoverTracking { hovering in
-                            withAnimation(VegaDesign.Motion.quick) {
+                            withAnimation(VegaDesign.Motion.hover(hovering)) {
                                 if hovering {
                                     hoveredIndex = index
                                 } else {
