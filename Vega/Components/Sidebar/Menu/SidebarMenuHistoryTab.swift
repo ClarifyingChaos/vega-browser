@@ -370,7 +370,7 @@ struct HistoryRowView: View {
         .background(isHovered ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .onHoverTracking { hovered in
-            withAnimation(VegaDesign.Motion.quick) {
+            withAnimation(VegaDesign.Motion.hover(hovered)) {
                 isHovered = hovered
             }
         }
@@ -479,7 +479,7 @@ struct FiltersSelectButton: View {
                 .vegaRowSelection(isActive)
         }
         .buttonStyle(.plain)
-        .animation(VegaDesign.Motion.quick, value: isHovering)
+        .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
         .animation(VegaDesign.Motion.standard, value: isActive)
         .onHoverTracking { state in
             isHovering = state

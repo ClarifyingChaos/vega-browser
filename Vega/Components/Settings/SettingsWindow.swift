@@ -216,7 +216,7 @@ private struct SettingsSidebarRow: View {
             .vegaElevation(isSelected ? .raised : .flat)
         }
         .buttonStyle(.plain)
-        .animation(VegaDesign.Motion.quick, value: isHovering)
+        .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
         .onHoverTracking { isHovering = $0 }
     }
 }
