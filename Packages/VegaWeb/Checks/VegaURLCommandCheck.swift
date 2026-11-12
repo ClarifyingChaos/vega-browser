@@ -19,6 +19,7 @@ struct VegaURLCommandCheck {
         precondition(open?.space == "Work" && open?.ignored == ["junk"])
         precondition(parse("vega://open?url=http://a.com")?.action == .open(URL(string: "http://a.com")!, reuse: false))
         precondition(parse("VEGA://OPEN?url=https://a.com") != nil)
+        precondition(parse("vega://open?url=https://a.com") == nil, "the old scheme belongs to upstream Vega")
         precondition(parse("vega://search?q=hello%20world&space=a")?.action == .search("hello world"))
         precondition(parse("vega://space?name=Work")?.space == "Work")
         precondition(parse("vega://open?url=https://a.com&space=") == nil && parse("vega://open?url=https://a.com&space=%20") == nil)
