@@ -308,7 +308,7 @@ struct CommandPaletteView: View {
                         .frame(width: effectiveCommandPaletteWidth)
                         // FORK: dark glass in any theme, as Arc's command bar is.
                         .environment(\.colorScheme, .dark)
-                        .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xxl), tint: .black.opacity(0.6))
+                        .vegaGlassSurface(in: VegaDesign.Radius.shape(14), tint: .black.opacity(0.6)) // FORK: Arc's ~14 pt corner (was 24)
                         .animation(
                             VegaDesign.Motion.quick,
                             value: searchManager.suggestions.count
