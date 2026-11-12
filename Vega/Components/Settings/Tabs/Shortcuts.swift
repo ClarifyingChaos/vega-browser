@@ -22,9 +22,13 @@ struct ShortcutsSettingsView: View {
 
     var body: some View {
         Form {
+            // FORK: the search field stands on its own, above the groups, not inside a card with a switch.
             Section {
                 SidebarMenuSearchField(prompt: "Search shortcuts...", text: $searchText)
+            }
+            .listRowBackground(Color.clear)
 
+            Section {
                 Toggle("Detect Website Shortcuts", isOn: Binding(
                     get: { WebsiteShortcutProfile.isFeatureEnabled },
                     set: { WebsiteShortcutProfile.isFeatureEnabled = $0 }
