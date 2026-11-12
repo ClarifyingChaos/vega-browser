@@ -55,15 +55,8 @@ struct ExtensionLibraryOverlay: View {
                             onShowMoreMenu: { isShowingMoreMenu.toggle() }
                         )
                         .frame(width: menuWidth)
-                        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
-                        // Arc's notch, pointing at the button the panel came from.
-                        .overlay(alignment: .topLeading) {
-                            PanelNotch()
-                                .fill(VegaDesign.Surface.raised)
-                                .frame(width: notchWidth, height: notchHeight)
-                                .offset(x: buttonFrame.midX - originX(buttonFrame: buttonFrame, container: proxy.size) - notchWidth / 2,
-                                        y: -notchHeight + 1)
-                        }
+                        // FORK: glass instead of a solid card; the solid notch no longer matches it, so it is dropped.
+                        .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
                         // Grows out of the button rather than appearing whole.
                         .scaleEffect(appeared ? 1 : 0.88, anchor: UnitPoint(
                             x: (buttonFrame.midX - originX(buttonFrame: buttonFrame, container: proxy.size)) / menuWidth, y: 0))
@@ -79,7 +72,7 @@ struct ExtensionLibraryOverlay: View {
                                 windowState: windowState,
                                 onDismiss: { isShowingMoreMenu = false }
                             )
-                            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+                            .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
                             .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)))
                         }
                     }

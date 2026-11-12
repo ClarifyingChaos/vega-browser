@@ -24,6 +24,7 @@ struct SpacesSideBarView: View {
     @Environment(\.vegaBaseColorScheme) private var baseColorScheme
     @Environment(WindowRegistry.self) private var windowRegistry
     @Environment(\.vegaSettings) var vegaSettings
+    @Environment(\.sidebarOverlayInset) private var overlayInset
     @Environment(CommandPalette.self) var commandPalette
     @Environment(TabOrganizerManager.self) var tabOrganizerManager
 
@@ -170,6 +171,8 @@ struct SpacesSideBarView: View {
                     .frame(height: VegaDesign.Spacing.sidebarTop)
                     .padding(.leading, VegaDesign.SidebarChrome.trafficLightsInset)
                     .padding(.trailing, VegaDesign.Spacing.sidebarInset)
+                    // FORK: in the hover overlay, cancel its inset so the icons stay level with the window buttons.
+                    .offset(x: -overlayInset.width, y: -overlayInset.height)
             }
         }
         .padding(.bottom, VegaDesign.Spacing.sidebarInset)
