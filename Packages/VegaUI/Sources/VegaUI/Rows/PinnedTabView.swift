@@ -85,7 +85,7 @@ public struct PinnedTabView<Icon: View>: View {
 
                 tabIcon
                     .frame(height: VegaDesign.Size.essentialsFavicon)
-                    .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
+                    // FORK: no unloaded fade; it washed icon colors out (Dia keeps them full).
             }
             // FORK: the hover reset arrow is removed; "Reset to Pinned URL" stays in the context menu.
             .frame(maxWidth: .infinity)
