@@ -40,7 +40,7 @@ struct SettingsAITab: View {
                         .foregroundStyle(.secondary)
                 } else {
                     Toggle(isOn: $settings.tabOrganizerEnabled) {
-                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
                             Text("Tab Organizer")
                                 .font(VegaDesign.Font.body)
                             Text("Uses Apple Intelligence on this Mac to group, rename, sort, and deduplicate tabs")
@@ -49,7 +49,7 @@ struct SettingsAITab: View {
                         }
                     }
                     Toggle(isOn: $settings.autoRenamePinnedTabs) {
-                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
                             Text("Rename Pinned Tabs")
                                 .font(VegaDesign.Font.body)
                             Text("Shortens a tab's title when you pin it to a space")
@@ -58,7 +58,7 @@ struct SettingsAITab: View {
                         }
                     }
                     Toggle(isOn: $settings.linkPreviews) {
-                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
                             Text("Link Previews")
                                 .font(VegaDesign.Font.body)
                             Text("Hold Shift while hovering a link to see a short summary of the page")
@@ -80,7 +80,7 @@ struct SettingsAITab: View {
             // MARK: - Downloads
             Section {
                 Toggle(isOn: $settings.tidyDownloads) {
-                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
                         Text("Tidy Downloads")
                             .font(VegaDesign.Font.body)
                         Text("Renames downloads with meaningless names, such as 387494876.pdf, after the page they came from")
@@ -102,6 +102,7 @@ struct SettingsAITab: View {
             Section("Providers") {
                 ForEach(configService.providers.filter { $0.providerType != .appleIntelligence || AppleIntelligenceProvider.isAvailable }) { provider in
                     providerRow(provider)
+                        .padding(.vertical, VegaDesign.Spacing.md)
                 }
 
                 if showAddCustomProvider {
@@ -461,13 +462,14 @@ struct SettingsAITab: View {
             }
         }
         .formStyle(.grouped)
+        .environment(\.defaultMinListRowHeight, 52) // FORK: rows with a description need the room
     }
 
     // MARK: - Provider Row
 
     @ViewBuilder
     private func providerRow(_ provider: AIProviderConfig) -> some View {
-        VStack(alignment: .leading, spacing: VegaDesign.Spacing.md) {
+        VStack(alignment: .leading, spacing: VegaDesign.Spacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
                     HStack(spacing: VegaDesign.Spacing.sm) {
