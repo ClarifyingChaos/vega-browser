@@ -109,7 +109,7 @@ public struct TabFolderView: View {
         .buttonStyle(VegaTabButtonStyle())
         .padding(.vertical, VegaDesign.Tab.verticalInset)
         .onHoverTracking { hovering in
-            withAnimation(VegaDesign.Motion.quick) {
+            withAnimation(VegaDesign.Motion.hover(hovering)) {
                 isHovering = hovering
             }
         }

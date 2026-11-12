@@ -133,7 +133,7 @@ private struct ArchiveRowView: View {
         .background(isHovered ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .onHoverTracking { hovered in
-            withAnimation(VegaDesign.Motion.quick) { isHovered = hovered }
+            withAnimation(VegaDesign.Motion.hover(hovered)) { isHovered = hovered }
         }
         .onTapGesture(perform: restore)
         .contextMenu {

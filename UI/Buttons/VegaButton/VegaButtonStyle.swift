@@ -76,7 +76,7 @@ struct VegaButtonStyle: ButtonStyle {
         .compositingGroup()
         .opacity(isEnabled ? 1.0 : disabledOpacity)
         .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
-        .animation(VegaDesign.Motion.quick, value: isHovering)
+        .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
         .onHoverTracking { hovering in
             isHovering = hovering
         }

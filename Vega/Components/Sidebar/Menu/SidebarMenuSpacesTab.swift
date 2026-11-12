@@ -113,7 +113,7 @@ private struct SpaceColumn: View {
         }
         .spaceThemeAppearance(space.theme)
         .scaleEffect(isHovering ? 1.005 : 1)
-        .animation(VegaDesign.Motion.quick, value: isHovering)
+        .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
         .onTapGesture(perform: onOpen)
         .onHoverTracking { isHovering = $0 }

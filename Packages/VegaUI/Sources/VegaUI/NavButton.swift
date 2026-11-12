@@ -37,7 +37,7 @@ public struct VegaIconButtonStyle: ButtonStyle {
         .contentTransition(.symbolEffect(.replace.upUp.byLayer, options: .nonRepeating))
         .scaleEffect(configuration.isPressed && isEnabled ? 0.95 : 1.0)
         .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
-        .animation(VegaDesign.Motion.quick, value: isHovering)
+        .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
         .onHoverTracking { hovering in isHovering = hovering }
     }
 
@@ -90,7 +90,7 @@ public struct RectNavButtonStyle: ButtonStyle {
             .contentTransition(.symbolEffect(.replace.upUp.byLayer, options: .nonRepeating))
             .scaleEffect(configuration.isPressed && isEnabled ? 0.95 : 1.0)
             .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
-            .animation(VegaDesign.Motion.quick, value: isHovering)
+            .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
             .onHoverTracking { hovering in
                 isHovering = hovering
             }

@@ -63,7 +63,7 @@ public struct PinnedTabView<Icon: View>: View {
             ZStack {
                 VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                     .fill(backgroundColor)
-                    .animation(VegaDesign.Motion.quick, value: isHovered)
+                    .animation(VegaDesign.Motion.hover(isHovered), value: isHovered)
                 if let glow, colors != nil {
                     glowImage(glow)
                         .opacity(VegaDesign.Surface.favoriteGlowOpacity(dark: colorScheme == .dark, hovered: isHovered, dimmed: isDimmed))
@@ -107,7 +107,8 @@ public struct PinnedTabView<Icon: View>: View {
             .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
             .modifier(TileSelection(isActive: isActive, themed: colors != nil))
         }
-        .buttonStyle(.plain)
+        // The action is a selection, safe to run on the press and again on the release.
+        .buttonStyle(VegaPressButtonStyle(onPress: action))
         .onHoverTracking { hovering in
             self.isHovered = hovering
         }

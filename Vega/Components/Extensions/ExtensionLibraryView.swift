@@ -318,7 +318,7 @@ private struct ActionTileStyle: ButtonStyle {
             .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.lg))
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(VegaDesign.Motion.quick, value: configuration.isPressed)
-            .animation(VegaDesign.Motion.quick, value: isHovering)
+            .animation(VegaDesign.Motion.hover(isHovering), value: isHovering)
             .onHoverTracking { isHovering = $0 }
     }
 }
