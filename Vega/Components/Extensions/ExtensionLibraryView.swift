@@ -83,7 +83,7 @@ struct ExtensionLibraryView: View {
                 browserManager.openBoostPanel(in: windowState)
                 onDismiss()
             } label: {
-                ActionTileLabel(systemImage: "paintbrush.pointed")
+                ActionTileLabel(systemImage: "wand.and.sparkles")
             }
             .buttonStyle(ActionTileStyle(solid: true))
             .help("Boost")
@@ -191,23 +191,6 @@ struct ExtensionLibraryView: View {
             ) {
                 settings.autoPictureInPicture.toggle()
             }
-
-            if currentTab != nil {
-                SiteSettingRow(
-                    icon: "plus.magnifyingglass",
-                    title: "Zoom",
-                    subtitle: "\(browserManager.zoomManager.currentZoomPercentage)%",
-                    isOn: browserManager.zoomManager.currentZoomPercentage != 100,
-                    action: nil
-                ) {
-                    HStack(spacing: VegaDesign.Spacing.xxs) {
-                        Button("Zoom Out", systemImage: "minus", action: zoomOut)
-                        Button("Zoom In", systemImage: "plus", action: zoomIn)
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.rowButton + VegaDesign.Spacing.xs))
-                }
-            }
         }
     }
 
@@ -220,7 +203,7 @@ struct ExtensionLibraryView: View {
                 .font(VegaDesign.Font.body)
                 .padding(.horizontal, VegaDesign.Spacing.md)
                 .frame(height: VegaDesign.Size.row)
-                .background(VegaDesign.Surface.fill, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+                .background(Color.black.opacity(0.28), in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
                 .help(currentHost ?? "")
 
             Spacer()
@@ -253,7 +236,7 @@ struct ExtensionLibraryView: View {
                     .font(.system(size: VegaDesign.Size.spaceIcon, weight: .semibold))
                     .frame(width: VegaDesign.Size.iconButton + VegaDesign.Spacing.xs,
                            height: VegaDesign.Size.iconButton + VegaDesign.Spacing.xs)
-                    .background(VegaDesign.Surface.fillPressed, in: Circle())
+                    .background(Color.white.opacity(0.2), in: Circle())
                     .contentShape(Circle())
             }
             .menuStyle(.button)
@@ -283,18 +266,6 @@ struct ExtensionLibraryView: View {
         }
         onDismiss()
     }
-
-    // MARK: - Zoom Helpers
-
-    private func zoomIn() {
-        guard let tab = currentTab, let webView = tab.webView else { return }
-        browserManager.zoomManager.zoomIn(for: webView)
-    }
-
-    private func zoomOut() {
-        guard let tab = currentTab, let webView = tab.webView else { return }
-        browserManager.zoomManager.zoomOut(for: webView)
-    }
 }
 
 // MARK: - Tiles
@@ -312,8 +283,7 @@ private struct ActionTileStyle: ButtonStyle {
             .background {
                 VegaDesign.Radius.shape(VegaDesign.Radius.lg)
                     .fill(solid ? Color.black.opacity(configuration.isPressed || (isHovering && isEnabled) ? 0.78 : 0.62)
-                          : (configuration.isPressed ? VegaDesign.Surface.fillPressed
-                             : isHovering && isEnabled ? VegaDesign.Surface.fillPressed : VegaDesign.Surface.fill))
+                          : Color.white.opacity(configuration.isPressed || (isHovering && isEnabled) ? 0.2 : 0.13))
                     .overlay(alignment: .top) {
                         // The light catching the key's top edge.
                         VegaDesign.Radius.shape(VegaDesign.Radius.lg)
@@ -476,10 +446,11 @@ private struct SiteSettingRow<Trailing: View>: View {
         HStack(spacing: VegaDesign.Spacing.md) {
             Image(systemName: icon)
                 .font(.system(size: VegaDesign.Size.spaceIcon, weight: .semibold))
-                // On reads as a filled key in either appearance: primary fill, glyph knocked out.
-                .foregroundStyle(isOn ? AnyShapeStyle(.background) : AnyShapeStyle(.primary))
+                // FORK: as in Arc, on is a white circle with a dark glyph; off is a soft gray circle.
+                // The panel is always dark, so these are fixed colors, not the appearance's.
+                .foregroundStyle(isOn ? Color.black.opacity(0.72) : Color.white)
                 .frame(width: iconSize, height: iconSize)
-                .background(isOn ? Color.primary : Color.primary.opacity(0.16), in: Circle())
+                .background(isOn ? Color.white.opacity(0.94) : Color.white.opacity(0.2), in: Circle())
                 .contentTransition(.symbolEffect(.replace))
             VStack(alignment: .leading, spacing: 0) {
                 Text(title)

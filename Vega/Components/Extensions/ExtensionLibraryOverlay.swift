@@ -31,7 +31,7 @@ struct ExtensionLibraryOverlay: View {
 
     private let menuWidth: CGFloat = 232 // FORK: Arc's panel is about 232 pt wide (was 300)
     private let gap: CGFloat = 10
-    private let notchWidth: CGFloat = 18
+    private let notchWidth: CGFloat = 24
     private let notchHeight: CGFloat = 8
 
     var body: some View {
@@ -62,7 +62,7 @@ struct ExtensionLibraryOverlay: View {
                         .vegaGlassSurface(
                             in: NotchedPanel(radius: VegaDesign.Radius.xl, notchX: buttonFrame.midX - originX(buttonFrame: buttonFrame, container: proxy.size),
                                              notchWidth: notchWidth, notchHeight: notchHeight),
-                            tint: .black.opacity(0.45))
+                            tint: .black.opacity(0.22))
                         // Grows out of the button rather than appearing whole.
                         .scaleEffect(appeared ? 1 : 0.88, anchor: UnitPoint(
                             x: (buttonFrame.midX - originX(buttonFrame: buttonFrame, container: proxy.size)) / menuWidth, y: 0))
@@ -78,7 +78,8 @@ struct ExtensionLibraryOverlay: View {
                                 windowState: windowState,
                                 onDismiss: { isShowingMoreMenu = false }
                             )
-                            .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+                            .environment(\.colorScheme, .dark)
+                            .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg), tint: .black.opacity(0.22))
                             .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)))
                         }
                     }
