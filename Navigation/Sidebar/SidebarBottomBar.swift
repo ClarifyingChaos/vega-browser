@@ -41,7 +41,7 @@ struct SidebarBottomBar: View {
                     menuButton
                         .zIndex(1)
 
-                    if vegaSettings.showAIAssistant {
+                    if false, vegaSettings.showAIAssistant { // FORK: Arc's bar has none; View > Show AI Assistant
                         Button("Toggle AI Assistant", systemImage: "sparkle") {
                             browserManager.toggleAISidebar(for: windowState)
                         }
@@ -66,7 +66,7 @@ struct SidebarBottomBar: View {
     /// Room kept clear on each side of the dots: the wider cluster plus a gap.
     private var sideReserve: CGFloat {
         let button = VegaDesign.SidebarChrome.button, gap = VegaDesign.SidebarChrome.gap
-        let left = vegaSettings.showAIAssistant ? 2 * button + gap : button
+        let left = button // FORK: AI button removed above
         return left + gap
     }
 
