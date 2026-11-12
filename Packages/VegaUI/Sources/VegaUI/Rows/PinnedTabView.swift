@@ -87,20 +87,7 @@ public struct PinnedTabView<Icon: View>: View {
                     .frame(height: VegaDesign.Size.essentialsFavicon)
                     .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
             }
-            .overlay(alignment: .topTrailing) {
-                if hasLeftPinnedURL && isHovered {
-                    Button(action: onResetToPinnedURL) {
-                        Image(systemName: "arrow.uturn.backward")
-                            .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.primary)
-                            .frame(width: VegaDesign.Size.cornerButton, height: VegaDesign.Size.cornerButton)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help("Reset to Pinned URL")
-                    .padding(VegaDesign.Spacing.xxs)
-                }
-            }
+            // FORK: the hover reset arrow is removed; "Reset to Pinned URL" stays in the context menu.
             .frame(maxWidth: .infinity)
             .frame(height: VegaDesign.Size.favoriteTile)
             .frame(minWidth: VegaDesign.Size.favoriteTile)
