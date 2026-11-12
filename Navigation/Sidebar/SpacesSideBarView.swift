@@ -24,7 +24,6 @@ struct SpacesSideBarView: View {
     @Environment(\.vegaBaseColorScheme) private var baseColorScheme
     @Environment(WindowRegistry.self) private var windowRegistry
     @Environment(\.vegaSettings) var vegaSettings
-    @Environment(\.sidebarOverlayInset) private var overlayInset
     @Environment(CommandPalette.self) var commandPalette
     @Environment(TabOrganizerManager.self) var tabOrganizerManager
 
@@ -175,8 +174,6 @@ struct SpacesSideBarView: View {
                     .frame(height: VegaDesign.Spacing.sidebarTop)
                     .padding(.leading, VegaDesign.SidebarChrome.trafficLightsInset)
                     .padding(.trailing, 6) // FORK: Arc's reload button ends 6 pt from the edge
-                    // FORK: in the hover overlay, cancel its inset so the icons stay level with the window buttons.
-                    .offset(x: -overlayInset.width, y: -overlayInset.height)
             }
         }
         .padding(.bottom, 5) // FORK: Arc's bottom bar ends 9 pt from the window edge (40 pt bar, 32 pt buttons)

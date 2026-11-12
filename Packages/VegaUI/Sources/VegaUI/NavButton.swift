@@ -53,7 +53,7 @@ public extension View {
     /// Larger navigation and footer symbols, without changing tab or URL-bar controls.
     func vegaSidebarIconButtons() -> some View {
         labelStyle(.iconOnly)
-            .font(.system(size: VegaDesign.SidebarChrome.icon, weight: .medium)) // FORK: Arc's weight
+            .font(.system(size: VegaDesign.SidebarChrome.icon, weight: .regular)) // FORK: Arc's light glyphs
             .buttonStyle(VegaIconButtonStyle(size: VegaDesign.SidebarChrome.button))
             .foregroundStyle(.primary)
     }
