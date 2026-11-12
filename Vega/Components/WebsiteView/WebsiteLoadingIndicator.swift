@@ -28,7 +28,7 @@ struct WebsiteLoadingIndicator: View {
             Spacer()
         }
         .frame(maxWidth: .infinity)
-        .frame(height: VegaDesign.Chrome.pageInset)
+        .frame(height: VegaDesign.Chrome.pageInsetTop)
         
         
     }
