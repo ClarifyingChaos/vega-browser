@@ -110,7 +110,7 @@ struct PeekOverlayView: View {
         }
         .padding(.horizontal, VegaDesign.Spacing.sm)
         .padding(.vertical, VegaDesign.Spacing.xs)
-        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
     }
 
     /// Close, split and new tab: standalone icon buttons on one floating card, readable over any page.
@@ -130,7 +130,7 @@ struct PeekOverlayView: View {
         }
         .vegaIconButtons()
         .padding(VegaDesign.Spacing.xxs)
-        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
     }
 
 

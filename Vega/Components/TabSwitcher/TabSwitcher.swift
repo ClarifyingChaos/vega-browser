@@ -122,7 +122,7 @@ struct TabSwitcherOverlay: View {
                 }
             }
             .padding(VegaDesign.Spacing.md)
-            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+            .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.opacity.combined(with: .scale(scale: 0.97)))
         }

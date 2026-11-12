@@ -43,7 +43,7 @@ struct BoostOverlay: View {
             )
             // A different site is a different panel, with its own draft.
             .id(host)
-            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
+            .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.lg))
             .padding(VegaDesign.Spacing.lg)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             .padding(.top, VegaDesign.Size.row)

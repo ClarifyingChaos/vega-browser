@@ -150,7 +150,7 @@ struct URLBarView: View {
                     beginEditing(session?.url.absoluteString ?? item.url?.absoluteString ?? "")
                 })
                 .help("Search or Enter URL...")
-                .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+                .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
             } else {
                 sidebarAddress(session: session)
             }

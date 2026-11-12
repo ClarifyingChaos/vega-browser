@@ -12,6 +12,7 @@ import Carbon
 import OSLog
 import Sparkle
 import SwiftUI
+import VegaDesign
 import VegaSettings
 import VegaUI
 import VegaWeb
@@ -80,6 +81,7 @@ struct VegaApp: App {
             }
             // AppDelegate routes URLs; reuse the open scene instead of creating another one.
             .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
+            .vegaReduceMotion() // FORK
 
         }
         // TabsController restores browser windows; SwiftUI must not restore a second set.
@@ -98,6 +100,7 @@ struct VegaApp: App {
         // macOS 26 style sidebar settings window
         Settings {
             SettingsWindow()
+                .vegaReduceMotion() // FORK
                 .environmentObject(browserManager)
                 .environment(browserManager.tabs)
                 .environmentObject(browserManager.gradientColorManager)

@@ -36,7 +36,7 @@ struct TranslateOfferView: View {
             .controlSize(.small)
         }
         .padding(VegaDesign.Spacing.xxs)
-        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
     }
 }
 

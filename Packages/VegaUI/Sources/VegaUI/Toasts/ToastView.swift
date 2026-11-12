@@ -22,7 +22,7 @@ struct ToastView<Content: View>: View {
         content
             .padding(12)
             .fixedSize(horizontal: true, vertical: false)
-            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+            .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
     }
 }
 

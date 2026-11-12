@@ -46,7 +46,7 @@ struct TidyDownloadToast: View {
         }
         .padding(VegaDesign.Spacing.lg)
         .frame(maxWidth: maxWidth, alignment: .leading)
-        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+        .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
         .task(id: download.id) {
             try? await Task.sleep(for: visibleFor)
             if downloads.lastTidied === download { downloads.dismissTidyToast() }

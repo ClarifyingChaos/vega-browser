@@ -49,7 +49,7 @@ struct PDFControlsView: View {
         }
         .vegaIconButtons()
         .padding(VegaDesign.Spacing.xxs)
-        .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
+        .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .opacity(isVisible ? 1 : 0)
         .allowsHitTesting(isVisible)
         .animation(VegaDesign.Motion.standard, value: isVisible)

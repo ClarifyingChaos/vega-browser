@@ -173,7 +173,7 @@ struct DialogCard<Content: View>: View {
         content
             .padding(VegaDesign.Spacing.xl)
             .frame(maxWidth: VegaDesign.Size.dialogMaxWidth, alignment: .leading)
-            .vegaFloatingSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+            .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
     }
 }
 
