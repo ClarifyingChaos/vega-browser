@@ -40,7 +40,7 @@ struct SidebarMenuMediaTab: View {
         VStack(spacing: 0) {
             SidebarMenuSearchField(prompt: "Search Media...", text: $text)
                 .padding(.horizontal, VegaDesign.Spacing.md)
-                .padding(.top, VegaDesign.Spacing.sidebarTop)
+                .padding(.top, VegaDesign.Spacing.md)
                 .padding(.bottom, VegaDesign.Spacing.md)
 
             ScrollView {
