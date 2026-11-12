@@ -121,7 +121,7 @@ struct VegaCommands: Commands {
                 browserManager.setAsDefaultBrowser()
             }
 
-            // FORK: off until the fork has its own appcast feed and key (see AppDelegate).
+            // FORK: off until the appcast at SUFeedURL exists and the first release is signed with the key kept in the login Keychain (see AppDelegate).
             Button("Check for Updates…") {
                 browserManager.appDelegate?.updaterController.checkForUpdates(nil)
             }
