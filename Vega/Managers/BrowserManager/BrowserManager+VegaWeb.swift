@@ -12,6 +12,7 @@ import AppKit
 import Combine
 import WebKit
 import VegaWeb
+import VegaSettings
 
 // MARK: - WebViewProvider
 
@@ -177,7 +178,8 @@ extension BrowserManager: TabEventObserver {
         exitSidebarPiP(showing: session.itemID)
         PiPManager.shared.leaveAutomatic(session)
 
-        guard vegaSettings?.autoPictureInPicture == true,
+        // FORK: the site's own choice wins over the setting.
+        guard (SitePreferences.shared.prefs(for: previous?.url.host).autoPiP ?? vegaSettings?.autoPictureInPicture) == true,
             let previous, previous.hasPlayingVideo, previous.hasPlayingAudio,
             !previous.isPrivate, !previous.hasPiPActive,
             // Another window or the other split pane may still be showing it.
