@@ -77,6 +77,7 @@ struct SidebarBottomBar: View {
             }
             // A finished download bounces the button its icon flew into.
             .symbolEffect(.bounce, value: browserManager.downloadManager.completedCount)
+            .opacity(browserManager.downloadManager.activeDownloads.isEmpty ? 1 : 0)
             .vegaSidebarIconButtons()
             .anchorPreference(key: DownloadsButtonAnchorKey.self, value: .bounds) { $0 }
             .onHoverTracking { isHovered in
@@ -101,8 +102,9 @@ struct SidebarBottomBar: View {
             .animation(VegaDesign.Motion.quick, value: isMenuButtonHovered)
             .zIndex(1)
 
+            // Arc: while a file downloads, the ring takes the library icon's place.
             DownloadIndicator()
-                .offset(x: VegaDesign.Spacing.lg, y: -VegaDesign.Spacing.lg)
+                .allowsHitTesting(false)
         }
     }
     
