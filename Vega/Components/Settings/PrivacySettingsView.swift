@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import VegaUI
 import WebKit
 
 import VegaDesign
@@ -30,6 +31,8 @@ struct PrivacySettingsView: View {
         @Bindable var settings = vegaSettings
 
         Form {
+            SettingsHero(symbol: "lock.shield", title: "Privacy", detail: "Tracking protection, history and the data websites store.")
+
             Section("Tracking") {
                 scopePicker(
                     "Enhanced fingerprinting protection",

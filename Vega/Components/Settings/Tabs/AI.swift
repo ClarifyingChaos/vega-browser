@@ -8,6 +8,7 @@
 
 import VegaSettings
 import SwiftUI
+import VegaUI
 import VegaDesign
 
 struct SettingsAITab: View {
@@ -32,6 +33,8 @@ struct SettingsAITab: View {
     var body: some View {
         @Bindable var settings = vegaSettings
         Form {
+            SettingsHero(symbol: "sparkles", title: "AI", detail: "Tab organizer, providers and the assistant\u{2019}s tools.")
+
             // MARK: - Tab Organizer
             Section {
                 if let note = TabOrganizationModel.unavailableNote {
