@@ -37,10 +37,13 @@ struct SettingsWindow: View {
             get: { navigation.currentSettingsTab },
             set: { paths[$0] = []; navigation.currentSettingsTab = $0 }
         )
-        // A fixed sidebar beside the page, not a NavigationSplitView, whose sidebar is glass.
-        HStack(spacing: 0) {
+        // FORK: System Settings (macOS 27): the native split view, whose sidebar is the glass panel
+        // with the capsule search field, monochrome symbols and the blue selection.
+        NavigationSplitView {
             SettingsSidebar(selection: selection, query: $query)
-            Divider()
+                .navigationSplitViewColumnWidth(min: 232, ideal: 232, max: 280)
+                .toolbar(removing: .sidebarToggle)
+        } detail: {
             SettingsDetailPane(
                 tab: tab,
                 path: Binding(get: { paths[tab] ?? [] }, set: { paths[tab] = $0 }),
@@ -102,26 +105,25 @@ private struct HistoryToolbar: ViewModifier {
     let goBack: () -> Void
     let goForward: () -> Void
 
-    @ViewBuilder
     func body(content: Content) -> some View {
-        // Branch at the View level: ToolbarContentBuilder's availability erasure fails
-        // to link in optimized builds with the Xcode 26.3 SDK.
-        if #available(macOS 26, *) {
-            content.toolbar { buttons.sharedBackgroundVisibility(.hidden) }
-        } else {
-            content.toolbar { buttons }
-        }
+        content
+            .toolbar { buttons }
+            // No hairline under the top bar; the pages scroll under a soft edge, as in System Settings.
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
     }
 
+    /// System Settings' pair: back and forward joined in one capsule, the page title beside it.
     private var buttons: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
-            HStack(spacing: VegaDesign.Spacing.xxs) {
+            ControlGroup {
                 Button("Back", systemImage: "chevron.backward", action: goBack)
                     .disabled(!canGoBack)
                 Button("Forward", systemImage: "chevron.forward", action: goForward)
                     .disabled(!canGoForward)
             }
-            .vegaIconButtons()
+            .controlGroupStyle(.navigation)
+            // System Settings keeps 12 pt between the capsule and the page title.
+            .padding(.trailing, 10)
         }
     }
 }
@@ -150,89 +152,35 @@ private struct SettingsSidebar: View {
     @Binding var query: String
     @EnvironmentObject var browserManager: BrowserManager
 
-    private let sidebarWidth: CGFloat = 230
-
     var body: some View {
-        VStack(spacing: VegaDesign.Spacing.md) {
-            // FORK: a large title with the app under it, as in Apple Music's sidebar.
-            VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
-                Text("Settings")
-                    .font(.system(size: 28, weight: .bold))
-                Text("Vega")
-                    .font(VegaDesign.Font.body)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, VegaDesign.Spacing.rowPadding)
-            .padding(.top, VegaDesign.Spacing.sm)
-            SidebarMenuSearchField(prompt: "Search", text: $query)
-            ScrollView {
-                VStack(alignment: .leading, spacing: VegaDesign.Spacing.rowGap) {
-                    ForEach(Array(SettingsTabs.sidebarGroups.enumerated()), id: \.offset) { _, group in
-                        let tabs = group.tabs.filter { tab in
-                            guard tab.matches(query) else { return false }
-                            return tab != .extensions || browserManager.extensionManager != nil
-                        }
-                        if !tabs.isEmpty {
-                            // A visible gap between groups, as in System Settings' sidebar.
-                            if group.title == nil, query.isEmpty, group.tabs.first != SettingsTabs.sidebarGroups.first?.tabs.first {
-                                Color.clear.frame(height: VegaDesign.Spacing.md)
+        List(selection: Binding<SettingsTabs?>(get: { selection }, set: { if let tab = $0 { selection = tab } })) {
+            ForEach(Array(SettingsTabs.sidebarGroups.enumerated()), id: \.offset) { _, group in
+                let tabs = group.tabs.filter { tab in
+                    guard tab.matches(query) else { return false }
+                    return tab != .extensions || browserManager.extensionManager != nil
+                }
+                if !tabs.isEmpty {
+                    // Untitled sections: the list draws System Settings' gap between groups.
+                    Section {
+                        ForEach(tabs, id: \.self) { tab in
+                            Label {
+                                Text(tab.name)
+                            } icon: {
+                                // macOS 27 System Settings: symbols in the label colour, not the accent.
+                                Image(systemName: tab.icon)
+                                    .foregroundStyle(.primary)
                             }
-                            // A group header reads as a filter label while searching, so it goes.
-                            if let title = group.title, query.isEmpty {
-                                Text(title)
-                                    .font(VegaDesign.Font.captionStrong)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, VegaDesign.Spacing.rowPadding)
-                                    .padding(.top, VegaDesign.Spacing.sectionGap)
-                            }
-                            ForEach(tabs, id: \.self) { tab in
-                                SettingsSidebarRow(tab: tab, isSelected: selection == tab) {
-                                    selection = tab
-                                }
-                            }
+                            .tag(tab)
+                            .listItemTint(.fixed(Color(nsColor: .labelColor)))
                         }
                     }
                 }
             }
-            .scrollIndicators(.never)
         }
-        .padding(VegaDesign.Spacing.sidebarInset)
-        .frame(width: sidebarWidth)
-    }
-}
-
-/// A settings tab in the sidebar, drawn like a sidebar tab row.
-private struct SettingsSidebarRow: View {
-    let tab: SettingsTabs
-    let isSelected: Bool
-    let action: () -> Void
-    @State private var isHovering = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: VegaDesign.Spacing.md) {
-                Image(systemName: tab.icon)
-                    .imageScale(.small)
-                    .foregroundStyle(.white)
-                    .frame(width: VegaDesign.Size.settingsChip, height: VegaDesign.Size.settingsChip)
-                    .background(VegaDesign.Radius.shape(VegaDesign.Radius.sm).fill(tab.iconColor.gradient))
-                Text(tab.name)
-                    .font(VegaDesign.Font.body)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, VegaDesign.Spacing.rowPadding)
-            .frame(height: 38) // FORK: roomier than a tab row, as in Apple Music's sidebar
-            .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
-            .background(!isSelected && isHovering ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
-            .vegaRowSelection(isSelected)
-            .vegaElevation(isSelected ? .raised : .flat)
-        }
-        .buttonStyle(.plain)
-        .animation(VegaDesign.Motion.quick, value: isHovering)
-        .onHoverTracking { isHovering = $0 }
+        .listStyle(.sidebar)
+        // System Settings' sidebar is 232 pt; the split view otherwise opens it at its narrowest.
+        .frame(minWidth: 232)
+        .searchable(text: $query, placement: .sidebar, prompt: "Search")
     }
 }
 
@@ -270,22 +218,9 @@ private struct SettingsDetailPane: View {
                 if let pane = path.last {
                     pane.view(browserManager)
                 } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // FORK: a large title and a line under it, as in Apple Music's content pane.
-                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
-                            Text(tab.name)
-                                .font(.system(size: 28, weight: .bold))
-                            Text(tab.subtitle)
-                                .font(VegaDesign.Font.body)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, VegaDesign.Spacing.xxl)
-                        .padding(.top, VegaDesign.Spacing.lg)
-                        .padding(.bottom, VegaDesign.Spacing.sm)
-                        tabPage
-                            // FORK: room to breathe: taller rows on every page.
-                            .environment(\.defaultMinListRowHeight, 40)
-                    }
+                    tabPage
+                        // FORK: room to breathe: taller rows on every page.
+                        .environment(\.defaultMinListRowHeight, 40)
                     .navigationTitle(tab.name)
                 }
             }
