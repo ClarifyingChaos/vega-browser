@@ -9,6 +9,7 @@
 import SwiftUI
 import VegaDesign
 import WebKit
+import VegaUI
 
 struct ExtensionPermissionView: View {
     let extensionName: String
@@ -31,7 +32,7 @@ struct ExtensionPermissionView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 64, height: 64)
-                    Image(systemName: "arrow.left")
+                    VegaSymbol("arrow.left", size: 35)
                         .font(VegaDesign.Font.display)
                         .foregroundColor(.secondary)
                     Image(nsImage: extensionLogo)

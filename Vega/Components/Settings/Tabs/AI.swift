@@ -148,7 +148,7 @@ struct SettingsAITab: View {
                     }
                 } else {
                     Button(action: { showAddCustomProvider = true }) {
-                        Label("Add Custom Provider", systemImage: "plus.circle")
+                        Label("Add Custom Provider", vegaIcon: "plus.circle")
                     }
                 }
             }
@@ -189,7 +189,7 @@ struct SettingsAITab: View {
                         Button(action: {
                             configService.removeModel(model.id, providerId: model.providerId)
                         }) {
-                            Image(systemName: "trash")
+                            VegaSymbol("trash", size: 14)
                                 .font(VegaDesign.Font.caption)
                                 .foregroundStyle(.red)
                         }
@@ -460,7 +460,7 @@ struct SettingsAITab: View {
             Section("MCP Servers") {
                 if configService.mcpServers.isEmpty && !showAddMCPServer {
                     VStack(spacing: VegaDesign.Spacing.md) {
-                        Image(systemName: "puzzlepiece.extension")
+                        VegaSymbol("puzzlepiece.extension", size: 25)
                             .font(VegaDesign.Font.titleLarge)
                             .foregroundStyle(.secondary)
                         Text("No MCP servers configured")
@@ -479,7 +479,7 @@ struct SettingsAITab: View {
                     addMCPServerForm
                 } else {
                     Button(action: { showAddMCPServer = true }) {
-                        Label("Add Server", systemImage: "plus.circle")
+                        Label("Add Server", vegaIcon: "plus.circle")
                     }
                 }
             }
@@ -660,7 +660,7 @@ struct SettingsAITab: View {
                 ))
 
                 Button(action: { mcpManager.reconnectServer(server) }) {
-                    Image(systemName: "arrow.clockwise")
+                    VegaSymbol("arrow.clockwise", size: 14)
                         .font(VegaDesign.Font.caption)
                 }
                 .buttonStyle(.bordered)
@@ -670,7 +670,7 @@ struct SettingsAITab: View {
                     configService.removeMCPServer(server.id)
                     mcpManager.disconnectServer(server.id)
                 }) {
-                    Image(systemName: "trash")
+                    VegaSymbol("trash", size: 14)
                         .font(VegaDesign.Font.caption)
                         .foregroundStyle(.red)
                 }

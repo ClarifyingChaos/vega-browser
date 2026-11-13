@@ -149,16 +149,16 @@ struct SidebarAIChat: View {
             Spacer()
 
             HStack(spacing: VegaDesign.Spacing.xxs) {
-                Button("Settings", systemImage: "gearshape") {
+                Button("Settings", vegaIcon: "gearshape") {
                     showSettings()
                 }
-                Button("Clear Messages", systemImage: "trash") {
+                Button("Clear Messages", vegaIcon: "trash") {
                     showClearMessagesDialog()
                 }
                 .disabled(aiService.messages.isEmpty)
                 // With Developer Mode on, the panel's tab bar has the close button.
                 if !vegaSettings.developerModeEnabled {
-                    Button("Close", systemImage: "xmark") {
+                    Button("Close", vegaIcon: "xmark") {
                         withAnimation(VegaDesign.Motion.standard) {
                             windowState.isSidebarAIChatVisible = false
                         }
@@ -249,12 +249,12 @@ struct SidebarAIChat: View {
 
             if configService.activeProviderType != .appleIntelligence {
                 Button(action: { showAddModelPopover = true }) {
-                    Label("Add Model...", systemImage: "plus.circle")
+                    Label("Add Model...", vegaIcon: "plus.circle")
                 }
             }
 
             Button(action: { showSettings() }) {
-                Label("Manage Models...", systemImage: "gearshape")
+                Label("Manage Models...", vegaIcon: "gearshape")
             }
         }
         .menuStyle(.button)
@@ -492,7 +492,7 @@ struct MessageBubble: View {
                     VStack(alignment: .leading, spacing: 0) {
                         if message.usedWebSearch {
                             HStack(spacing: 4) {
-                                Image(systemName: "globe")
+                                VegaSymbol("globe", size: 14)
                                     .font(VegaDesign.Font.caption)
                                 Text("Web Search")
                                     .font(VegaDesign.Font.caption)
@@ -738,7 +738,7 @@ struct CitationView: View {
             }
         }) {
             HStack(spacing: 6) {
-                Image(systemName: "link")
+                VegaSymbol("link", size: 14)
                     .font(VegaDesign.Font.caption)
                     .foregroundStyle(.tertiary)
 
@@ -758,7 +758,7 @@ struct CitationView: View {
 
                 Spacer()
 
-                Image(systemName: "arrow.up.forward")
+                VegaSymbol("arrow.up.forward", size: 14)
                     .font(VegaDesign.Font.caption)
                     .foregroundStyle(isHovered ? .secondary : .tertiary)
             }

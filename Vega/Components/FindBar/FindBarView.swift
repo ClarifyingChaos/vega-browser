@@ -32,9 +32,10 @@ struct FindBarView: View {
                     HStack(spacing: 8) {
                         // Search icon + text field - integrated without sub-box
                         HStack(spacing: 6) {
-                            Image(systemName: "magnifyingglass")
+                            VegaSymbol("magnifyingglass", size: 16)
                                 .foregroundColor(.secondary)
                                 .font(VegaDesign.Font.body)
+                                .fontWeight(.medium)
 
                             TextField("Find in page", text: $findManager.searchText)
                                 .textFieldStyle(.plain)
@@ -76,8 +77,8 @@ struct FindBarView: View {
                             Button(action: {
                                 findManager.findPrevious()
                             }) {
-                                Image(systemName: "chevron.up")
-                                    .font(VegaDesign.Font.caption)
+                                AnimatedIcon("chevron-up", fallback: "chevron.up", size: 16)
+                                    .environment(\.vegaIconHovering, isUpButtonHovered)
                                     .frame(width: 22, height: 22)
                                     .background(isUpButtonHovered ? Color.secondary.opacity(0.2) : Color.clear)
                                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
@@ -93,8 +94,8 @@ struct FindBarView: View {
                             Button(action: {
                                 findManager.findNext()
                             }) {
-                                Image(systemName: "chevron.down")
-                                    .font(VegaDesign.Font.caption)
+                                AnimatedIcon("chevron-down", fallback: "chevron.down", size: 16)
+                                    .environment(\.vegaIconHovering, isDownButtonHovered)
                                     .frame(width: 22, height: 22)
                                     .background(isDownButtonHovered ? Color.secondary.opacity(0.2) : Color.clear)
                                     .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))
@@ -115,8 +116,8 @@ struct FindBarView: View {
                         Button(action: {
                             findManager.hideFindBar()
                         }) {
-                            Image(systemName: "xmark")
-                                .font(VegaDesign.Font.caption)
+                            AnimatedIcon("error", fallback: "xmark", size: 16)
+                                .environment(\.vegaIconHovering, isCloseButtonHovered)
                                 .frame(width: 22, height: 22)
                                 .background(isCloseButtonHovered ? Color.secondary.opacity(0.2) : Color.clear)
                                 .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.xs))

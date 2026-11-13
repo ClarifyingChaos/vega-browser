@@ -283,7 +283,7 @@ struct SpacesSideBarView: View {
 
     private var emptyStateView: some View {
         VStack(spacing: VegaDesign.Spacing.xl) {
-            Image(systemName: "square.grid.2x2")
+            VegaSymbol("square.grid.2x2", size: 60)
                 .font(VegaDesign.Font.hero)
                 .foregroundColor(.secondary)
             VStack(spacing: VegaDesign.Spacing.md) {
@@ -295,7 +295,7 @@ struct SpacesSideBarView: View {
                     .foregroundColor(.secondary)
             }
             Button(action: showSpaceCreationDialog) {
-                Label("Create Space", systemImage: "plus")
+                Label("Create Space", vegaIcon: "plus")
             }
             .buttonStyle(.borderedProminent)
         }
@@ -339,7 +339,7 @@ struct SpacesSideBarView: View {
             Button {
                 commandPalette.open()
             } label: {
-                Label("New Tab", systemImage: "plus")
+                Label("New Tab", vegaIcon: "plus")
             }
 
             Button {
@@ -347,7 +347,7 @@ struct SpacesSideBarView: View {
                     tabs.createFolderForRename(in: .tabs(spaceID: spaceID), after: nil)
                 }
             } label: {
-                Label("New Folder", systemImage: "folder.badge.plus")
+                Label("New Folder", vegaIcon: "folder.badge.plus")
             }
 
             if !windowState.isIncognito {
@@ -480,9 +480,13 @@ struct SpacesSideBarView: View {
 
     private func titleRow(showsHistory: Bool) -> some View {
         HStack(spacing: VegaDesign.SidebarChrome.gap) {
-            Button("Toggle Sidebar", systemImage: vegaSettings.sidebarPosition == .left ? "sidebar.left" : "sidebar.right") {
+            Button {
                 browserManager.toggleSidebar(for: windowState)
+            } label: {
+                AnimatedIcon("sidebar", fallback: vegaSettings.sidebarPosition == .left ? "sidebar.left" : "sidebar.right")
+                    .scaleEffect(x: vegaSettings.sidebarPosition == .left ? 1 : -1)
             }
+            .accessibilityLabel("Toggle Sidebar")
             .vegaSidebarIconButtons()
             Spacer(minLength: 0)
             if showsHistory, !vegaSettings.topBarAddressView {

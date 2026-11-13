@@ -61,14 +61,14 @@ struct ExtensionLibraryView: View {
     private var actionTiles: some View {
         HStack(spacing: VegaDesign.Spacing.sm) {
             Menu {
-                Button("Copy Link", systemImage: "link") {
+                Button("Copy Link", vegaIcon: "link") {
                     guard let url = currentTab?.url.absoluteString else { return }
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(url, forType: .string)
                     onDismiss()
                 }
                 if let url = currentTab?.url {
-                    ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
+                    ShareLink(item: url) { Label("Share", vegaIcon: "square.and.arrow.up") }
                 }
             } label: {
                 ActionTileLabel(systemImage: "square.and.arrow.up")
@@ -257,7 +257,7 @@ struct ExtensionLibraryView: View {
                 Divider()
                 Button("All Site Settings…", action: onShowMoreMenu)
             } label: {
-                Image(systemName: "ellipsis")
+                VegaSymbol("ellipsis", size: 18)
                     .font(.system(size: VegaDesign.Size.spaceIcon, weight: .semibold))
                     .frame(width: VegaDesign.Size.iconButton + VegaDesign.Spacing.xs,
                            height: VegaDesign.Size.iconButton + VegaDesign.Spacing.xs)
@@ -382,7 +382,7 @@ private struct ExtensionGridItem: View {
                         .scaledToFit()
                         .frame(width: VegaDesign.Size.essentialsFavicon + 2, height: VegaDesign.Size.essentialsFavicon + 2)
                 } else {
-                    Image(systemName: "puzzlepiece.extension")
+                    VegaSymbol("puzzlepiece.extension", size: 19)
                         .font(VegaDesign.Font.title)
                         .foregroundStyle(.secondary)
                 }

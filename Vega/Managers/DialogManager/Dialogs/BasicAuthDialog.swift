@@ -9,6 +9,7 @@
 import SwiftUI
 import VegaDesign
 import Observation
+import VegaUI
 
 @Observable
 final class BasicAuthDialogModel {
@@ -80,7 +81,7 @@ struct BasicAuthDialog: DialogPresentable {
                             .foregroundStyle(.secondary)
                     }
                     if model.isInsecure {
-                        Label("Your password will be sent unencrypted.", systemImage: "exclamationmark.triangle.fill")
+                        Label("Your password will be sent unencrypted.", vegaIcon: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
                     }
                 }

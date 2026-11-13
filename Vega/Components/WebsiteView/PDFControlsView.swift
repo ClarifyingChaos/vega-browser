@@ -29,21 +29,21 @@ struct PDFControlsView: View {
 
     var body: some View {
         HStack(spacing: VegaDesign.Spacing.xxs) {
-            Button("Zoom Out", systemImage: "minus.magnifyingglass") {
+            Button("Zoom Out", vegaIcon: "minus.magnifyingglass") {
                 browserManager.zoomManager.zoomOut(for: webView)
                 browserManager.shouldShowZoomPopup = true
             }
-            Button("Zoom In", systemImage: "plus.magnifyingglass") {
+            Button("Zoom In", vegaIcon: "plus.magnifyingglass") {
                 browserManager.zoomManager.zoomIn(for: webView)
                 browserManager.shouldShowZoomPopup = true
             }
-            Button("Open in Preview", systemImage: "arrow.up.forward.app") {
+            Button("Open in Preview", vegaIcon: "arrow.up.forward.app") {
                 session.openPDFInDefaultApp(from: webView)
             }
-            Button("Print", systemImage: "printer") {
+            Button("Print", vegaIcon: "printer") {
                 webView.vegaPrint()
             }
-            Button("Save PDF", systemImage: "arrow.down.circle") {
+            Button("Save PDF", vegaIcon: "arrow.down.circle") {
                 session.savePDF(from: webView)
             }
         }

@@ -15,6 +15,8 @@ let package = Package(
         .package(path: "../VegaTabsCore"),
         .package(path: "../VegaTweaks"),
         .package(path: "../VegaWeb"),
+        // FORK: plays the useAnimations icons (MIT, Lottie JSON) on hover.
+        .package(url: "https://github.com/airbnb/lottie-ios", from: "4.5.0"),
     ],
     targets: [
         .target(
@@ -26,7 +28,9 @@ let package = Package(
                 .product(name: "VegaTabsCore", package: "VegaTabsCore"),
                 .product(name: "VegaTweaks", package: "VegaTweaks"),
                 .product(name: "VegaWeb", package: "VegaWeb"),
+                .product(name: "Lottie", package: "lottie-ios"),
             ],
+            resources: [.copy("Resources/UseAnimations")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

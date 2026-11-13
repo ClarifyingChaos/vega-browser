@@ -68,12 +68,12 @@ struct DownloadPreviewOverlay: View {
         let list = downloads.previewable
         let index = list.firstIndex { $0 === download }
         return HStack(spacing: VegaDesign.Spacing.sm) {
-            Button("Close", systemImage: "xmark", action: close)
+            Button("Close", vegaIcon: "xmark", action: close)
                 .keyboardShortcut(.cancelAction)
-            Button("Previous", systemImage: "chevron.left") { step(-1, in: list, from: index) }
+            Button("Previous", vegaIcon: "chevron.left") { step(-1, in: list, from: index) }
                 .keyboardShortcut(.leftArrow, modifiers: [])
                 .disabled(index.map { $0 <= 0 } ?? true)
-            Button("Next", systemImage: "chevron.right") { step(1, in: list, from: index) }
+            Button("Next", vegaIcon: "chevron.right") { step(1, in: list, from: index) }
                 .keyboardShortcut(.rightArrow, modifiers: [])
                 .disabled(index.map { $0 >= list.count - 1 } ?? true)
 
@@ -91,17 +91,17 @@ struct DownloadPreviewOverlay: View {
             Spacer(minLength: VegaDesign.Spacing.lg)
 
             Menu {
-                Button("Show in Finder", systemImage: "folder") {
+                Button("Show in Finder", vegaIcon: "folder") {
                     if let file = download.completedFile { NSWorkspace.shared.activateFileViewerSelecting([file]) }
                 }
-                Button("Copy", systemImage: "doc.on.doc") {
+                Button("Copy", vegaIcon: "doc.on.doc") {
                     if let file = download.completedFile {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.writeObjects([file as NSURL])
                     }
                 }
                 Divider()
-                Button("Move to Trash", systemImage: "trash") {
+                Button("Move to Trash", vegaIcon: "trash") {
                     close()
                     downloads.moveToTrash(download)
                 }
@@ -116,7 +116,7 @@ struct DownloadPreviewOverlay: View {
                 openExternally()
                 close()
             } label: {
-                Label(openTitle, systemImage: "arrow.up.forward")
+                Label(openTitle, vegaIcon: "arrow.up.forward")
                     .labelStyle(TitleThenIcon())
                     .font(VegaDesign.Font.label)
                     .padding(.horizontal, VegaDesign.Spacing.md)

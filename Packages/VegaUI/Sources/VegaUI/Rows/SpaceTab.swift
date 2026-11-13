@@ -54,8 +54,8 @@ public struct SpaceTab: View {
         return Button(action: {
             withAnimation(VegaDesign.Motion.spring) { tabs.toggleFolder(item.id) }
         }) {
-            Image(systemName: "chevron.right")
-                .font(.system(size: VegaDesign.Size.rowGlyph - 1, weight: .semibold))
+            VegaSymbol("chevron.right", size: 15)
+                .font(.system(size: VegaDesign.Size.rowGlyph - 1, weight: .medium))
                 .foregroundStyle(.tertiary)
                 .rotationEffect(.degrees(isOpen ? 90 : 0))
                 .animation(VegaDesign.Motion.standard, value: isOpen)
@@ -105,10 +105,11 @@ public struct SpaceTab: View {
                     .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
                 if let session, session.hasAudioContent || session.hasPlayingAudio || session.isAudioMuted {
                     Button(action: { session.toggleMute() }) {
-                        Image(systemName: session.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                            .contentTransition(.symbolEffect(.replace))
-                            .font(.system(size: VegaDesign.Size.rowGlyph, weight: .medium))
-                            .foregroundStyle(.secondary)
+                        AnimatedIcon("volume", fallback: session.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                                     size: 16, ink: .secondary,
+                                     // Reversed on purpose: the icon shows what the button does, so a tab that is
+                                     // playing sound shows the slashed speaker (mute) and a muted tab shows sound.
+                                     toggled: !session.isAudioMuted)
                     }
                     .buttonStyle(.plain)
                     .help(session.isAudioMuted ? "Unmute" : "Mute")
@@ -158,7 +159,7 @@ public struct SpaceTab: View {
                         // Resets a pinned tab whose page left its pinned URL; sits left of close and fades in with it.
                         if showsReset {
                             Button { tabs.resetToHome(item.id) } label: {
-                                Image(systemName: "arrow.uturn.backward")
+                                VegaSymbol("arrow.uturn.backward", size: 15)
                                     .font(VegaDesign.Font.secondary)
                                     .foregroundStyle(.primary)
                                     .frame(width: VegaDesign.Size.rowButton, height: VegaDesign.Size.rowButton)
@@ -177,8 +178,10 @@ public struct SpaceTab: View {
                             // The next row slides under the pointer; let it show its close button.
                             HoverResync.request(after: VegaDesign.Motion.tabCloseDuration)
                         }) {
-                            Image(systemName: useUnload ? "minus" : "xmark")
-                                .font(VegaDesign.Font.secondary)
+                            Group {
+                                if useUnload { VegaSymbol("minus", size: 15).font(VegaDesign.Font.secondary) }
+                                else { AnimatedIcon("error", fallback: "xmark", size: 14) }
+                            }
                                 .foregroundColor(.primary)
                                 .frame(width: VegaDesign.Size.rowButton, height: VegaDesign.Size.rowButton)
                                 .background(isCloseHovering ? VegaDesign.Surface.fillPressed : Color.clear)

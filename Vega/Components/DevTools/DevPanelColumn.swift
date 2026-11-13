@@ -69,7 +69,7 @@ struct DevPanelColumn: View {
                 .buttonStyle(.plain)
             }
             Spacer()
-            Button("Close", systemImage: "xmark") {
+            Button("Close", vegaIcon: "xmark") {
                 withAnimation(VegaDesign.Motion.standard) {
                     windowState.isSidebarAIChatVisible = false
                 }

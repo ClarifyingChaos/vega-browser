@@ -68,7 +68,7 @@ public struct SpaceSeparator: View {
                 } else if let onOrganize {
                     Button(action: onOrganize) {
                         HStack(spacing: VegaDesign.Spacing.xs) {
-                            Image(systemName: "wand.and.stars")
+                            VegaSymbol("wand.and.stars", size: 14)
                                 .font(VegaDesign.Font.caption)
                             Text("Organize")
                                 .font(VegaDesign.Font.caption)

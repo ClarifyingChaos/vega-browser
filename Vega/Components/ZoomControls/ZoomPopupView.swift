@@ -8,6 +8,7 @@
 
 import SwiftUI
 import VegaDesign
+import VegaUI
 
 struct ZoomPopupView: View {
     var zoomManager: ZoomManager
@@ -27,7 +28,7 @@ struct ZoomPopupView: View {
                 onZoomOut()
                 resetHideTimer()
             }) {
-                Image(systemName: "minus")
+                VegaSymbol("minus", size: 15)
                     .font(VegaDesign.Font.secondary)
                     .foregroundStyle(.primary)
                     .frame(width: 28, height: 28)
@@ -69,7 +70,7 @@ struct ZoomPopupView: View {
                 onZoomIn()
                 resetHideTimer()
             }) {
-                Image(systemName: "plus")
+                VegaSymbol("plus", size: 15)
                     .font(VegaDesign.Font.secondary)
                     .foregroundStyle(.primary)
                     .frame(width: 28, height: 28)

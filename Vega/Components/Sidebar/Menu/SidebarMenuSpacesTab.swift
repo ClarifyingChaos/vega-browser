@@ -36,7 +36,7 @@ struct SidebarMenuSpacesTab: View {
                     .frame(maxHeight: .infinity)
                 }
                 Button(action: onNewSpace) {
-                    Image(systemName: "plus")
+                    VegaSymbol("plus", size: 18)
                         .font(.system(size: VegaDesign.Size.spaceIcon, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: addSize, height: addSize)
@@ -132,7 +132,7 @@ private struct SpaceColumn: View {
                 .lineLimit(1)
             Spacer(minLength: 0)
             if let profile = tabs.profiles.first(where: { $0.spaceIDs.contains(space.id) }) {
-                Label(profile.name, systemImage: "person.crop.circle")
+                Label(profile.name, vegaIcon: "person.crop.circle")
                     .font(VegaDesign.Font.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

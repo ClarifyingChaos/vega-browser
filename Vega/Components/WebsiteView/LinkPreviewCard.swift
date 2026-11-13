@@ -250,16 +250,16 @@ struct LinkPreviewCard: View {
 
     private var shareButton: some View {
         Menu {
-            Button("Copy as Text", systemImage: "doc.on.doc", action: copyText)
-            Button("Copy as Image", systemImage: "photo.on.rectangle", action: copyImage)
-            Button("Messages", systemImage: "message") {
+            Button("Copy as Text", vegaIcon: "doc.on.doc", action: copyText)
+            Button("Copy as Image", vegaIcon: "photo.on.rectangle", action: copyImage)
+            Button("Messages", vegaIcon: "message") {
                 NSSharingService(named: .composeMessage)?.perform(withItems: [url])
             }
             ShareLink(item: url) {
-                Label("Share", systemImage: "square.and.arrow.up")
+                Label("Share", vegaIcon: "square.and.arrow.up")
             }
         } label: {
-            Image(systemName: "square.and.arrow.up")
+            VegaSymbol("square.and.arrow.up", size: 18)
                 .font(.system(size: VegaDesign.Size.spaceIcon, weight: .medium))
                 .frame(width: shareSize, height: shareSize)
                 .background(VegaDesign.Surface.fillPressed, in: Circle())

@@ -86,7 +86,7 @@ struct MediaControlsView: View {
                         HStack(spacing: 6) {
                             MediaControlsTabTitle(tab: tab)
                             Spacer(minLength: 0)
-                            Button("Close", systemImage: "xmark") { close(tab) }
+                            Button("Close", vegaIcon: "xmark") { close(tab) }
                                 .labelStyle(.iconOnly)
                                 .buttonStyle(VegaIconButtonStyle(size: 20))
                                 .foregroundStyle(Color.white)
@@ -167,7 +167,7 @@ struct MediaControlsView: View {
 
                         Spacer(minLength: 0)
 
-                        Button("Return to Tab", systemImage: "arrow.up.forward.app") {
+                        Button("Return to Tab", vegaIcon: "arrow.up.forward.app") {
                             browserManager.tabs.select(tab.itemID, in: windowState)
                         }
                         .labelStyle(.iconOnly)

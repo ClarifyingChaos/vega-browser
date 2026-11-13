@@ -124,7 +124,7 @@ struct SidebarMenuHistoryTab: View {
                 .padding()
             } else if groupedHistoryEntries.isEmpty {
                 VStack(spacing: VegaDesign.Spacing.md) {
-                    Image(systemName: "clock")
+                    VegaSymbol("clock", size: 25)
                         .font(VegaDesign.Font.titleLarge)
                         .foregroundStyle(.tertiary)
 

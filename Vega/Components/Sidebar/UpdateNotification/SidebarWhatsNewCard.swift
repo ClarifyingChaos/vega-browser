@@ -43,7 +43,7 @@ struct SidebarWhatsNewCard: View {
                     Button {
                         browserManager.whatsNewVersion = nil
                     } label: {
-                        Image(systemName: "xmark")
+                        VegaSymbol("xmark", size: 12)
                             .font(VegaDesign.Font.micro)
                             .foregroundStyle(.secondary)
                             .frame(width: VegaDesign.Size.cornerButton, height: VegaDesign.Size.cornerButton)

@@ -48,7 +48,7 @@ struct DevConsoleView: View {
                 .padding(.horizontal, VegaDesign.Spacing.sm)
                 .frame(height: VegaDesign.Size.iconButton)
                 .vegaControlSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
-            Button("Clear", systemImage: "trash") { capture.clearConsole() }
+            Button("Clear", vegaIcon: "trash") { capture.clearConsole() }
                 .vegaIconButtons()
         }
         .padding(VegaDesign.Spacing.md)
@@ -93,7 +93,7 @@ struct DevConsoleView: View {
 
     private var inputField: some View {
         HStack(spacing: VegaDesign.Spacing.sm) {
-            Image(systemName: "chevron.right")
+            VegaSymbol("chevron.right", size: 14)
                 .font(VegaDesign.Font.caption)
                 .foregroundStyle(.tertiary)
             TextField("", text: $input)

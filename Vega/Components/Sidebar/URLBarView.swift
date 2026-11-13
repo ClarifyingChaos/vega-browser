@@ -198,7 +198,7 @@ struct URLBarView: View {
                         }
                     } else {
                         HStack(spacing: VegaDesign.Spacing.xs) {
-                            Image(systemName: "magnifyingglass")
+                            VegaSymbol("magnifyingglass", size: 16)
                                 .font(.system(size: VegaDesign.Size.rowGlyph, weight: .medium))
                                 .foregroundStyle(textColor)
                             Text("Search or Enter URL...")
@@ -229,10 +229,12 @@ struct URLBarView: View {
 
                 // Copy link button (show on hover when tab is selected)
                 if !isEditing, isHovering, let session {
-                    Button("Copy Link", systemImage: showCheckmark ? "checkmark" : "link") {
+                    Button {
                         copyURLToClipboard(session.url.absoluteString)
+                    } label: {
+                        if showCheckmark { Image(systemName: "checkmark") } else { AnimatedIcon("copy", fallback: "link") }
                     }
-                    .labelStyle(.iconOnly)
+                    .accessibilityLabel("Copy Link")
                     .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.iconButton, radius: VegaDesign.Radius.sm))
                     .foregroundStyle(Color.primary)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
@@ -359,8 +361,8 @@ struct URLBarView: View {
     private var expandedAddressPanel: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 16))
+                VegaSymbol("magnifyingglass", size: 20)
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.secondary)
                 inlineAddressField
             }
@@ -623,7 +625,7 @@ private struct AddressSuggestionFavicon: View {
                 Image(nsImage: cached).resizable().scaledToFit()
             } else {
                 Image(systemName: url == nil ? "magnifyingglass" : "globe")
-                    .font(.system(size: 16)).foregroundStyle(.secondary)
+                    .font(.system(size: 16, weight: .medium)).foregroundStyle(.secondary)
             }
         }
         .task(id: url.flatMap(FaviconCache.key)) {

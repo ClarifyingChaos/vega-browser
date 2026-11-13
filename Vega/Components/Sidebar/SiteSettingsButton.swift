@@ -30,8 +30,8 @@ struct SiteSettingsButton: View {
 
     var body: some View {
         if let host {
-            Button("Site Settings", systemImage: "switch.2") { isPresented = true }
-                .labelStyle(.iconOnly)
+            Button { isPresented = true } label: { AnimatedIcon("settings-v2", fallback: "switch.2") }
+                .accessibilityLabel("Site Settings")
                 .buttonStyle(VegaIconButtonStyle(size: VegaDesign.Size.iconButton, radius: VegaDesign.Radius.sm))
                 .foregroundStyle(Color.primary)
                 .help("Site Settings")

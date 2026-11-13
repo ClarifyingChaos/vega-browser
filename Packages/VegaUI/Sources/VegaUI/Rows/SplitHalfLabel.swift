@@ -41,7 +41,7 @@ public struct SplitHalfLabel: View {
                 Spacer(minLength: VegaDesign.Spacing.xs)
                 if isHovering {
                     Button(action: { tabs.close(item.id) }) {
-                        Image(systemName: "xmark")
+                        VegaSymbol("xmark", size: 15)
                             .font(VegaDesign.Font.secondary)
                             .foregroundColor(.primary)
                             .frame(width: VegaDesign.Size.rowButton, height: VegaDesign.Size.rowButton)

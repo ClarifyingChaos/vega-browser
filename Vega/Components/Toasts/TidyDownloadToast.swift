@@ -35,9 +35,9 @@ struct TidyDownloadToast: View {
                 }
             }
             HStack(spacing: VegaDesign.Spacing.xxs) {
-                Button("Undo", systemImage: "arrow.uturn.backward") { downloads.undoTidy(download) }
+                Button("Undo", vegaIcon: "arrow.uturn.backward") { downloads.undoTidy(download) }
                     .help("Undo")
-                Button("Close", systemImage: "xmark") { downloads.dismissTidyToast() }
+                Button("Close", vegaIcon: "xmark") { downloads.dismissTidyToast() }
                     .help("Close")
             }
             .labelStyle(.iconOnly)

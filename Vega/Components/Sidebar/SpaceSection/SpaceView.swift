@@ -192,7 +192,7 @@ struct SpaceView: View {
                 Button {
                     tabs.createFolderForRename(in: section, after: tabs.children(of: section).last?.id)
                 } label: {
-                    Label("New Folder", systemImage: "folder.badge.plus")
+                    Label("New Folder", vegaIcon: "folder.badge.plus")
                 }
             }
         }
@@ -310,7 +310,7 @@ struct SpaceView: View {
             commandPalette.open()
         } label: {
             HStack(spacing: VegaDesign.Spacing.md) {
-                Image(systemName: "plus")
+                VegaSymbol("plus", size: 20)
                     .font(.system(size: VegaDesign.Size.favicon, weight: .medium))
                 Text("New Tab")
                     .font(VegaDesign.Tab.font)

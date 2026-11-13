@@ -112,11 +112,11 @@ private struct PasswordsContent: View {
                         }
                         Spacer()
                         Menu {
-                            Button("Copy Username", systemImage: "doc.on.doc") { copy(login.username) }
-                            Button("Copy Password", systemImage: "key") { reveal(login) { copy($0) } }
+                            Button("Copy Username", vegaIcon: "doc.on.doc") { copy(login.username) }
+                            Button("Copy Password", vegaIcon: "key") { reveal(login) { copy($0) } }
                             Divider()
-                            Button("Edit…", systemImage: "pencil") { reveal(login) { _ in editing = login } }
-                            Button("Delete…", systemImage: "trash", role: .destructive) { deleting = login }
+                            Button("Edit…", vegaIcon: "pencil") { reveal(login) { _ in editing = login } }
+                            Button("Delete…", vegaIcon: "trash", role: .destructive) { deleting = login }
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -130,7 +130,7 @@ private struct PasswordsContent: View {
                     .padding(.vertical, VegaDesign.Spacing.xxs)
                 }
                 HStack {
-                    Button("Add Password…", systemImage: "plus") { adding = true }
+                    Button("Add Password…", vegaIcon: "plus") { adding = true }
                     Spacer()
                     Button("Import from CSV…") { importCSV() }
                 }

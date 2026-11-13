@@ -62,7 +62,7 @@ struct PortraitCaptureView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, VegaDesign.Spacing.sm)
                     Button(action: save) {
-                        Label("Save…", systemImage: "square.and.arrow.down")
+                        Label("Save…", vegaIcon: "square.and.arrow.down")
                             .font(VegaDesign.Font.label)
                             .padding(.horizontal, VegaDesign.Spacing.md)
                             .frame(height: VegaDesign.Size.row)

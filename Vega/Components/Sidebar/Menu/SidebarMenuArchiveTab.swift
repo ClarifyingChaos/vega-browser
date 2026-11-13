@@ -66,7 +66,7 @@ struct SidebarMenuArchiveTab: View {
 
     private var empty: some View {
         VStack(spacing: VegaDesign.Spacing.md) {
-            Image(systemName: "archivebox")
+            VegaSymbol("archivebox", size: 25)
                 .font(VegaDesign.Font.titleLarge)
                 .foregroundStyle(.tertiary)
             Text("Tabs you close show up here for 30 days.")

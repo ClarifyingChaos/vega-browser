@@ -66,7 +66,7 @@ struct HistoryPageView: View {
                 Text("History")
                     .font(VegaDesign.Font.display)
                 Spacer()
-                Button("Close", systemImage: "xmark", action: close)
+                Button("Close", vegaIcon: "xmark", action: close)
                     .labelStyle(.iconOnly)
                     .vegaIconButtons()
                     .help("Close History")
@@ -119,7 +119,7 @@ struct HistoryPageView: View {
                 Spacer()
                 Button("Cancel") { withAnimation(VegaDesign.Motion.standard) { selection.removeAll() } }
                     .buttonStyle(RectNavButtonStyle())
-                Button("Delete", systemImage: "trash", action: deleteSelected)
+                Button("Delete", vegaIcon: "trash", action: deleteSelected)
                     .buttonStyle(RectNavButtonStyle())
             }
             .padding(.horizontal, VegaDesign.Spacing.lg)

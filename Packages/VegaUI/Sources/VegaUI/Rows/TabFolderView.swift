@@ -46,7 +46,7 @@ public struct TabFolderView: View {
             }
         }) {
             HStack(spacing: VegaDesign.Spacing.md) {
-                Image(systemName: "chevron.right")
+                VegaSymbol("chevron.right", size: 15)
                     .font(.system(size: VegaDesign.Size.rowGlyph - 1, weight: .semibold))
                     .foregroundStyle(.tertiary)
                     .rotationEffect(.degrees(isOpen ? 90 : 0))
@@ -80,7 +80,7 @@ public struct TabFolderView: View {
                 Spacer(minLength: VegaDesign.Spacing.xs)
 
                 if let status = tabs.liveStatus[item.id] {
-                    Image(systemName: "exclamationmark.triangle")
+                    VegaSymbol("exclamationmark.triangle", size: 14)
                         .font(VegaDesign.Font.caption)
                         .foregroundStyle(.secondary)
                         .help(liveStatusHelp(status))

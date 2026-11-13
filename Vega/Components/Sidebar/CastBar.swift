@@ -20,7 +20,7 @@ struct CastBar: View {
 
     var body: some View {
         HStack(spacing: VegaDesign.Spacing.md) {
-            Image(systemName: "airplayvideo")
+            VegaSymbol("airplayvideo", size: 19)
                 .font(VegaDesign.Font.title)
                 .foregroundStyle(.white)
             Text("Cast to…")
@@ -29,7 +29,7 @@ struct CastBar: View {
             Spacer(minLength: 0)
             RoutePicker { close() }
                 .frame(width: 28, height: 28)
-            Button("Close", systemImage: "xmark", action: close)
+            Button("Close", vegaIcon: "xmark", action: close)
                 .labelStyle(.iconOnly)
                 .buttonStyle(VegaIconButtonStyle(size: 24))
                 .foregroundStyle(.white)

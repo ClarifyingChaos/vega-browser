@@ -19,7 +19,7 @@ public struct TabClosureToast: View {
     public var body: some View {
         ToastView {
             HStack(spacing: 8) {
-                Image(systemName: "arrow.counterclockwise")
+                VegaSymbol("arrow.counterclockwise", size: 15)
                     .font(VegaDesign.Font.secondary)
                     .foregroundStyle(.primary)
                     .frame(width: 14, height: 14)
