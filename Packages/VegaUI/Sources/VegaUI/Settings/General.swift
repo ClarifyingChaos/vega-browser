@@ -16,6 +16,8 @@ public struct SettingsGeneralTab: View {
     @Environment(VegaSettingsService.self) var vegaSettings
     @State private var showingAddSite = false
     @State private var showingAddEngine = false
+    /// The Site Search row picked for the − button.
+    @State private var selectedSite: UUID?
 
     public init() {}
 
@@ -135,43 +137,50 @@ public struct SettingsGeneralTab: View {
                 Text(vegaSettings.tabManagementMode.description)
             }
 
+            // FORK: System Settings' editable list: plain rows you select, and one + / − bar under
+            // them, in place of a red minus button on every row.
             Section {
                 ForEach(vegaSettings.siteSearchEntries) { entry in
-                    LabeledContent {
-                        HStack(spacing: VegaDesign.Spacing.md) {
-                            Text(entry.domain)
-                                .foregroundStyle(.secondary)
-                            Button {
-                                vegaSettings.siteSearchEntries.removeAll { $0.id == entry.id }
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundStyle(.red)
-                            }
-                            .buttonStyle(.plain)
+                    HStack(spacing: VegaDesign.Spacing.md) {
+                        Circle()
+                            .fill(entry.color)
+                            .frame(width: VegaDesign.Size.statusDot, height: VegaDesign.Size.statusDot)
+                        Text(entry.name)
+                        Spacer()
+                        Text(entry.domain)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, VegaDesign.Spacing.sm)
+                    .padding(.vertical, VegaDesign.Spacing.xs)
+                    .background(
+                        VegaDesign.Radius.shape(VegaDesign.Radius.sm)
+                            .fill(selectedSite == entry.id ? Color.accentColor.opacity(0.25) : .clear)
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture { selectedSite = selectedSite == entry.id ? nil : entry.id }
+                    .accessibilityAddTraits(selectedSite == entry.id ? [.isButton, .isSelected] : .isButton)
+                }
+
+                HStack(spacing: VegaDesign.Spacing.sm) {
+                    Button { showingAddSite = true } label: { Image(systemName: "plus") }
+                        .help("Add Site")
+                        .accessibilityLabel("Add Site")
+                    Button {
+                        if let id = selectedSite {
+                            vegaSettings.siteSearchEntries.removeAll { $0.id == id }
+                            selectedSite = nil
                         }
-                    } label: {
-                        Label {
-                            Text(entry.name)
-                        } icon: {
-                            Circle()
-                                .fill(entry.color)
-                                .frame(
-                                    width: VegaDesign.Size.statusDot,
-                                    height: VegaDesign.Size.statusDot
-                                )
-                        }
+                    } label: { Image(systemName: "minus") }
+                        .disabled(selectedSite == nil)
+                        .help("Remove Site")
+                        .accessibilityLabel("Remove Site")
+                    Spacer()
+                    Button("Reset to Defaults") {
+                        vegaSettings.siteSearchEntries = SiteSearchEntry.defaultSites
+                        selectedSite = nil
                     }
                 }
-
-                Button {
-                    showingAddSite = true
-                } label: {
-                    Label("Add Site", systemImage: "plus")
-                }
-
-                Button("Reset to Defaults") {
-                    vegaSettings.siteSearchEntries = SiteSearchEntry.defaultSites
-                }
+                .buttonStyle(.bordered)
             } header: {
                 Text("Site Search")
             } footer: {
