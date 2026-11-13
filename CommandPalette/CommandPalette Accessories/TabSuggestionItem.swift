@@ -58,7 +58,7 @@ struct TabSuggestionItem: View {
         }
         .frame(maxWidth: .infinity)
         .onHoverTracking { hovering in
-            withAnimation(VegaDesign.Motion.quick) {
+            withAnimation(VegaDesign.Motion.hover(hovering)) {
                 isHovered = hovering
             }
         }

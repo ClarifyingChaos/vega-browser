@@ -29,8 +29,7 @@ enum DevCaptureScript {
             }
         } else if all.contains(where: isDev) {
             let keep = all.vegaOwned.filter { !isDev($0) }
-            controller.removeAllUserScripts()
-            keep.forEach(controller.addUserScript)
+            controller.resetUserScripts(to: keep)
         }
     }
 

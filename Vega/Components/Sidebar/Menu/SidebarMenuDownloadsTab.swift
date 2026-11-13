@@ -244,7 +244,7 @@ struct DownloadItem: View {
         .background(isHovering ? VegaDesign.Surface.fill : .clear, in: VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .contentShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
         .onHoverTracking { state in
-            withAnimation(VegaDesign.Motion.quick) {
+            withAnimation(VegaDesign.Motion.hover(state)) {
                 isHovering = state
             }
         }
