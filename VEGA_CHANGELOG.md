@@ -2,6 +2,14 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.7.2 (2026-11-13)
+
+Faster page loads, and a new home for updates.
+
+### Fixes
+- **Pages load faster.** Vega no longer stalls on every navigation while it re-checks the ad blocker's scripts.
+- Updates now come from Vega's renamed GitHub repository. Copies installed before 1.7.2 may need a fresh download of this version.
+
 ## Vega 1.7.1 (2026-11-13)
 
 Small fixes to updating.
