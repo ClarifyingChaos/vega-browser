@@ -9,6 +9,9 @@
 
 import VegaTabsCore
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 import VegaDesign
 import VegaWeb
 
@@ -282,50 +285,73 @@ private struct ProfileDetailsSheet: View {
     @State private var confirmingClear = false
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header: avatar beside the name and a quiet summary, no card.
+            HStack(spacing: VegaDesign.Spacing.lg) {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 44))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                    Text(name.isEmpty ? profile.name : name)
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("Profile")
+                        .font(VegaDesign.Font.secondary)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, VegaDesign.Spacing.xxl)
+            .padding(.top, VegaDesign.Spacing.xxl)
+
             Form {
                 Section {
-                    VStack(spacing: VegaDesign.Spacing.sm) {
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 56))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(.secondary)
-                        Text(name.isEmpty ? profile.name : name)
-                            .font(.system(size: 17, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, VegaDesign.Spacing.md)
-                    .accessibilityHidden(true)
-                }
-
-                Section {
                     TextField("Name", text: $name)
-                    LabeledContent("Spaces", value: spaceNames.joined(separator: ", "))
-                    LabeledContent("Website data", value: dataSize ?? "Checking…")
-                }
-
-                Section {
-                    Button("Clear Website Data…", role: .destructive) { confirmingClear = true }
-                } footer: {
-                    Text("Signs every space in this profile out of all websites.")
+                    LabeledContent("Used by") {
+                        Text("\(spaceNames.count) \(spaceNames.count == 1 ? "space" : "spaces")")
+                            .help(spaceNames.joined(separator: ", "))
+                    }
+                    // The amount under its label, and the button alone at the trailing edge.
+                    HStack(spacing: VegaDesign.Spacing.lg) {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text("Website data")
+                            Text(dataSize ?? "Checking…")
+                                .font(VegaDesign.Font.secondary)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: VegaDesign.Spacing.lg)
+                        Button("Clear…") { confirmingClear = true }
+                    }
+                    .padding(.vertical, VegaDesign.Spacing.xxs)
                 }
             }
             .formStyle(.grouped)
+            // The sheet's own background behind the group, not a second, darker band.
+            .scrollContentBackground(.hidden)
+            .scrollDisabled(true)
+            .frame(height: 190)
 
             HStack {
                 Spacer()
                 Button("Done") { commit(); done() }
                     .keyboardShortcut(.defaultAction)
             }
-            .padding(VegaDesign.Spacing.xl)
+            .padding(.horizontal, VegaDesign.Spacing.xxl)
+            .padding(.bottom, VegaDesign.Spacing.xl)
         }
-        .frame(width: 420)
-        .onAppear { name = profile.name }
+        .frame(width: 460)
+        .onAppear {
+            name = profile.name
+            #if os(macOS)
+            // A sheet focuses its first field with the text selected; leave it unfocused until clicked.
+            DispatchQueue.main.async { NSApp.keyWindow?.makeFirstResponder(nil) }
+            #endif
+        }
         .confirmationDialog("Clear website data for \u{201C}\(profile.name)\u{201D}?", isPresented: $confirmingClear) {
             Button("Clear Website Data", role: .destructive, action: clearData)
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Logins, cookies and site data in this profile are deleted. You can't undo this.")
+            Text("Every space in this profile is signed out of all websites. You can't undo this.")
         }
     }
 
