@@ -570,17 +570,22 @@ struct SettingsAITab: View {
             // FORK: a custom provider can take a key later too, not only when it is added.
             if provider.providerType.requiresAPIKey || provider.providerType == .openAICompatible {
                 HStack(spacing: NookDesign.Spacing.md) {
+                    // FORK: typing only changes the draft. Saving on every keystroke rebuilt the whole page and
+                    // dropped the field's focus after one character, so only pasting a key worked.
                     SecureField("API Key", text: Binding(
                         get: { keyDrafts[provider.id] ?? provider.apiKey },
-                        set: { newValue in
-                            keyDrafts[provider.id] = newValue
-                            configService.updateProvider(provider, apiKey: newValue)
-                            keyErrors[provider.id] = AIKeychainStorage.shared.apiKey(for: provider.id) == newValue || newValue.isEmpty
-                                ? nil : "Could not save the key to the Keychain."
-                        }
+                        set: { keyDrafts[provider.id] = $0; keyErrors[provider.id] = nil }
                     ))
                     .textFieldStyle(.settings)
                     .font(NookDesign.Font.secondary)
+                    .onSubmit { saveKey(provider) }
+
+                    if let draft = keyDrafts[provider.id], draft != provider.apiKey {
+                        Button("Save") { saveKey(provider) }
+                            .font(NookDesign.Font.caption)
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                    }
 
                     if !(keyDrafts[provider.id] ?? provider.apiKey).isEmpty {
                         Button("Test") {
@@ -592,6 +597,8 @@ struct SettingsAITab: View {
                         .disabled(testingConnection)
                     }
                 }
+                // A key typed and not saved is saved when the page closes.
+                .onDisappear { saveKey(provider) }
             }
 
             if provider.providerType == .ollama || provider.providerType == .openAICompatible {
@@ -853,7 +860,19 @@ struct SettingsAITab: View {
 
     // MARK: - Helpers
 
+    /// Files the typed key in the Keychain and says so if that fails.
+    private func saveKey(_ provider: AIProviderConfig) {
+        guard let draft = keyDrafts[provider.id],
+              configService.providers.contains(where: { $0.id == provider.id }),
+              draft != provider.apiKey else { return }
+        configService.updateProvider(provider, apiKey: draft)
+        keyErrors[provider.id] = AIKeychainStorage.shared.apiKey(for: provider.id) == draft || draft.isEmpty
+            ? nil : "Could not save the key to the Keychain."
+        if keyErrors[provider.id] == nil { keyDrafts[provider.id] = nil }
+    }
+
     private func testConnection(_ provider: AIProviderConfig) {
+        saveKey(provider)
         testingConnection = true
         connectionTestResults[provider.id] = nil
         let key = keyDrafts[provider.id] ?? provider.apiKey
