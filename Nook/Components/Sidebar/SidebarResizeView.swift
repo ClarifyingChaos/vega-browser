@@ -94,7 +94,7 @@ struct SidebarResizeView: View {
     }
 }
 
-private struct SidebarResizeHandle: NSViewRepresentable {
+struct SidebarResizeHandle: NSViewRepresentable {
     var color: NSColor
     var sidebarOnLeft: Bool
     var onHover: (Bool) -> Void
