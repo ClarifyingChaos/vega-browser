@@ -18,6 +18,7 @@ struct SettingsAITab: View {
 
     @State private var openRouterSearch: String = ""
     @State private var testingConnection: Bool = false
+    @State private var providerToRemove: AIProviderConfig?
     @State private var connectionTestResult: String?
     @State private var newMCPServerName: String = ""
     @State private var newMCPServerCommand: String = ""
@@ -118,6 +119,18 @@ struct SettingsAITab: View {
                 ForEach(configService.providers.filter { $0.providerType != .appleIntelligence || AppleIntelligenceProvider.isAvailable }) { provider in
                     providerRow(provider)
                         .padding(.vertical, NookDesign.Spacing.md)
+                }
+                .confirmationDialog(
+                    "Remove \(providerToRemove?.displayName ?? "provider")?",
+                    isPresented: Binding(get: { providerToRemove != nil }, set: { if !$0 { providerToRemove = nil } }),
+                    titleVisibility: .visible
+                ) {
+                    Button("Remove", role: .destructive) {
+                        if let provider = providerToRemove { configService.removeProvider(provider.id) }
+                        providerToRemove = nil
+                    }
+                } message: {
+                    Text("Its saved key and models are deleted too.")
                 }
 
                 if showAddCustomProvider {
@@ -536,9 +549,18 @@ struct SettingsAITab: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                 }
+
+                // FORK: any provider but the built-in on-device one can be removed, with its key and models.
+                if provider.providerType != .appleIntelligence {
+                    Button("Remove", role: .destructive) { providerToRemove = provider }
+                        .font(NookDesign.Font.caption)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                }
             }
 
-            if provider.providerType.requiresAPIKey {
+            // FORK: a custom provider can take a key later too, not only when it is added.
+            if provider.providerType.requiresAPIKey || provider.providerType == .openAICompatible {
                 HStack(spacing: NookDesign.Spacing.md) {
                     SecureField("API Key", text: Binding(
                         get: { provider.apiKey },
