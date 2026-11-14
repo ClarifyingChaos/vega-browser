@@ -3,7 +3,9 @@
 //  AISidebarResizeView.swift
 //  Vega
 //
-//  Resize handle for the AI assistant sidebar
+//  Resize handle for the AI assistant sidebar.
+//  FORK: the same native handle as the main sidebar's (full height, same line and fade), not a
+//  separate short SwiftUI line.
 //
 
 import SwiftUI
@@ -15,95 +17,54 @@ struct AISidebarResizeView: View {
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(\.vegaSettings) var vegaSettings
-    @State private var isResizing = false
-    @State private var isHovering = false
+    @Environment(\.vegaUsesDefaultSpaceTheme) private var usesDefaultTheme
+    @Environment(\.colorScheme) private var colorScheme
     @State private var startingWidth: CGFloat = 0
-    @State private var startingMouseX: CGFloat = 0
-    @StateObject private var dragLockManager = DragLockManager.shared
-    @State private var dragSessionID: String = UUID().uuidString
+    @State private var sessionID = UUID().uuidString
 
     private let minWidth: CGFloat = 260
     private let maxWidth: CGFloat = 520
+    private let standardWidth: CGFloat = 350
 
-    private var aiSitsOnRight: Bool {
-        vegaSettings.sidebarPosition == .left
-    }
+    /// The AI panel sits opposite the main sidebar.
+    private var aiSitsOnRight: Bool { vegaSettings.sidebarPosition == .left }
 
-    // FORK: over the 8 pt gap beside the page, not inside the panel. The gap is the window
-    // background's drag surface, so a press on the visible edge moved the window.
-    private var indicatorOffset: CGFloat {
-        aiSitsOnRight ? -4 : 4
-    }
-
-    private var hitAreaOffset: CGFloat {
-        aiSitsOnRight ? -4 : 4
+    private var indicatorColor: NSColor {
+        if usesDefaultTheme {
+            return NSColor(colorScheme == .dark
+                ? VegaDesign.SidebarChrome.defaultResizeDark
+                : VegaDesign.SidebarChrome.defaultResizeLight)
+        }
+        return NSColor(browserManager.accentColor).withAlphaComponent(0.8)
     }
 
     var body: some View {
-        ZStack {
-            if isHovering || isResizing {
-                VegaDesign.Radius.shape(VegaDesign.Radius.xs)
-                    .fill(Color.accentColor)
-                    .frame(width: 2)
-                    .frame(maxHeight: .infinity)
-                    .offset(x: indicatorOffset)
-                    .animation(VegaDesign.Motion.quick, value: isResizing)
-                    .animation(VegaDesign.Motion.quick, value: isHovering)
-                    .padding(.vertical, 30)
-            }
-
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: 12)
-                .padding(.vertical, 30)
-                .offset(x: hitAreaOffset)
-                .contentShape(.interaction, .rect)
-                .onHoverTracking { hovering in
-                    guard windowState.isSidebarAIChatVisible else { return }
-
-                    isHovering = hovering
-
-                    if hovering && !isResizing {
-                        NSCursor.resizeLeftRight.set()
-                    } else if !hovering && !isResizing {
-                        NSCursor.arrow.set()
-                    }
+        SidebarResizeHandle(
+            color: indicatorColor,
+            // The gap is on this handle's leading side when the panel is on the right.
+            sidebarOnLeft: !aiSitsOnRight,
+            onHover: { _ in },
+            onStart: {
+                guard windowState.isSidebarAIChatVisible,
+                      DragLockManager.shared.startDrag(ownerID: sessionID) else { return false }
+                startingWidth = windowState.aiSidebarWidth
+                return true
+            },
+            onDrag: { delta, _ in
+                let width = startingWidth + delta * (aiSitsOnRight ? -1 : 1)
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    windowState.aiSidebarWidth = max(minWidth, min(maxWidth, width))
                 }
-                .gesture(
-                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                        .onChanged { value in
-                            guard windowState.isSidebarAIChatVisible else { return }
-
-                            if !isResizing {
-                                guard dragLockManager.startDrag(ownerID: dragSessionID) else {
-                                    return
-                                }
-
-                                startingWidth = windowState.aiSidebarWidth
-                                startingMouseX = value.startLocation.x
-                                isResizing = true
-                                NSCursor.resizeLeftRight.set()
-                            }
-
-                            let currentMouseX = value.location.x
-                            let mouseMovement = aiSitsOnRight ? (startingMouseX - currentMouseX) : (currentMouseX - startingMouseX)
-                            let newWidth = startingWidth + mouseMovement
-                            let clampedWidth = max(minWidth, min(maxWidth, newWidth))
-
-                            windowState.aiSidebarWidth = clampedWidth
-                        }
-                        .onEnded { _ in
-                            isResizing = false
-                            dragLockManager.endDrag(ownerID: dragSessionID)
-
-                            if isHovering {
-                                NSCursor.resizeLeftRight.set()
-                            } else {
-                                NSCursor.arrow.set()
-                            }
-                        }
-                )
-        }
-        .frame(width: 3)
+            },
+            onEnd: { DragLockManager.shared.endDrag(ownerID: sessionID) },
+            onReset: { windowState.aiSidebarWidth = standardWidth }
+        )
+        // Spans the 8 pt gap beside the page plus 4 pt of the panel, like the main sidebar's handle.
+        .frame(width: 12)
+        .offset(x: aiSitsOnRight ? -8 : 8)
+        .padding(.vertical, 10)
+        .onDisappear { DragLockManager.shared.endDrag(ownerID: sessionID) }
     }
 }
