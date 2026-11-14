@@ -417,8 +417,8 @@ struct SidebarAIChat: View {
             }
 
             VStack(spacing: 8) {
-                suggestion("Summarize this page")
-                suggestion("List the key points")
+                suggestion("Summarize this page in a few sentences")
+                suggestion("List the key points of this page")
                 suggestion("Summarize my open tabs", task: .summarizeTabs)
                 // Fills the box and waits: the next message is a request to browse, answered with a page.
                 suggestion("Browse the web for me…") {
