@@ -73,10 +73,13 @@ final class AIKeychainStorage: @unchecked Sendable {
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
         ]
 
-        let status: OSStatus
-        if SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess {
-            status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-        } else {
+        // FORK: an item left by another build of the app (other signature) cannot be updated in place, so typing
+        // a key did nothing. Fall back to replacing it.
+        var status = SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
+            ? SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+            : errSecItemNotFound
+        if status != errSecSuccess {
+            SecItemDelete(query as CFDictionary)
             var insert = query
             insert[kSecValueData as String] = data
             insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked

@@ -19,6 +19,9 @@ struct SettingsAITab: View {
     @State private var openRouterSearch: String = ""
     @State private var testingConnection: Bool = false
     @State private var providerToRemove: AIProviderConfig?
+    // FORK: what is typed in each key field, so the field does not depend on the Keychain answering on every keystroke.
+    @State private var keyDrafts: [String: String] = [:]
+    @State private var keyErrors: [String: String] = [:]
     // FORK: one result per provider, so testing one does not mark the others.
     @State private var connectionTestResults: [String: String] = [:]
     @State private var newMCPServerName: String = ""
@@ -564,16 +567,18 @@ struct SettingsAITab: View {
             if provider.providerType.requiresAPIKey || provider.providerType == .openAICompatible {
                 HStack(spacing: NookDesign.Spacing.md) {
                     SecureField("API Key", text: Binding(
-                        get: { provider.apiKey },
+                        get: { keyDrafts[provider.id] ?? provider.apiKey },
                         set: { newValue in
-                            // Update provider config and API key separately
+                            keyDrafts[provider.id] = newValue
                             configService.updateProvider(provider, apiKey: newValue)
+                            keyErrors[provider.id] = AIKeychainStorage.shared.apiKey(for: provider.id) == newValue || newValue.isEmpty
+                                ? nil : "Could not save the key to the Keychain."
                         }
                     ))
                     .textFieldStyle(.settings)
                     .font(NookDesign.Font.secondary)
 
-                    if !provider.apiKey.isEmpty {
+                    if !(keyDrafts[provider.id] ?? provider.apiKey).isEmpty {
                         Button("Test") {
                             testConnection(provider)
                         }
@@ -596,12 +601,30 @@ struct SettingsAITab: View {
                 ))
                 .textFieldStyle(.settings)
                 .font(NookDesign.Font.secondary)
+
+                HStack(spacing: NookDesign.Spacing.md) {
+                    if provider.providerType == .ollama {
+                        Button("Test") { testConnection(provider) }
+                            .font(NookDesign.Font.caption).buttonStyle(.bordered).controlSize(.small).disabled(testingConnection)
+                    }
+                    if provider.providerType == .openAICompatible {
+                        Button("Fetch Models") {
+                            connectionTestResults[provider.id] = "Fetching models…"
+                            Task { connectionTestResults[provider.id] = await configService.fetchModels(for: provider) }
+                        }
+                        .font(NookDesign.Font.caption).buttonStyle(.bordered).controlSize(.small)
+                    }
+                }
+            }
+
+            if let error = keyErrors[provider.id] {
+                Text(error).font(NookDesign.Font.caption).foregroundStyle(.red)
             }
 
             if let result = connectionTestResults[provider.id] {
                 Text(result)
                     .font(NookDesign.Font.caption)
-                    .foregroundStyle(result.contains("Success") ? .green : .red)
+                    .foregroundStyle(result.hasPrefix("Success") ? .green : (result.hasPrefix("Failed") ? .red : .secondary))
             }
         }
     }
@@ -766,54 +789,41 @@ struct SettingsAITab: View {
     private func testConnection(_ provider: AIProviderConfig) {
         testingConnection = true
         connectionTestResults[provider.id] = nil
+        let key = keyDrafts[provider.id] ?? provider.apiKey
 
         Task {
+            defer { testingConnection = false }
+            // The address that answers for this kind of provider, and how it wants the key.
+            var path = "/models"
+            var header: (String, String)?
+            switch provider.providerType {
+            case .appleIntelligence:
+                connectionTestResults[provider.id] = AppleIntelligenceProvider.isAvailable ? "Success: On-device model is ready" : "Failed: Apple Intelligence is not available"
+                return
+            case .gemini: header = ("x-goog-api-key", key)   // in a header; in the URL it would reach logs and proxies
+            case .openRouter: header = ("Authorization", "Bearer \(key)")
+            case .ollama: path = "/api/tags"
+            case .openAICompatible: if !key.isEmpty { header = ("Authorization", "Bearer \(key)") }
+            }
+            guard let url = URL(string: provider.baseURL + path), url.scheme != nil else {
+                connectionTestResults[provider.id] = "Failed: the Base URL is not valid"
+                return
+            }
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 10
+            if let header { request.setValue(header.1, forHTTPHeaderField: header.0) }
             do {
-                switch provider.providerType {
-                case .appleIntelligence:
-                    break
-                case .gemini:
-                    // The key goes in a header; in the URL it would reach logs and proxies
-                    var request = URLRequest(url: URL(string: "\(provider.baseURL)/models")!)
-                    request.setValue(provider.apiKey, forHTTPHeaderField: "x-goog-api-key")
-                    let (_, response) = try await URLSession.shared.data(for: request)
-                    if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                        connectionTestResults[provider.id] = "Success: Connection verified"
-                    } else {
-                        connectionTestResults[provider.id] = "Failed: Invalid response"
-                    }
-                case .openRouter:
-                    var request = URLRequest(url: URL(string: "\(provider.baseURL)/models")!)
-                    request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
-                    let (_, response) = try await URLSession.shared.data(for: request)
-                    if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                        connectionTestResults[provider.id] = "Success: Connection verified"
-                    } else {
-                        connectionTestResults[provider.id] = "Failed: Invalid response"
-                    }
-                case .ollama:
-                    let (_, response) = try await URLSession.shared.data(from: URL(string: "\(provider.baseURL)/api/tags")!)
-                    if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                        connectionTestResults[provider.id] = "Success: Ollama is running"
-                    } else {
-                        connectionTestResults[provider.id] = "Failed: Ollama not responding"
-                    }
-                case .openAICompatible:
-                    var request = URLRequest(url: URL(string: "\(provider.baseURL)/models")!)
-                    if !provider.apiKey.isEmpty {
-                        request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
-                    }
-                    let (_, response) = try await URLSession.shared.data(for: request)
-                    if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                        connectionTestResults[provider.id] = "Success: Connection verified"
-                    } else {
-                        connectionTestResults[provider.id] = "Failed: Invalid response"
-                    }
+                let (_, response) = try await URLSession.shared.data(for: request)
+                if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                    connectionTestResults[provider.id] = provider.providerType == .ollama ? "Success: Ollama is running" : "Success: Connection verified"
+                } else if let http = response as? HTTPURLResponse {
+                    connectionTestResults[provider.id] = "Failed: \(AIConfigService.reason(http.statusCode))"
+                } else {
+                    connectionTestResults[provider.id] = "Failed: no response"
                 }
             } catch {
                 connectionTestResults[provider.id] = "Failed: \(error.localizedDescription)"
             }
-            testingConnection = false
         }
     }
 

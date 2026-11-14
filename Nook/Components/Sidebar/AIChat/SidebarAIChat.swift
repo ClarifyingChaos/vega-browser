@@ -57,6 +57,7 @@ struct SidebarAIChat: View {
     @State private var messageText: String = ""
     @State private var showAddModelPopover: Bool = false
     @State private var showModelMenu: Bool = false
+    @State private var modelFilter: String = ""
     @State private var newModelId: String = ""
     @FocusState private var isTextFieldFocused: Bool
 
@@ -293,7 +294,22 @@ struct SidebarAIChat: View {
                 TextField("Model ID (e.g. gpt-4o)", text: $newModelId)
                     .textFieldStyle(.roundedBorder)
                     .font(NookDesign.Font.secondary)
-                    .frame(width: 200)
+                    .frame(width: 240)
+                // What the provider says it has, narrowed by what is typed; click one to fill the box.
+                if let pid = configService.config.activeProviderId,
+                   let listed = configService.fetchedModels[pid], !newModelId.isEmpty {
+                    let hits = listed.filter { $0.id.lowercased().contains(newModelId.lowercased()) && $0.id != newModelId }.prefix(6)
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(hits)) { m in
+                            Button { newModelId = m.id } label: {
+                                Text(m.id).font(NookDesign.Font.caption).lineLimit(1).truncationMode(.middle)
+                                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 3)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .frame(width: 240)
+                }
                 HStack {
                     Button("Cancel") {
                         newModelId = ""
@@ -323,17 +339,46 @@ struct SidebarAIChat: View {
         let close = { withAnimation(NookDesign.Motion.quick) { showModelMenu = false } }
         let active = configService.config.activeModelId
         return VStack(alignment: .leading, spacing: 2) {
-            ForEach(configService.modelsForActiveProvider()) { model in
-                ModelMenuRow(title: model.displayName, checked: active == model.id) {
-                    configService.setActiveModel(model.id); close()
+            // FORK: every usable provider, each with its models; picking one switches the chat to that provider.
+            ForEach(Array(configService.usableProviders.enumerated()), id: \.element.id) { index, provider in
+                if index > 0 { Divider().padding(.vertical, 4) }
+                if configService.usableProviders.count > 1 {
+                    Text(provider.displayName)
+                        .font(NookDesign.Font.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.top, index == 0 ? 2 : 0)
                 }
-            }
-            if !configService.ollamaModels.isEmpty && configService.activeProviderType == .ollama {
-                Divider().padding(.vertical, 4)
-                ForEach(configService.ollamaModels) { model in
-                    ModelMenuRow(title: model.displayName, checked: active == model.id) {
-                        configService.addModel(model); configService.setActiveModel(model.id); close()
+                let saved = configService.modelsForProvider(provider.id)
+                // Only models the person added, plus the local ones Ollama has installed.
+                let more = (provider.providerType == .ollama ? configService.ollamaModels : [])
+                    .filter { m in !saved.contains { $0.id == m.id } }
+                let all = saved + more
+                // A provider can list hundreds of models, so a long list gets a filter and scrolls.
+                let needle = modelFilter.trimmingCharacters(in: .whitespaces).lowercased()
+                let models = needle.isEmpty || all.count <= 12 ? all : all.filter { $0.displayName.lowercased().contains(needle) }
+                if all.count > 12 {
+                    TextField("Search \(all.count) models", text: $modelFilter)
+                        .textFieldStyle(.roundedBorder)
+                        .font(NookDesign.Font.secondary)
+                        .padding(.horizontal, 6)
+                }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(models.prefix(80)) { model in
+                            ModelMenuRow(title: model.displayName, checked: active == model.id && configService.config.activeProviderId == provider.id) {
+                                configService.addModel(model); configService.selectModel(model); close()
+                            }
+                        }
                     }
+                }
+                .frame(maxHeight: 280)
+                if all.isEmpty {
+                    Text("No models yet")
+                        .font(NookDesign.Font.caption)
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 2)
                 }
             }
             Divider().padding(.vertical, 4)
@@ -342,9 +387,15 @@ struct SidebarAIChat: View {
             }
             ModelMenuRow(title: "Manage Models…", icon: "gearshape") { close(); showSettings() }
         }
+        .onAppear {
+            // A custom provider's list is asked for when the menu opens, once.
+            for provider in configService.usableProviders where provider.providerType == .openAICompatible && configService.fetchedModels[provider.id] == nil {
+                Task { _ = await configService.fetchModels(for: provider) }
+            }
+        }
         .padding(6)
-        .frame(minWidth: 190, alignment: .leading)
-        .fixedSize()
+        .frame(width: 250, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color(nsColor: .windowBackgroundColor).opacity(0.96), in: NookDesign.Radius.shape(NookDesign.Radius.lg))
         .overlay(NookDesign.Radius.shape(NookDesign.Radius.lg).strokeBorder(Color.primary.opacity(0.18), lineWidth: 0.75))
         .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
@@ -892,7 +943,7 @@ private struct ModelMenuRow: View {
                     else { Color.clear }
                 }
                 .frame(width: 16, height: 16)
-                Text(title).font(NookDesign.Font.body).foregroundStyle(.primary)
+                Text(title).font(NookDesign.Font.body).foregroundStyle(.primary).lineLimit(1).truncationMode(.middle)
                 Spacer(minLength: 12)
             }
             .padding(.horizontal, 8)
