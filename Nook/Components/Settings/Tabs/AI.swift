@@ -19,7 +19,8 @@ struct SettingsAITab: View {
     @State private var openRouterSearch: String = ""
     @State private var testingConnection: Bool = false
     @State private var providerToRemove: AIProviderConfig?
-    @State private var connectionTestResult: String?
+    // FORK: one result per provider, so testing one does not mark the others.
+    @State private var connectionTestResults: [String: String] = [:]
     @State private var newMCPServerName: String = ""
     @State private var newMCPServerCommand: String = ""
     @State private var newMCPServerArgs: String = ""
@@ -597,7 +598,7 @@ struct SettingsAITab: View {
                 .font(NookDesign.Font.secondary)
             }
 
-            if let result = connectionTestResult {
+            if let result = connectionTestResults[provider.id] {
                 Text(result)
                     .font(NookDesign.Font.caption)
                     .foregroundStyle(result.contains("Success") ? .green : .red)
@@ -764,7 +765,7 @@ struct SettingsAITab: View {
 
     private func testConnection(_ provider: AIProviderConfig) {
         testingConnection = true
-        connectionTestResult = nil
+        connectionTestResults[provider.id] = nil
 
         Task {
             do {
@@ -777,25 +778,25 @@ struct SettingsAITab: View {
                     request.setValue(provider.apiKey, forHTTPHeaderField: "x-goog-api-key")
                     let (_, response) = try await URLSession.shared.data(for: request)
                     if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                        connectionTestResult = "Success: Connection verified"
+                        connectionTestResults[provider.id] = "Success: Connection verified"
                     } else {
-                        connectionTestResult = "Failed: Invalid response"
+                        connectionTestResults[provider.id] = "Failed: Invalid response"
                     }
                 case .openRouter:
                     var request = URLRequest(url: URL(string: "\(provider.baseURL)/models")!)
                     request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
                     let (_, response) = try await URLSession.shared.data(for: request)
                     if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                        connectionTestResult = "Success: Connection verified"
+                        connectionTestResults[provider.id] = "Success: Connection verified"
                     } else {
-                        connectionTestResult = "Failed: Invalid response"
+                        connectionTestResults[provider.id] = "Failed: Invalid response"
                     }
                 case .ollama:
                     let (_, response) = try await URLSession.shared.data(from: URL(string: "\(provider.baseURL)/api/tags")!)
                     if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                        connectionTestResult = "Success: Ollama is running"
+                        connectionTestResults[provider.id] = "Success: Ollama is running"
                     } else {
-                        connectionTestResult = "Failed: Ollama not responding"
+                        connectionTestResults[provider.id] = "Failed: Ollama not responding"
                     }
                 case .openAICompatible:
                     var request = URLRequest(url: URL(string: "\(provider.baseURL)/models")!)
@@ -804,13 +805,13 @@ struct SettingsAITab: View {
                     }
                     let (_, response) = try await URLSession.shared.data(for: request)
                     if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                        connectionTestResult = "Success: Connection verified"
+                        connectionTestResults[provider.id] = "Success: Connection verified"
                     } else {
-                        connectionTestResult = "Failed: Invalid response"
+                        connectionTestResults[provider.id] = "Failed: Invalid response"
                     }
                 }
             } catch {
-                connectionTestResult = "Failed: \(error.localizedDescription)"
+                connectionTestResults[provider.id] = "Failed: \(error.localizedDescription)"
             }
             testingConnection = false
         }
