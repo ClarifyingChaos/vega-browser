@@ -25,6 +25,7 @@ struct SettingsAITab: View {
     // FORK: the fetched-models picker: a search per provider, and which model is being checked.
     @State private var modelSearch: [String: String] = [:]
     @State private var checkingModels: Set<String> = []
+    @State private var enablingAll: Set<String> = []
     @State private var modelPickErrors: [String: String] = [:]
     // FORK: one result per provider, so testing one does not mark the others.
     @State private var connectionTestResults: [String: String] = [:]
@@ -664,9 +665,23 @@ struct SettingsAITab: View {
         let needle = (modelSearch[provider.id] ?? "").trimmingCharacters(in: .whitespaces).lowercased()
         let shown = needle.isEmpty ? listed : listed.filter { $0.id.lowercased().contains(needle) }
         VStack(alignment: .leading, spacing: VegaDesign.Spacing.sm) {
-            Text("Choose which models appear in the chat")
-                .font(VegaDesign.Font.caption)
-                .foregroundStyle(.secondary)
+            HStack {
+                Text("Choose which models appear in the chat")
+                    .font(VegaDesign.Font.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if provider.providerType == .gemini {
+                    Button(enablingAll.contains(provider.id) ? "Checking…" : "Turn on working models") {
+                        enablingAll.insert(provider.id)
+                        Task {
+                            connectionTestResults[provider.id] = await configService.enableWorkingModels(for: provider)
+                            enablingAll.remove(provider.id)
+                        }
+                    }
+                    .font(VegaDesign.Font.caption).buttonStyle(.bordered).controlSize(.small)
+                    .disabled(enablingAll.contains(provider.id))
+                }
+            }
             TextField("Search \(listed.count) models", text: Binding(get: { modelSearch[provider.id] ?? "" }, set: { modelSearch[provider.id] = $0 }))
                 .textFieldStyle(.settings)
                 .font(VegaDesign.Font.secondary)
