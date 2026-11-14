@@ -115,6 +115,27 @@ class AIConfigService {
         }
     }
 
+    /// FORK: switches on the chat models a provider lists that answer a test request. Image, speech, embedding
+    /// and other non-chat models are skipped without asking. Returns a short summary.
+    func enableWorkingModels(for provider: AIProviderConfig) async -> String {
+        let skip = ["image", "tts", "audio", "live", "embedding", "robotics", "computer-use", "deep-research", "antigravity", "veo", "imagen", "aqa", "learnlm", "gemma"]
+        let candidates = (fetchedModels[provider.id] ?? []).filter { m in
+            !skip.contains { m.id.lowercased().contains($0) } && !models.contains { $0.id == m.id && $0.providerId == provider.id }
+        }
+        guard !candidates.isEmpty else { return "Nothing new to turn on" }
+        var worked = 0, failed = 0
+        await withTaskGroup(of: (AIModelConfig, Bool).self) { group in
+            var iterator = candidates.makeIterator()
+            func next() { if let m = iterator.next() { group.addTask { (m, await self.verifyModel(m.id, for: provider) == nil) } } }
+            for _ in 0..<4 { next() }   // four at a time, to stay inside rate limits
+            for await (model, ok) in group {
+                if ok { addModel(model); worked += 1 } else { failed += 1 }
+                next()
+            }
+        }
+        return "Turned on \(worked) models that work. \(failed) did not answer and were left off."
+    }
+
     /// FORK: asks a custom provider for one token from a model, so only a model that answers gets added.
     /// Returns nil when it works, else why not.
     func verifyModel(_ modelId: String, for provider: AIProviderConfig) async -> String? {
