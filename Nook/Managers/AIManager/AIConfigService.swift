@@ -118,7 +118,7 @@ class AIConfigService {
     /// FORK: switches on the chat models a provider lists that answer a test request. Image, speech, embedding
     /// and other non-chat models are skipped without asking. Returns a short summary.
     func enableWorkingModels(for provider: AIProviderConfig) async -> String {
-        let skip = ["image", "tts", "audio", "live", "embedding", "robotics", "computer-use", "deep-research", "antigravity", "veo", "imagen", "aqa", "learnlm", "gemma"]
+        let skip = ["image", "tts", "audio", "live", "embedding", "robotics", "computer-use", "deep-research", "antigravity", "veo", "imagen", "aqa", "learnlm", "gemma", "transcribe", "speech", "translate", "tuning", "dialog", "bidi", "ocr", "diffusion", "lyria"]
         let candidates = (fetchedModels[provider.id] ?? []).filter { m in
             !skip.contains { m.id.lowercased().contains($0) } && !models.contains { $0.id == m.id && $0.providerId == provider.id }
         }
