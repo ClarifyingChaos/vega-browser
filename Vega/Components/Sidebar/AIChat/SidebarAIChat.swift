@@ -417,11 +417,11 @@ struct SidebarAIChat: View {
             }
 
             VStack(spacing: 8) {
-                suggestion("Summarize this page in a few sentences")
-                suggestion("List the key points of this page")
-                suggestion("Summarize my open tabs", task: .summarizeTabs)
+                suggestion("Summarize this page")
+                suggestion("Key points")
+                suggestion("Summarize my tabs", task: .summarizeTabs)
                 // Fills the box and waits: the next message is a request to browse, answered with a page.
-                suggestion("Browse the web for me…") {
+                suggestion("Browse for me…") {
                     aiService.pendingTask = .browse
                     isTextFieldFocused = true
                 }
@@ -432,11 +432,14 @@ struct SidebarAIChat: View {
         .padding(.horizontal, 4)
     }
 
+    /// What a short starter sends, so the model gets a clear request.
+    private let prompts = ["Key points": "List the key points of this page as a short bulleted list."]
+
     /// A starter prompt: one click sends it.
     private func suggestion(_ text: String, task: AIService.ChatTask = .chat, action: (() -> Void)? = nil) -> some View {
         Button {
             if let action { action(); return }
-            messageText = text
+            messageText = prompts[text] ?? text
             sendMessage(task: task)
         } label: {
             HStack(spacing: 10) {
