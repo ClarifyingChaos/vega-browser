@@ -58,6 +58,8 @@ struct SidebarAIChat: View {
     @State private var showAddModelPopover: Bool = false
     @State private var showModelMenu: Bool = false
     @State private var modelFilter: String = ""
+    @State private var checkingModel = false
+    @State private var modelError: String?
     @State private var newModelId: String = ""
     @FocusState private var isTextFieldFocused: Bool
 
@@ -310,22 +312,36 @@ struct SidebarAIChat: View {
                     }
                     .frame(width: 240)
                 }
+                if let modelError {
+                    Text(modelError).font(NookDesign.Font.caption).foregroundStyle(.red).frame(width: 240, alignment: .leading)
+                }
                 HStack {
                     Button("Cancel") {
                         newModelId = ""
+                        modelError = nil
                         showAddModelPopover = false
                     }
                     .controlSize(.small)
-                    Button("Add") {
+                    Button(checkingModel ? "Checking…" : "Add") {
                         guard !newModelId.isEmpty,
-                              let providerId = configService.config.activeProviderId else { return }
-                        configService.addModelById(newModelId, displayName: nil, providerId: providerId)
-                        configService.setActiveModel(newModelId)
-                        newModelId = ""
-                        showAddModelPopover = false
+                              let providerId = configService.config.activeProviderId,
+                              let provider = configService.providers.first(where: { $0.id == providerId }) else { return }
+                        let id = newModelId
+                        checkingModel = true
+                        modelError = nil
+                        Task {
+                            // Only a model that answers a one-token test is added.
+                            let problem = await configService.verifyModel(id, for: provider)
+                            checkingModel = false
+                            if let problem { modelError = "Not added: \(problem)"; return }
+                            configService.addModelById(id, displayName: nil, providerId: providerId)
+                            configService.setActiveModel(id)
+                            newModelId = ""
+                            showAddModelPopover = false
+                        }
                     }
                     .controlSize(.small)
-                    .disabled(newModelId.isEmpty || configService.config.activeProviderId == nil)
+                    .disabled(newModelId.isEmpty || checkingModel || configService.config.activeProviderId == nil)
                 }
             }
             .padding(12)
