@@ -97,6 +97,29 @@ class AIConfigService {
         }
     }
 
+    /// FORK: asks a custom provider for one token from a model, so only a model that answers gets added.
+    /// Returns nil when it works, else why not.
+    func verifyModel(_ modelId: String, for provider: AIProviderConfig) async -> String? {
+        guard provider.providerType == .openAICompatible else { return nil }
+        guard let url = URL(string: provider.baseURL + "/chat/completions") else { return "the Base URL is not valid" }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 25
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if !provider.apiKey.isEmpty { request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization") }
+        let body: [String: Any] = ["model": modelId, "max_tokens": 1, "messages": [["role": "user", "content": "hi"]]]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return "no response" }
+            if http.statusCode == 200 { return nil }
+            let message = ((try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? [String: Any])?["message"] as? String
+            return message.map { String($0.prefix(120)) } ?? Self.reason(http.statusCode)
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
     static func reason(_ status: Int) -> String {
         switch status {
         case 401, 403: return "the key was refused (HTTP \(status))"
