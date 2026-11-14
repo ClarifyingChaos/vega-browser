@@ -628,7 +628,18 @@ struct SettingsAITab: View {
                 }
             }
 
-            if provider.providerType == .openAICompatible, let listed = configService.fetchedModels[provider.id], !listed.isEmpty {
+            // Gemini and OpenRouter list their models too, once they have a key.
+            if provider.providerType == .gemini || provider.providerType == .openRouter {
+                Button("Fetch Models") {
+                    saveKey(provider)
+                    connectionTestResults[provider.id] = "Fetching models…"
+                    Task { connectionTestResults[provider.id] = await configService.fetchModels(for: provider) }
+                }
+                .font(VegaDesign.Font.caption).buttonStyle(.bordered).controlSize(.small)
+                .disabled((keyDrafts[provider.id] ?? provider.apiKey).isEmpty)
+            }
+
+            if provider.providerType != .ollama, provider.providerType != .appleIntelligence, let listed = configService.fetchedModels[provider.id], !listed.isEmpty {
                 fetchedModelPicker(provider, listed: listed)
             }
 

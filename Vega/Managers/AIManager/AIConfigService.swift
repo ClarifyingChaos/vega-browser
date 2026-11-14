@@ -76,22 +76,40 @@ class AIConfigService {
     /// FORK: asks a custom provider (OmniRoute, LM Studio, ...) which models it has and adds them.
     /// Returns a short message for the settings page.
     func fetchModels(for provider: AIProviderConfig) async -> String {
-        guard let url = URL(string: provider.baseURL + "/models") else { return "Failed: the Base URL is not valid" }
+        let isGemini = provider.providerType == .gemini
+        guard let url = URL(string: provider.baseURL + "/models" + (isGemini ? "?pageSize=1000" : "")) else { return "Failed: the Base URL is not valid" }
         var request = URLRequest(url: url)
         request.timeoutInterval = 10
-        if !provider.apiKey.isEmpty { request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization") }
+        if !provider.apiKey.isEmpty {
+            // Gemini wants the key in its own header; the others take a Bearer token.
+            if isGemini { request.setValue(provider.apiKey, forHTTPHeaderField: "x-goog-api-key") }
+            else { request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization") }
+        }
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else { return "Failed: no response" }
             guard http.statusCode == 200 else { return "Failed: \(Self.reason(http.statusCode))" }
-            let list = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["data"] as? [[String: Any]] ?? []
-            let ids = list.compactMap { $0["id"] as? String }
-            guard !ids.isEmpty else { return "Failed: the provider listed no models" }
-            fetchedModels[provider.id] = ids.sorted().map {
-                AIModelConfig(id: $0, displayName: $0, providerId: provider.id, isCustom: true,
-                              capabilities: AIModelCapabilities(toolCalling: true, streaming: true, webSearch: false))
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            var found: [(id: String, name: String)] = []
+            if isGemini {
+                for m in json?["models"] as? [[String: Any]] ?? [] {
+                    // Only models that can chat.
+                    guard let name = m["name"] as? String,
+                          (m["supportedGenerationMethods"] as? [String])?.contains("generateContent") == true else { continue }
+                    let id = name.hasPrefix("models/") ? String(name.dropFirst(7)) : name
+                    found.append((id, m["displayName"] as? String ?? id))
+                }
+            } else {
+                for m in json?["data"] as? [[String: Any]] ?? [] {
+                    if let id = m["id"] as? String { found.append((id, (m["name"] as? String) ?? id)) }
+                }
             }
-            return "Success: \(ids.count) models found. Pick one in the chat's model list."
+            guard !found.isEmpty else { return "Failed: the provider listed no models" }
+            fetchedModels[provider.id] = found.sorted { $0.id < $1.id }.map {
+                AIModelConfig(id: $0.id, displayName: provider.providerType == .openAICompatible ? $0.id : $0.name, providerId: provider.id, isCustom: true,
+                              capabilities: AIModelCapabilities(toolCalling: true, streaming: true, webSearch: isGemini))
+            }
+            return "Success: \(found.count) models found. Switch on the ones you want in the chat."
         } catch {
             return "Failed: \(error.localizedDescription)"
         }
@@ -100,14 +118,25 @@ class AIConfigService {
     /// FORK: asks a custom provider for one token from a model, so only a model that answers gets added.
     /// Returns nil when it works, else why not.
     func verifyModel(_ modelId: String, for provider: AIProviderConfig) async -> String? {
-        guard provider.providerType == .openAICompatible else { return nil }
-        guard let url = URL(string: provider.baseURL + "/chat/completions") else { return "the Base URL is not valid" }
-        var request = URLRequest(url: url)
+        var request: URLRequest
+        let body: [String: Any]
+        switch provider.providerType {
+        case .gemini:
+            guard let url = URL(string: "\(provider.baseURL)/models/\(modelId):generateContent") else { return "the Base URL is not valid" }
+            request = URLRequest(url: url)
+            request.setValue(provider.apiKey, forHTTPHeaderField: "x-goog-api-key")
+            body = ["contents": [["role": "user", "parts": [["text": "hi"]]]], "generationConfig": ["maxOutputTokens": 1]]
+        case .openAICompatible, .openRouter:
+            guard let url = URL(string: provider.baseURL + "/chat/completions") else { return "the Base URL is not valid" }
+            request = URLRequest(url: url)
+            if !provider.apiKey.isEmpty { request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization") }
+            body = ["model": modelId, "max_tokens": 1, "messages": [["role": "user", "content": "hi"]]]
+        default:
+            return nil
+        }
         request.httpMethod = "POST"
         request.timeoutInterval = 25
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !provider.apiKey.isEmpty { request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization") }
-        let body: [String: Any] = ["model": modelId, "max_tokens": 1, "messages": [["role": "user", "content": "hi"]]]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
