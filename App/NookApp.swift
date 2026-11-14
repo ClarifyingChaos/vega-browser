@@ -124,6 +124,7 @@ struct NookApp: App {
     /// Wires AI services to runtime dependencies (BrowserManager, MCP, etc.)
     private func setupAIServices() {
         aiService.browserManager = browserManager
+        EaselManager.shared.browserManager = browserManager
         aiService.mcpManager = mcpManager
 
         let toolExecutor = BrowserToolExecutor(browserManager: browserManager)

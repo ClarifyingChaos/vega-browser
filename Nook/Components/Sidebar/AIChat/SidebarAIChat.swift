@@ -201,7 +201,17 @@ struct SidebarAIChat: View {
 
     private var inputAreaView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("", text: $messageText, prompt: Text("Ask about this page...").foregroundColor(.secondary), axis: .vertical)
+            if aiService.pendingTask == .browse {
+                HStack(spacing: 6) {
+                    NookSymbol("globe", size: 16)
+                    Text("Browsing for you").font(NookDesign.Font.caption)
+                    Spacer(minLength: 0)
+                    Button { aiService.pendingTask = .chat } label: { Image(systemName: "xmark").font(.system(size: 10, weight: .semibold)) }
+                        .buttonStyle(.plain).help("Back to a normal chat")
+                }
+                .foregroundStyle(.secondary)
+            }
+            TextField("", text: $messageText, prompt: Text(aiService.pendingTask == .browse ? "What should I look up?" : "Ask about this page...").foregroundColor(.secondary), axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(NookDesign.Font.body)
                 .foregroundStyle(.primary)
@@ -221,7 +231,7 @@ struct SidebarAIChat: View {
 
                 Spacer()
 
-                Button(action: sendMessage) {
+                Button(action: { sendMessage() }) {
                     AnimatedIcon("send", fallback: "paperplane", size: 18, ink: canSend ? .white : .secondary)
                         .frame(width: 28, height: 28)
                         .background(canSend ? Color.accentColor : Color.primary.opacity(0.16), in: Circle())
@@ -409,7 +419,12 @@ struct SidebarAIChat: View {
             VStack(spacing: 8) {
                 suggestion("Summarize this page")
                 suggestion("List the key points")
-                suggestion("Explain this in simple terms")
+                suggestion("Summarize my open tabs", task: .summarizeTabs)
+                // Fills the box and waits: the next message is a request to browse, answered with a page.
+                suggestion("Browse the web for me…") {
+                    aiService.pendingTask = .browse
+                    isTextFieldFocused = true
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -418,10 +433,11 @@ struct SidebarAIChat: View {
     }
 
     /// A starter prompt: one click sends it.
-    private func suggestion(_ text: String) -> some View {
+    private func suggestion(_ text: String, task: AIService.ChatTask = .chat, action: (() -> Void)? = nil) -> some View {
         Button {
+            if let action { action(); return }
             messageText = text
-            sendMessage()
+            sendMessage(task: task)
         } label: {
             HStack(spacing: 10) {
                 Text(text)
@@ -467,12 +483,14 @@ struct SidebarAIChat: View {
 
     // MARK: - Actions
 
-    private func sendMessage() {
+    private func sendMessage(task: AIService.ChatTask? = nil) {
         guard !messageText.isEmpty, aiService.hasApiKey else { return }
         let text = messageText
+        let kind = task ?? aiService.pendingTask
         messageText = ""
+        aiService.pendingTask = .chat
         Task {
-            await aiService.sendMessage(text, windowState: windowState)
+            await aiService.sendMessage(text, windowState: windowState, task: kind)
         }
     }
 

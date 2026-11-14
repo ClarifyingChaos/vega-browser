@@ -209,8 +209,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     /// Handles URLs opened from external sources (e.g., Finder, other apps)
     func application(_ application: NSApplication, open urls: [URL]) {
+        // A space someone shared (a .vegaspace file) is added, not opened as a page.
+        for url in urls where url.isFileURL && url.pathExtension.lowercased() == "vegaspace" { browserManager?.openSharedSpace(at: url) }
         // Same guard as handleGetURLEvent, plus file: for documents opened from Finder.
-        urls.filter { ["http", "https", "file"].contains($0.scheme?.lowercased() ?? "") }
+        urls.filter { !($0.isFileURL && $0.pathExtension.lowercased() == "vegaspace") }.filter { ["http", "https", "file"].contains($0.scheme?.lowercased() ?? "") }
             .forEach { handleIncoming(url: $0) }
     }
 
