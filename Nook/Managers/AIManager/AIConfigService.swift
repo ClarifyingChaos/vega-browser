@@ -49,7 +49,60 @@ class AIConfigService {
     }
 
     var activeModel: AIModelConfig? {
-        config.models.first { $0.id == config.activeModelId }
+        // The same model id can belong to two providers, so the provider counts too.
+        config.models.first { $0.id == config.activeModelId && $0.providerId == config.activeProviderId }
+            ?? config.models.first { $0.id == config.activeModelId }
+    }
+
+    /// FORK: providers the chat can use now: switched on, and with a key where one is needed.
+    var usableProviders: [AIProviderConfig] {
+        config.providers.filter { provider in
+            guard provider.isEnabled else { return false }
+            switch provider.providerType {
+            case .appleIntelligence: return AppleIntelligenceProvider.isAvailable
+            case .ollama, .openAICompatible: return true
+            case .gemini, .openRouter: return !provider.apiKey.isEmpty
+            }
+        }
+    }
+
+    /// FORK: picks a model from any usable provider; the chat then talks to that provider.
+    func selectModel(_ model: AIModelConfig) {
+        config.activeProviderId = model.providerId
+        config.activeModelId = model.id
+        save()
+    }
+
+    /// FORK: asks a custom provider (OmniRoute, LM Studio, ...) which models it has and adds them.
+    /// Returns a short message for the settings page.
+    func fetchModels(for provider: AIProviderConfig) async -> String {
+        guard let url = URL(string: provider.baseURL + "/models") else { return "Failed: the Base URL is not valid" }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 10
+        if !provider.apiKey.isEmpty { request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization") }
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return "Failed: no response" }
+            guard http.statusCode == 200 else { return "Failed: \(Self.reason(http.statusCode))" }
+            let list = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["data"] as? [[String: Any]] ?? []
+            let ids = list.compactMap { $0["id"] as? String }
+            guard !ids.isEmpty else { return "Failed: the provider listed no models" }
+            fetchedModels[provider.id] = ids.sorted().map {
+                AIModelConfig(id: $0, displayName: $0, providerId: provider.id, isCustom: true,
+                              capabilities: AIModelCapabilities(toolCalling: true, streaming: true, webSearch: false))
+            }
+            return "Success: \(ids.count) models found. Pick one in the chat's model list."
+        } catch {
+            return "Failed: \(error.localizedDescription)"
+        }
+    }
+
+    static func reason(_ status: Int) -> String {
+        switch status {
+        case 401, 403: return "the key was refused (HTTP \(status))"
+        case 404: return "address not found (HTTP 404), check the Base URL"
+        default: return "HTTP \(status)"
+        }
     }
 
     var activeProviderType: AIProviderType? {
@@ -59,6 +112,8 @@ class AIConfigService {
     // Dynamic model lists (fetched from APIs)
     var openRouterModels: [AIModelConfig] = []
     var ollamaModels: [AIModelConfig] = []
+    /// FORK: what a custom provider said it has, by provider id. Kept here, not saved: it can be hundreds long.
+    var fetchedModels: [String: [AIModelConfig]] = [:]
     var isFetchingModels: Bool = false
 
     init() {
@@ -103,6 +158,8 @@ class AIConfigService {
 
     func setActiveProvider(_ providerId: String) {
         config.activeProviderId = providerId
+        // Using a provider switches it on, or it would vanish from the chat's model list.
+        if let i = config.providers.firstIndex(where: { $0.id == providerId }) { config.providers[i].isEnabled = true }
         // Auto-select first model for this provider
         if let firstModel = config.models.first(where: { $0.providerId == providerId }) {
             config.activeModelId = firstModel.id
