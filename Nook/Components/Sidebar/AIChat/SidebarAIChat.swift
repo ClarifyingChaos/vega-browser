@@ -192,6 +192,8 @@ struct SidebarAIChat: View {
 
             Divider().opacity(0.5)
         }
+        // Blurred glass behind the header, extended up to the window's top edge, so replies scrolling under it stay legible.
+        .background(.regularMaterial, ignoresSafeAreaEdges: .top)
     }
 
     private var pageHost: String? {
@@ -245,6 +247,8 @@ struct SidebarAIChat: View {
             }
         }
         .padding(14)
+        // Blurred glass under the composer, so replies scrolling behind it do not show through the text.
+        .background(.regularMaterial, in: NookDesign.Radius.shape(NookDesign.Radius.xl))
         .chatSurface(radius: NookDesign.Radius.xl)
         .overlay(alignment: .topLeading) {
             if showModelMenu {
