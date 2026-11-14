@@ -6,6 +6,18 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Vega Space</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.vega.browser.space</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>HTML Document</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
@@ -82,6 +94,23 @@
 	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Vega Space</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.vega.browser.space</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>vegaspace</string>
+				</array>
+			</dict>
+		</dict>
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>

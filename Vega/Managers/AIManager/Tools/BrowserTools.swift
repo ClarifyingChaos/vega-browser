@@ -153,12 +153,40 @@ enum BrowserTools {
         ]
     )
 
+    // FORK: read every open tab at once, and hand back a finished page.
+    static let readOpenTabs = AIToolDefinition(
+        name: "readOpenTabs",
+        description: "Read a short excerpt of the text of every open tab in this space, without switching tabs. Use it to summarize, compare or group the person's tabs.",
+        parameters: [
+            "type": "object",
+            "properties": [
+                "maxCharsPerTab": ["type": "integer", "description": "Characters of text per tab (default 700, at most 2000)"]
+            ]
+        ]
+    )
+
+    static let showPage = AIToolDefinition(
+        name: "showPage",
+        description: "Show a page you built in a new tab, as the finished answer. Give a title and the page body as plain HTML: headings, short paragraphs, lists, and links to the sources you used. No scripts, no forms. Call it once, after you have read what you need.",
+        parameters: [
+            "type": "object",
+            "properties": [
+                "title": ["type": "string", "description": "The page title"],
+                "html": ["type": "string", "description": "The page body as HTML"]
+            ],
+            "required": ["title", "html"]
+        ]
+    )
+
+    /// Tools that are on for everyone, so a saved tool list from before they existed does not hide them.
+    static let alwaysOn: Set<String> = ["readOpenTabs", "showPage"]
+
     static let allTools: [AIToolDefinition] = [
         navigateToURL, readPageContent, clickElement,
         getInteractiveElements,
         extractStructuredData, summarizePage, searchInPage,
         getTabList, switchTab, createTab, getSelectedText,
-        executeJavaScript
+        executeJavaScript, readOpenTabs, showPage
     ]
 
     static let toolsByName: [String: AIToolDefinition] = {

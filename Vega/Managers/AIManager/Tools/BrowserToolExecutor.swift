@@ -30,7 +30,7 @@ class BrowserToolExecutor {
     // MARK: - Tool Definitions
 
     func availableToolDefinitions(enabledTools: Set<String>) -> [AIToolDefinition] {
-        BrowserTools.allTools.filter { enabledTools.contains($0.name) }
+        BrowserTools.allTools.filter { enabledTools.contains($0.name) || BrowserTools.alwaysOn.contains($0.name) }
     }
 
     /// Callback for requesting user confirmation before executing dangerous tools.
@@ -85,6 +85,10 @@ class BrowserToolExecutor {
             result = try executeCreateTab(toolCall.arguments, browserManager: browserManager, windowState: windowState)
         case "getSelectedText":
             result = try await executeGetSelectedText(browserManager: browserManager, windowState: windowState)
+        case "readOpenTabs":
+            result = await executeReadOpenTabs(toolCall.arguments, browserManager: browserManager, windowState: windowState)
+        case "showPage":
+            result = executeShowPage(toolCall.arguments, browserManager: browserManager, windowState: windowState)
         case "executeJavaScript":
             result = try await executeJavaScript(toolCall.arguments, browserManager: browserManager, windowState: windowState)
         default:
@@ -452,6 +456,72 @@ class BrowserToolExecutor {
 
         let result = try await webView.callAsyncJavaScript(script, arguments: ["query": query], contentWorld: .page)
         return result as? String ?? "No matches found"
+    }
+
+    // MARK: - Open tabs and finished pages
+
+    /// A short excerpt of every open tab's text, without switching tabs. A tab that is not loaded gives its title and address.
+    private func executeReadOpenTabs(_ args: [String: Any], browserManager: BrowserManager, windowState: BrowserWindowState) async -> String {
+        let controller = browserManager.tabs
+        let limit = min(max(args["maxCharsPerTab"] as? Int ?? 700, 200), 2000)
+        let order = Array(tabOrder(controller, windowState).prefix(25))
+        guard !order.isEmpty else { return "No tabs available" }
+        let script = """
+            (function() {
+                const clone = document.body ? document.body.cloneNode(true) : null;
+                if (!clone) return '';
+                clone.querySelectorAll('script, style, noscript, nav, footer, header').forEach(el => el.remove());
+                return (clone.innerText || '').replace(/\\s+/g, ' ').trim().substring(0, \(limit));
+            })();
+            """
+        var out: [String] = []
+        for (index, itemID) in order.enumerated() {
+            let session = controller.session(for: itemID)
+            let url = (session?.url ?? controller.item(itemID)?.url)?.absoluteString ?? ""
+            var excerpt = ""
+            if let webView = session?.webView, !webView.isLoading, url.hasPrefix("http") {
+                excerpt = ((try? await webView.evaluateJavaScript(script)) as? String) ?? ""
+            }
+            out.append("[\(index + 1)] \(tabTitle(itemID, in: controller))\n\(url)\n\(excerpt.isEmpty ? "(not loaded)" : excerpt)")
+        }
+        return out.joined(separator: "\n\n")
+    }
+
+    /// The page the model built, opened in a new tab from a file in the app's folder. Scripts are stripped and a
+    /// content policy blocks any that remain, so a page the model wrote can show text, images and links and nothing else.
+    private func executeShowPage(_ args: [String: Any], browserManager: BrowserManager, windowState: BrowserWindowState) -> String {
+        guard let title = args["title"] as? String, let body = args["html"] as? String, !body.isEmpty else {
+            return "Missing title or html"
+        }
+        func strip(_ html: String) -> String {
+            var s = html
+            let patterns = ["<script[\\s\\S]*?</script>", "<iframe[\\s\\S]*?</iframe>", "<object[\\s\\S]*?</object>", "<embed[^>]*>",
+                            "<form[\\s\\S]*?</form>", "\\son[a-z]+\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)", "javascript:"]
+            for pattern in patterns {
+                s = s.replacingOccurrences(of: pattern, with: "", options: [.regularExpression, .caseInsensitive])
+            }
+            return s
+        }
+        let escapedTitle = title.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
+        let page = """
+            <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'">
+            <title>\(escapedTitle)</title>
+            <style>
+            :root{color-scheme:light dark} body{font:17px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;max-width:720px;margin:48px auto;padding:0 24px}
+            h1{font-size:34px;line-height:1.15;letter-spacing:-.02em} h2{margin-top:2em} a{color:#0a64d6} img{max-width:100%;border-radius:8px}
+            @media (prefers-color-scheme:dark){body{background:#161618;color:#e8e8ea}a{color:#6cb2ff}}
+            </style></head><body><h1>\(escapedTitle)</h1>\(strip(body))</body></html>
+            """
+        let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(Bundle.main.bundleIdentifier ?? "Vega").appendingPathComponent("Pages", isDirectory: true)
+        let file = folder.appendingPathComponent("\(UUID().uuidString).html")
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try page.write(to: file, atomically: true, encoding: .utf8)
+        } catch { return "Could not save the page: \(error.localizedDescription)" }
+        guard openTab(file, browserManager.tabs, windowState) != nil else { return "Could not open the page" }
+        return "Opened the page \"\(title)\" in a new tab."
     }
 
     private func executeGetTabList(browserManager: BrowserManager, windowState: BrowserWindowState) -> String {
