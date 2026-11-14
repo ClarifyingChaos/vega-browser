@@ -156,6 +156,12 @@ class AIService {
 
             // Extract page context
             let onDevice = configService.activeProviderType == .appleIntelligence
+            // The on-device model has no room to read pages and write one, so say so rather than fail quietly.
+            if task == .browse && onDevice {
+                messages.append(ChatMessage(role: .assistant, content: "Browsing for you needs a larger model than On-Device. Pick another model under the input box (Settings › AI) and ask again.", timestamp: Date()))
+                isLoading = false
+                return
+            }
             let pageContext = isPrivate ? "" : await extractPageContext(
                 windowState: windowState, tag: contextTag, maxTokens: onDevice ? AppleIntelligenceProvider.pageTokens : nil,
                 canSearch: tools.contains { $0.name == BrowserTools.searchInPage.name }
