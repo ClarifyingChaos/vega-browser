@@ -279,6 +279,9 @@ private struct SyncSection: View {
                     ForEach(SyncCoordinator.Backend.allCases) { Text($0.title).tag($0) }
                 }
                 if sync.backend == .google { GoogleRow() }
+                Toggle("Share open tabs", isOn: Binding(get: { sync.sharesOpenTabs }, set: { sync.sharesOpenTabs = $0 }))
+                Text("Lists the titles and addresses of this Mac's open tabs in your sync folder. Your other Macs show them under Spaces › Tabs from Other Macs.")
+                    .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
             }
             if sync.isEnabled {
                 Toggle("Sync passwords", isOn: Binding(

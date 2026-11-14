@@ -21,6 +21,7 @@ struct NookCommands: Commands {
     let tabOrganizerManager: TabOrganizerManager
     @Environment(\.openSettings) private var openSettings
     @Environment(\.nookSettings) var nookSettings
+    @ObservedObject private var easels = EaselStore.shared
 
     init(browserManager: BrowserManager, windowRegistry: WindowRegistry, shortcutManager: KeyboardShortcutManager, tabOrganizerManager: TabOrganizerManager) {
         self.browserManager = browserManager
@@ -243,6 +244,69 @@ struct NookCommands: Commands {
             }
             .modifier(dynamicShortcut(.expandAllFolders))
             .disabled(windowRegistry.activeWindow?.spaceID == nil)
+
+            Divider()
+
+            Button("Summarize Open Tabs") {
+                browserManager.askVega("Summarize my open tabs.", task: .summarizeTabs)
+            }
+            .disabled(windowRegistry.activeWindow?.spaceID == nil || nookSettings.showAIAssistant == false)
+
+            Button("Browse the Web for Me…") {
+                browserManager.askVega(nil, task: .browse)
+            }
+            .disabled(nookSettings.showAIAssistant == false)
+
+            Divider()
+
+            Button("Share Space…") { browserManager.shareSpace() }
+                .disabled(windowRegistry.activeWindow?.spaceID == nil)
+            Button("Export Space…") { browserManager.exportSpace() }
+                .disabled(windowRegistry.activeWindow?.spaceID == nil)
+            Button("Open Shared Space…") { browserManager.openSharedSpacePanel() }
+
+            Menu("Easels") {
+                Button("New Easel") { EaselManager.shared.newEasel() }
+                if !easels.easels.isEmpty {
+                    Divider()
+                    ForEach(easels.easels) { easel in
+                        Button(easel.name.isEmpty ? "Untitled Easel" : easel.name) { EaselManager.shared.open(easel.id) }
+                    }
+                    Divider()
+                    Menu("Add This Page to Easel") {
+                        ForEach(easels.easels) { easel in
+                            Button(easel.name.isEmpty ? "Untitled Easel" : easel.name) { EaselManager.shared.addCurrentPage(to: easel.id) }
+                        }
+                    }
+                    .disabled(EaselManager.shared.currentPage() == nil)
+                    Menu("Delete Easel") {
+                        ForEach(easels.easels) { easel in
+                            Button(easel.name.isEmpty ? "Untitled Easel" : easel.name, role: .destructive) { EaselManager.shared.delete(easel.id) }
+                        }
+                    }
+                }
+            }
+
+            Menu("Tabs from Other Macs") {
+                let sync = SyncCoordinator.shared
+                if !sync.isEnabled || !sync.sharesOpenTabs {
+                    Button("Turn On Sharing in Settings…") { browserManager.openSettings(tab: .general) }
+                } else if sync.otherMacsTabs.isEmpty {
+                    Text("No other Mac is sharing tabs yet")
+                } else {
+                    ForEach(sync.otherMacsTabs) { mac in
+                        Menu(mac.deviceName) {
+                            ForEach(mac.tabs) { tab in
+                                Button(tab.title.isEmpty ? tab.url : tab.title) {
+                                    if let url = URL(string: tab.url), let window = windowRegistry.activeWindow {
+                                        _ = browserManager.tabs.open(url: url, in: window, placement: .newTab)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             if tabOrganizerManager.isAvailable {
                 Divider()

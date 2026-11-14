@@ -221,7 +221,7 @@ public struct BrowserToolsConfig: Codable, Equatable {
         "getInteractiveElements",
         "extractStructuredData", "summarizePage", "searchInPage",
         "getTabList", "switchTab", "createTab", "getSelectedText",
-        "executeJavaScript"
+        "executeJavaScript", "readOpenTabs", "showPage"
     ]
 
     public init(

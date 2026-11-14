@@ -53,11 +53,24 @@ public final class SyncCoordinator {
     private static let backendKey = "fork.sync.backend"
     private static let enabledKey = "fork.sync.enabled"
     private static let deviceKey = "fork.sync.deviceID"
+    private static let openTabsKey = "fork.sync.openTabs"
     private static let interval: Duration = .seconds(20)
 
     public private(set) var status: Status = .off
     /// Where password sync stands, shown under its switch.
     public private(set) var passwordStatus: String?
+    /// The tabs open on the other Macs, as of the last sync.
+    public private(set) var otherMacsTabs: [OpenTabsSnapshot] = []
+    /// Whether this Mac lists its open tabs (titles and addresses) in the sync folder for the others.
+    public var sharesOpenTabs: Bool {
+        get { UserDefaults.standard.bool(forKey: Self.openTabsKey) }
+        set {
+            UserDefaults.standard.set(newValue, forKey: Self.openTabsKey)
+            lastOpenTabs = nil
+            if isEnabled { syncNow() }
+        }
+    }
+    @ObservationIgnored private var lastOpenTabs: [OpenTabsSnapshot.Entry]?
     @ObservationIgnored private weak var tabs: TabsController?
     @ObservationIgnored private var loop: Task<Void, Never>?
     @ObservationIgnored private var lastWritten: SyncSnapshot?
@@ -238,12 +251,27 @@ public final class SyncCoordinator {
             }
             try await writeOwn(store: store)
             await syncPasswords(store: store)
+            await syncOpenTabs(store: store, tabs: tabs, own: own)
             // Names only: which devices have a snapshot in the store, so a failed sync can be told from an empty one.
             let present = (try? await store.list("devices").names) ?? []
             Self.logger.notice("synced via \(self.backend.rawValue, privacy: .public): \(present.count) device file(s) in the store, \(snapshots.count) from other Macs")
             status = .idle(lastSync: Date(), otherMacs: snapshots.count, waitingForDownload: pending)
         } catch {
             status = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Writes this Mac's open tabs (when shared, and only when they changed) and reads the others'.
+    private func syncOpenTabs(store: any SyncBlobStore, tabs: TabsController, own: UUID) async {
+        do {
+            let entries = sharesOpenTabs ? ownOpenTabs(in: tabs) : []
+            if entries != lastOpenTabs {
+                try await store.writeOpenTabs(OpenTabsSnapshot(deviceID: own, deviceName: deviceName, writtenAt: Date(), tabs: entries))
+                lastOpenTabs = entries
+            }
+            otherMacsTabs = try await store.readOtherOpenTabs(excluding: own)
+        } catch {
+            Self.logger.error("open tabs sync failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
