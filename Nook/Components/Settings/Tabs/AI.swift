@@ -22,6 +22,10 @@ struct SettingsAITab: View {
     // FORK: what is typed in each key field, so the field does not depend on the Keychain answering on every keystroke.
     @State private var keyDrafts: [String: String] = [:]
     @State private var keyErrors: [String: String] = [:]
+    // FORK: the fetched-models picker: a search per provider, and which model is being checked.
+    @State private var modelSearch: [String: String] = [:]
+    @State private var checkingModels: Set<String> = []
+    @State private var modelPickErrors: [String: String] = [:]
     // FORK: one result per provider, so testing one does not mark the others.
     @State private var connectionTestResults: [String: String] = [:]
     @State private var newMCPServerName: String = ""
@@ -617,6 +621,10 @@ struct SettingsAITab: View {
                 }
             }
 
+            if provider.providerType == .openAICompatible, let listed = configService.fetchedModels[provider.id], !listed.isEmpty {
+                fetchedModelPicker(provider, listed: listed)
+            }
+
             if let error = keyErrors[provider.id] {
                 Text(error).font(NookDesign.Font.caption).foregroundStyle(.red)
             }
@@ -625,6 +633,65 @@ struct SettingsAITab: View {
                 Text(result)
                     .font(NookDesign.Font.caption)
                     .foregroundStyle(result.hasPrefix("Success") ? .green : (result.hasPrefix("Failed") ? .red : .secondary))
+            }
+        }
+    }
+
+    // MARK: - Fetched models picker
+
+    /// What a custom provider offers, with a switch per model: on means it shows in the chat's model list.
+    /// A model is checked with a one-token request before it is switched on.
+    @ViewBuilder
+    private func fetchedModelPicker(_ provider: AIProviderConfig, listed: [AIModelConfig]) -> some View {
+        let needle = (modelSearch[provider.id] ?? "").trimmingCharacters(in: .whitespaces).lowercased()
+        let shown = needle.isEmpty ? listed : listed.filter { $0.id.lowercased().contains(needle) }
+        VStack(alignment: .leading, spacing: NookDesign.Spacing.sm) {
+            Text("Choose which models appear in the chat")
+                .font(NookDesign.Font.caption)
+                .foregroundStyle(.secondary)
+            TextField("Search \(listed.count) models", text: Binding(get: { modelSearch[provider.id] ?? "" }, set: { modelSearch[provider.id] = $0 }))
+                .textFieldStyle(.settings)
+                .font(NookDesign.Font.secondary)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(shown.prefix(200)) { model in
+                        let key = provider.id + "/" + model.id
+                        HStack(spacing: NookDesign.Spacing.sm) {
+                            Text(model.id)
+                                .font(NookDesign.Font.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer(minLength: 8)
+                            if checkingModels.contains(key) { ProgressView().controlSize(.small) }
+                            Toggle("", isOn: Binding(
+                                get: { configService.models.contains { $0.id == model.id && $0.providerId == provider.id } },
+                                set: { on in
+                                    modelPickErrors[provider.id] = nil
+                                    if !on { configService.removeModel(model.id, providerId: provider.id); return }
+                                    checkingModels.insert(key)
+                                    Task {
+                                        let problem = await configService.verifyModel(model.id, for: provider)
+                                        checkingModels.remove(key)
+                                        if let problem { modelPickErrors[provider.id] = "\(model.id) was not added: \(problem)"; return }
+                                        configService.addModel(model)
+                                    }
+                                }
+                            ))
+                            .labelsHidden()
+                            .controlSize(.small)
+                            .disabled(checkingModels.contains(key))
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    if shown.count > 200 {
+                        Text("Showing 200 of \(shown.count). Search to narrow the list.")
+                            .font(NookDesign.Font.caption).foregroundStyle(.secondary).padding(.vertical, 4)
+                    }
+                }
+            }
+            .frame(maxHeight: 240)
+            if let error = modelPickErrors[provider.id] {
+                Text(error).font(NookDesign.Font.caption).foregroundStyle(.red)
             }
         }
     }
