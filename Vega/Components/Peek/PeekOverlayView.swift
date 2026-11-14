@@ -64,6 +64,8 @@ struct PeekOverlayView: View {
                 DetachedPageHost(page: page, cornerRadius: cornerRadius)
                     .id(page.itemID)
 
+                LoadErrorView(session: page)
+                    .clipShape(VegaDesign.Radius.shape(cornerRadius))
                 BlockedPageView(session: page)
                 TranslationTaskHost(session: page)
 
