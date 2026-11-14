@@ -12,9 +12,21 @@
 import Foundation
 import OSLog
 
+/// The folder under Application Support that Nook names itself, not by bundle id: extension
+/// packages and the AI configuration.
+enum SharedSupportFolder {
+    /// "Nook" for the shipping app. A copy built under another bundle id (a perf or test build)
+    /// gets its own, so it never rewrites the installed app's extensions or AI settings.
+    static var name: String {
+        let id = Bundle.main.bundleIdentifier ?? "Nook"
+        return id == LegacyDataMigration.shippingBundleID ? "Nook" : id
+    }
+}
+
 enum LegacyDataMigration {
     /// Newest first: anyone with both ran the fork after the original.
     static let previousBundleIDs = ["com.gstudios.nook", "com.baingurley.nook", "io.browsewithnook.nook"] // FORK: Vega (com.vega.browser) comes after upstream Nook
+    static let shippingBundleID = "com.vega.browser"
 
     private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Nook", category: "Migration")
 
@@ -26,6 +38,9 @@ enum LegacyDataMigration {
         // FORK: `defaults write com.vega.browser skipLegacyMigration -bool true` before the first launch starts Vega
         // empty, without importing an older Vega or Nook install's spaces, history and settings.
         if defaults.bool(forKey: "skipLegacyMigration") { return }
+        // A copy built under another bundle id (a perf or test build) starts empty. Migrated, it
+        // held the person's cookies and extension rows that point at the installed app's packages.
+        guard currentBundleID == shippingBundleID else { return }
         let fm = FileManager.default
         let appSupport = library.appendingPathComponent("Application Support", isDirectory: true)
         let webKit = library.appendingPathComponent("WebKit", isDirectory: true)
