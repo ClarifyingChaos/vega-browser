@@ -198,7 +198,8 @@ struct SidebarAIChat: View {
             .padding(.top, 14)
             .padding(.bottom, 10)
 
-            Divider().opacity(0.5)
+            // The floating card has no line under its header; the docked sidebar keeps it.
+            if !nookSettings.aiChatFloating { Divider().opacity(0.5) }
         }
         // Blurred glass behind the header, extended up to the window's top edge, so replies scrolling under it stay legible.
         .background(.regularMaterial, ignoresSafeAreaEdges: .top)
