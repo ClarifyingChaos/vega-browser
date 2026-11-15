@@ -54,6 +54,8 @@ public final class FilterListManager {
         FilterList(name: "uBlock Badware", url: URL(string: "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt")!, filename: "ublock-badware.txt", knownSizeRange: 5_000...2_000_000, category: .malware, isTrusted: true),
         FilterList(name: "uBlock Privacy", url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/privacy.min.txt")!, filename: "ublock-privacy.min.txt", knownSizeRange: 5_000...2_000_000, category: .privacy, isTrusted: true),
         FilterList(name: "uBlock Quick Fixes", url: URL(string: "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/quick-fixes.txt")!, filename: "ublock-quick-fixes.txt", knownSizeRange: 1_000...2_000_000, category: .ads, isTrusted: true),
+        // FORK: Brave's own list of rules its Shields add on top of EasyList and uBlock.
+        FilterList(name: "Brave Specific", url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-specific.txt")!, filename: "brave-specific.txt", knownSizeRange: 500...2_000_000, category: .ads, isTrusted: true),
         FilterList(name: "AdGuard URL Tracking Protection", url: URL(string: "https://filters.adtidy.org/extension/ublock/filters/17.txt")!, filename: "adguard-url-tracking.txt", knownSizeRange: 20_000...5_000_000, category: .privacy),
     ]
 

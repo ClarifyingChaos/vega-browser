@@ -906,7 +906,7 @@ extension PageSession {
     }
 }
 
-private extension WKNavigationAction {
+extension WKNavigationAction {
     /// `_isUserInitiated`: true only inside a real user gesture. Without it, nothing counts as one.
     var nookIsUserInitiated: Bool {
         let selector = NSSelectorFromString("_isUserInitiated")
