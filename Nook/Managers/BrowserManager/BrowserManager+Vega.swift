@@ -99,3 +99,18 @@ extension BrowserManager {
         _ = tabs.importSharedSpace(shared)
     }
 }
+
+// MARK: - Clear data on quit
+
+import WebKit
+
+extension BrowserManager {
+    /// Every space's cookies, site data and cache, the default store's, and the history.
+    func clearWebsiteDataAtQuit() async {
+        let stores: [WKWebsiteDataStore] = tabs.orderedSpaces.compactMap { tabs.profile(forSpace: $0.id)?.dataStore } + [WKWebsiteDataStore.default()]
+        for store in stores {
+            await store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast)
+        }
+        historyManager.clearHistory()
+    }
+}
