@@ -7,10 +7,11 @@
 //  sharing (an empty list) and one not heard from in two weeks drop out. Compiles the shipped sources:
 //
 //    swiftc Packages/NookTabsCore/Sources/NookTabsCore/*.swift \
-//           Packages/NookWeb/Sources/NookWeb/SyncOpenTabsStore.swift \
+//           Packages/NookWeb/Sources/NookWeb/SyncOpenTabsStore.swift Packages/NookWeb/Sources/NookWeb/Passwords/PasswordSync.swift \
 //           Packages/NookWeb/Checks/OpenTabsSyncCheck.swift -o /tmp/open-tabs-sync-check && /tmp/open-tabs-sync-check
 //
 
+import CryptoKit
 import Foundation
 
 @main
@@ -39,6 +40,20 @@ struct OpenTabsSyncCheck {
         try await store.writeOpenTabs(snap(a, "Studio", []))
         let afterStop = try await store.readOtherOpenTabs(excluding: b)
         precondition(afterStop.isEmpty, "a Mac that stops sharing drops out")
+
+        // Sealed lists: the full address crosses, the folder holds no readable address, a Mac without the key sees nothing.
+        let key = SymmetricKey(size: .bits256), wrong = SymmetricKey(size: .bits256)
+        let sealed = UUID(), reader = UUID()
+        try await store.writeOpenTabs(snap(sealed, "Sealed", [tab("Doc", "https://docs.example/d/abc?token=SECRET")]), key: key)
+        let files = try await store.list("openTabs").names
+        for name in files where name.hasPrefix(sealed.uuidString) {
+            let raw = try await store.get("openTabs/\(name)") ?? Data()
+            precondition(!String(decoding: raw, as: UTF8.self).contains("SECRET"), "no file in the folder shows the address: \(name)")
+        }
+        let withKey = try await store.readOtherOpenTabs(excluding: reader, key: key)
+        precondition(withKey.contains { $0.deviceName == "Sealed" && $0.tabs[0].url.contains("token=SECRET") }, "the right key opens the full address")
+        let withoutKey = try await store.readOtherOpenTabs(excluding: reader, key: wrong)
+        precondition(!withoutKey.contains { $0.deviceName == "Sealed" }, "a wrong key shows nothing")
         print("OpenTabsSync ok: shared lists reach the other Mac, and only those")
     }
 }
