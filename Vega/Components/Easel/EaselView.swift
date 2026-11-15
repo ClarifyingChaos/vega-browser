@@ -105,7 +105,7 @@ struct EaselView: View {
         panel.allowedContentTypes = [.image]
         panel.allowsMultipleSelection = true
         guard panel.runModal() == .OK else { return }
-        for url in panel.urls { if let image = NSImage(contentsOf: url) { addImage(image) } }
+        for url in panel.urls { if let image = EaselStore.loadImage(at: url) { addImage(image) } }
     }
 
     private func remove(_ item: EaselItem) {
@@ -128,7 +128,7 @@ struct EaselView: View {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
                     guard let url else { return }
                     DispatchQueue.main.async {
-                        if let image = NSImage(contentsOf: url) { addImage(image, at: here) }
+                        if let image = EaselStore.loadImage(at: url) { addImage(image, at: here) }
                         else { addNote(text: url.lastPathComponent, at: here) }
                     }
                 }

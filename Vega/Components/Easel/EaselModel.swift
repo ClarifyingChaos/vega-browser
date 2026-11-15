@@ -38,6 +38,13 @@ final class EaselStore: ObservableObject {
     @Published private(set) var easels: [Easel] = []
     private var pendingSave: [UUID: Task<Void, Never>] = [:]
 
+    /// A picture from a file, refused when the file is over 25 MB.
+    static func loadImage(at url: URL) -> NSImage? {
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        guard size > 0, size <= 25_000_000 else { return nil }
+        return NSImage(contentsOf: url)
+    }
+
     let folder: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base.appendingPathComponent(Bundle.main.bundleIdentifier ?? "Vega").appendingPathComponent("Easels", isDirectory: true)
@@ -100,6 +107,19 @@ final class EaselStore: ObservableObject {
 
     /// Stores an image in the Easels folder and returns its file name and size on the canvas.
     func saveImage(_ image: NSImage) -> (file: String, size: CGSize)? {
+        // A huge picture would fill the disk and memory: scale it so its long side is at most 2400 px.
+        let longest = max(image.size.width, image.size.height)
+        var image = image
+        if longest > 2400, let rep = image.representations.first {
+            let scale = 2400 / longest
+            let target = NSSize(width: image.size.width * scale, height: image.size.height * scale)
+            let small = NSImage(size: target)
+            small.lockFocus()
+            image.draw(in: NSRect(origin: .zero, size: target), from: .zero, operation: .copy, fraction: 1)
+            small.unlockFocus()
+            _ = rep
+            image = small
+        }
         guard let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
               let data = rep.representation(using: .png, properties: [:]) else { return nil }
         let name = "\(UUID().uuidString).png"

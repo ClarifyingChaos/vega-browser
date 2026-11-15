@@ -174,11 +174,7 @@ class AIConfigService {
 
     /// A key is only sent over HTTPS, or to this Mac (LM Studio, OmniRoute and the like): over plain HTTP to
     /// another machine it would cross the network readable. The chat's own provider enforces the same rule.
-    static func isSafeAddress(_ baseURL: String) -> Bool {
-        guard let url = URL(string: baseURL), let scheme = url.scheme?.lowercased(), let host = url.host?.lowercased() else { return false }
-        if scheme == "https" { return true }
-        return scheme == "http" && ["localhost", "127.0.0.1", "::1"].contains(host)
-    }
+    static func isSafeAddress(_ baseURL: String) -> Bool { AIAddress.isSafe(baseURL) }
 
     static let insecureMessage = "the address must start with https:// (http:// is only allowed for this Mac)"
 

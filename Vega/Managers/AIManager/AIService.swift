@@ -48,6 +48,9 @@ class AIService {
 
     // Per-conversation flag: if the user chose "Allow All This Chat", skip further approval prompts
     private var autoApprovedThisChat: Bool = false
+    // FORK: Allow for This Chat covers sites already in play. A site the model has not opened yet is asked about again,
+    // so a page cannot steer it to a stranger's address that carries what it read.
+    private var approvedHosts: Set<String> = []
     // Allow All on an MCP prompt covers that server only, and the browser-tool flag never covers MCP
     private var autoApprovedMCPServers: Set<String> = []
 
@@ -59,7 +62,7 @@ class AIService {
 
     /// Mutating tools that always require explicit user approval in `.askBeforeExecuting` mode
     private static let mutatingTools: Set<String> = [
-        "executeJavaScript", "navigateToURL", "clickElement", "createTab", "switchTab"
+        "executeJavaScript", "navigateToURL", "clickElement", "createTab", "switchTab", "showPage"
     ]
 
     init(configService: AIConfigService) {
@@ -159,7 +162,9 @@ class AIService {
                 isLoading = false
                 return
             }
-            let pageContext = isPrivate ? "" : await extractPageContext(
+            // Not sent from a private window, nor when the provider's own switch is off.
+            let sharesPage = configService.activeProvider?.sendsPageContent ?? true
+            let pageContext = (isPrivate || !sharesPage) ? "" : await extractPageContext(
                 windowState: windowState, tag: contextTag, maxTokens: onDevice ? AppleIntelligenceProvider.pageTokens : nil,
                 canSearch: tools.contains { $0.name == BrowserTools.searchInPage.name }
             )
@@ -295,6 +300,7 @@ class AIService {
     func clearMessages() {
         messages.removeAll()
         autoApprovedThisChat = false
+        approvedHosts = []
         autoApprovedMCPServers = []
     }
 
@@ -358,14 +364,17 @@ class AIService {
             }
 
             // executeJavaScript is left to the confirmation handler below, which prompts on every call
+            let target = Self.targetHost(of: toolCall)
+            let knownSite = target == nil || approvedHosts.contains(target!) || target == currentHost()
             if executionMode == .askBeforeExecuting && Self.mutatingTools.contains(toolCall.name)
-                && toolCall.name != "executeJavaScript" && !autoApprovedThisChat && !approved {
+                && toolCall.name != "executeJavaScript" && !approved && (!autoApprovedThisChat || !knownSite) {
                 let approval = await requestToolApproval(toolName: toolCall.name, args: toolCall.arguments)
                 switch approval {
                 case .allow:
-                    break // proceed with this single execution
+                    if let target { approvedHosts.insert(target) }
                 case .allowAll:
                     autoApprovedThisChat = true
+                    if let target { approvedHosts.insert(target) }
                 case .deny:
                     Self.log.info("User denied tool execution: \(toolCall.name)")
                     return AIToolResult(toolCallId: toolCall.id, toolName: toolCall.name, content: "User denied execution of \(toolCall.name).", isError: true)
@@ -459,6 +468,19 @@ class AIService {
     // MARK: - Tool Approval Dialog
 
     /// Shows an NSAlert asking the user to approve a mutating browser tool or MCP tool call.
+    /// The site an opening tool is aimed at, without "www.".
+    private static func targetHost(of call: AIToolCall) -> String? {
+        guard ["navigateToURL", "createTab"].contains(call.name), let text = call.arguments["url"] as? String, !text.isEmpty else { return nil }
+        guard let host = URL(string: text.contains("://") ? text : "https://" + text)?.host()?.lowercased() else { return nil }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+
+    private func currentHost() -> String? {
+        guard let state = browserToolExecutor?.windowState,
+              let host = browserManager?.tabs.selectedSession(in: state)?.url.host()?.lowercased() else { return nil }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+
     private func requestToolApproval(toolName: String, args: [String: Any], mcpServerId: String? = nil, offerAllowAll: Bool = true) async -> ToolApprovalResult {
         let alert = NSAlert()
         // FORK: one plain sentence, no code or parameters: what it wants to do, and where.
@@ -472,6 +494,7 @@ class AIService {
         case "navigateToURL": sentence = "open \(site()) in the tab"
         case "createTab": sentence = "open \(site()) in a new tab"
         case "switchTab": sentence = "switch to another tab"
+        case "showPage": sentence = "show you a page it wrote"
         case "clickElement": sentence = "click something on \(host)"
         case "executeJavaScript": sentence = "run a script on \(host)"
         default: sentence = mcpServerId.map { "use the \($0) tool" } ?? "do something in your browser"
