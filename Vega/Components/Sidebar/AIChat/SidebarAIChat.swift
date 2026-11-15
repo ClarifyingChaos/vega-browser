@@ -149,10 +149,16 @@ struct SidebarAIChat: View {
                         .foregroundStyle(.primary)
                     // The page the chat is about, so it is clear what "this page" means.
                     if let host = pageHost {
-                        Text(host + sharingNote)
+                        Text(host)
                             .font(VegaDesign.Font.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                        if let note = sharingNote {
+                            Text(note)
+                                .font(VegaDesign.Font.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     }
                 }
 
@@ -205,13 +211,13 @@ struct SidebarAIChat: View {
         .background(.regularMaterial, ignoresSafeAreaEdges: .top)
     }
 
-    /// Where the page text goes, said plainly: nothing is hidden about what leaves this Mac.
-    private var sharingNote: String {
-        guard !windowState.isIncognito, let provider = configService.activeProvider else { return "" }
-        guard provider.sendsPageContent else { return " \u{00B7} page not shared" }
-        let local = provider.providerType == .appleIntelligence || provider.providerType == .ollama
-            || (URL(string: provider.baseURL)?.host).map { ["localhost", "127.0.0.1", "::1"].contains($0) } == true
-        return local ? " \u{00B7} stays on this Mac" : " \u{00B7} shared with \(provider.displayName)"
+    /// Where the page text goes, said plainly. Only the on-device model and Ollama keep it on this Mac: a gateway
+    /// such as OmniRoute runs here but forwards the page on, so it is named, not called local.
+    private var sharingNote: String? {
+        guard !windowState.isIncognito, let provider = configService.activeProvider else { return nil }
+        guard provider.sendsPageContent else { return "Page not shared" }
+        if provider.providerType == .appleIntelligence || provider.providerType == .ollama { return "Page stays on this Mac" }
+        return "Page sent to \(provider.displayName)"
     }
 
     private var pageHost: String? {
