@@ -16,6 +16,12 @@ Easels, an AI chat that works with your own providers, and a floating chat.
 - **Share a space.** Spaces › Share Space… sends a space and its tabs to someone; they open the file and Vega adds it as a new space. Export Space… saves the file, Open Shared Space… opens one.
 - **Tabs from other Macs.** Turn on Settings › General › Share open tabs, and Spaces › Tabs from Other Macs lists what's open on your other Macs. Off by default.
 
+### Privacy and security
+- **Your keys stay put.** An API key is only sent over https:// (or to this Mac), and keys stay on this Mac's Keychain, not in backups or other devices.
+- **Pages Ask Vega builds can't phone home.** They show text and links only: no scripts, no remote images. They are deleted after 30 days.
+- **Cleaner summaries.** Summarize my tabs sends addresses without query strings, and skips the text of sign-in pages.
+- **Synced and shared tabs** drop query strings and logins from addresses. Opening a shared space adds it without opening any page.
+
 ### Fixes
 - API keys save with Save or Return; typing no longer drops the field's focus.
 - A connection test marks only the provider you tested, and says why it failed.
