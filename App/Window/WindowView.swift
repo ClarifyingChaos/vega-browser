@@ -316,6 +316,13 @@ struct WindowView: View {
                     .zIndex(10)
             }
         }
+        // The page's colour is sampled again once the chat has opened, closed, moved or stopped being dragged, so
+        // the strip that shows while the page catches up is the page's colour and not white.
+        .task(id: "\(windowState.isSidebarAIChatVisible)-\(vegaSettings.aiChatFloating)-\(Int(windowState.aiSidebarWidth))") {
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled else { return }
+            browserManager.tabs.selectedSession(in: windowState)?.resampleBackgroundColor()
+        }
         // No page inset on a side that a sidebar or the docked chat already covers.
         .padding(.trailing, !bordered || (sidebarVisible && sidebarOnRight) || aiDocked ? 0 : VegaDesign.Chrome.pageInset)
         .padding(.leading, !bordered || (sidebarVisible && sidebarOnLeft) ? 0 : VegaDesign.Chrome.pageInset)
