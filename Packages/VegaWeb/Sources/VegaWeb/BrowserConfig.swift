@@ -81,7 +81,7 @@ public class BrowserConfiguration {
         )
         config.userContentController.addUserScript(passkeySuppress)
 
-        // FORK: slim page scrollbars, the same thickness as the sidebar's: a 6 pt rounded thumb with 3 pt of space to its right, on a clear track,
+        // FORK: slim page scrollbars, the same thickness as the sidebar's: a 6 pt pill with 3 pt of space around it, on a clear track (the space is a transparent border, so the pill stays round),
         // instead of the system's wide bar. Added at the end of the document's head so the page's own sheets come first.
         config.userContentController.addUserScript(WKUserScript(
             source: """
@@ -89,10 +89,10 @@ public class BrowserConfiguration {
             (function() {
                 // !important, and an adopted sheet (which sorts after the page's own), so a site that styles its scrollbars
                 // itself (Pinterest does) still gets the slim one.
-                const css = '::-webkit-scrollbar{width:9px !important;height:9px !important;background:transparent !important}' +
+                const css = '::-webkit-scrollbar{width:12px !important;height:12px !important;background:transparent !important}' +
                             '::-webkit-scrollbar-track{background:transparent !important}' +
                             '::-webkit-scrollbar-corner{background:transparent !important}' +
-                            '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55) !important;border-radius:3px !important;border:0 !important;border-right:3px solid transparent !important;background-clip:padding-box !important;min-height:28px}' +
+                            '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55) !important;border-radius:6px !important;border:3px solid transparent !important;background-clip:padding-box !important;min-height:34px}' +
                             '::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.8) !important}';
                 const apply = () => {
                     try { const sheet = new CSSStyleSheet(); sheet.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]; }
