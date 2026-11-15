@@ -2,16 +2,24 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
-## Vega 1.7.4 (2026-11-14)
+## Vega 1.7.4 (2026-11-16)
 
-Easels, Ask Vega that works on your tabs, and tabs that follow you between Macs.
+Easels, an AI chat that works with your own providers, and a floating chat.
 
 ### New
+- **AI chat with your own provider and API key.** Add any OpenAI-compatible service (OmniRoute, LM Studio, Groq and more) in Settings › AI, with its address and API key. Use Gemini, OpenRouter or Ollama too, and several providers at once: the chat's model list shows the models you chose from each, and picking one switches the chat to that provider.
+- **Choose your models.** Fetch Models lists what a provider offers; switch on the ones you want in the chat. A model is tested with a one-token request first, and Gemini has a Turn on working models button. Providers can be removed.
+- **Floating or docked chat.** Settings › AI › Chat Position, or the button in the chat header. Floating keeps the page at full width, with the header as the drag handle. The chat is always on the right and never takes the tab sidebar's side.
 - **Easels.** Spaces › Easels › New Easel opens a freeform canvas. Drag in images, links or text, add notes, or use Spaces › Easels › Add This Page. Cards move and resize; a page card opens in a new tab. Easels save on their own.
 - **Summarize my open tabs.** Ask Vega reads your open tabs and groups and summarizes them. Spaces › Summarize Open Tabs, or the starter in the chat.
-- **Browse the web for me.** Describe what you want to know; Ask Vega researches it and builds a page of what it found, opened as a tab. Spaces › Browse the Web for Me…. Needs an AI model that can use tools.
+- **Browse the web for me.** Describe what you want to know; Ask Vega researches it and builds a page of what it found, opened as a tab. Spaces › Browse the Web for Me…. Needs a model that can use tools (not On-Device).
 - **Share a space.** Spaces › Share Space… sends a space and its tabs to someone; they open the file and Vega adds it as a new space. Export Space… saves the file, Open Shared Space… opens one.
 - **Tabs from other Macs.** Turn on Settings › General › Share open tabs, and Spaces › Tabs from Other Macs lists what's open on your other Macs. Off by default.
+
+### Fixes
+- API keys save with Save or Return; typing no longer drops the field's focus.
+- A connection test marks only the provider you tested, and says why it failed.
+- The chat's header and input sit on blurred glass, and the AI panel's resize line matches the sidebar's.
 
 ## Vega 1.7.3 (2026-11-14)
 
