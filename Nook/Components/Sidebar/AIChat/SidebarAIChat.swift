@@ -143,21 +143,30 @@ struct SidebarAIChat: View {
     private var headerView: some View {
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 8) {
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text("Ask Vega")
                         .font(NookDesign.Font.heading)
                         .foregroundStyle(.primary)
-                    // The page the chat is about, so it is clear what "this page" means.
+                    // One quiet line: the page this chat is about, then where its text goes.
                     if let host = pageHost {
-                        Text(host)
-                            .font(NookDesign.Font.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                        if let note = sharingNote {
-                            Text(note)
+                        HStack(spacing: 6) {
+                            Text(host)
                                 .font(NookDesign.Font.caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
+                                .truncationMode(.middle)
+                            if let status = sharingStatus {
+                                HStack(spacing: 3) {
+                                    Image(systemName: status.symbol).font(.system(size: 9, weight: .semibold))
+                                    Text(status.label).font(NookDesign.Font.caption).lineLimit(1)
+                                }
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.primary.opacity(0.08), in: Capsule())
+                                .fixedSize()
+                                .help(status.detail)
+                            }
                         }
                     }
                 }
@@ -211,13 +220,15 @@ struct SidebarAIChat: View {
         .background(.regularMaterial, ignoresSafeAreaEdges: .top)
     }
 
-    /// Where the page text goes, said plainly. Only the on-device model and Ollama keep it on this Mac: a gateway
-    /// such as OmniRoute runs here but forwards the page on, so it is named, not called local.
-    private var sharingNote: String? {
+    /// Where the page text goes, short enough for one line; the tooltip says it in full. Only the on-device model
+    /// and Ollama keep it on this Mac: a gateway such as OmniRoute runs here but forwards the page on.
+    private var sharingStatus: (symbol: String, label: String, detail: String)? {
         guard !windowState.isIncognito, let provider = configService.activeProvider else { return nil }
-        guard provider.sendsPageContent else { return "Page not shared" }
-        if provider.providerType == .appleIntelligence || provider.providerType == .ollama { return "Page stays on this Mac" }
-        return "Page sent to \(provider.displayName)"
+        guard provider.sendsPageContent else { return ("eye.slash", "Not shared", "This provider is set not to receive the page.") }
+        if provider.providerType == .appleIntelligence || provider.providerType == .ollama {
+            return ("lock.fill", "On this Mac", "The page stays on this Mac.")
+        }
+        return ("arrow.up.right", provider.displayName, "The page text is sent to \(provider.displayName) to answer you.")
     }
 
     private var pageHost: String? {
