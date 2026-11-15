@@ -87,13 +87,18 @@ public class BrowserConfiguration {
             source: """
             // Vega slim scrollbars
             (function() {
-                const css = '::-webkit-scrollbar{width:6px;height:6px;background:transparent}' +
-                            '::-webkit-scrollbar-track{background:transparent}' +
-                            '::-webkit-scrollbar-corner{background:transparent}' +
-                            '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55);border-radius:3px;border:0}' +
-                            '::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.8)}';
-                const add = () => { const s = document.createElement('style'); s.textContent = css; (document.head || document.documentElement).appendChild(s); };
-                if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add, { once: true }); else add();
+                // !important, and an adopted sheet (which sorts after the page's own), so a site that styles its scrollbars
+                // itself (Pinterest does) still gets the slim one.
+                const css = '::-webkit-scrollbar{width:6px !important;height:6px !important;background:transparent !important}' +
+                            '::-webkit-scrollbar-track{background:transparent !important}' +
+                            '::-webkit-scrollbar-corner{background:transparent !important}' +
+                            '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55) !important;border-radius:3px !important;border:0 !important;min-height:28px}' +
+                            '::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.8) !important}';
+                const apply = () => {
+                    try { const sheet = new CSSStyleSheet(); sheet.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]; }
+                    catch (e) { const s = document.createElement('style'); s.textContent = css; (document.head || document.documentElement).appendChild(s); }
+                };
+                apply();
             })();
             """,
             injectionTime: .atDocumentStart,
