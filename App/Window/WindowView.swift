@@ -30,6 +30,8 @@ struct WindowView: View {
     // FORK: where the floating chat card was dragged to, for this window while it is open.
     @State private var floatingChatOffset: CGSize = .zero
     @State private var floatingChatBase: CGSize = .zero
+    @State private var floatingChatDragging: Bool?
+    @State private var floatingChatTop: CGFloat = 0
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -324,20 +326,6 @@ struct WindowView: View {
     private func FloatingAIChat() -> some View {
         let shape = NookDesign.Radius.shape(NookDesign.Radius.xl)
         VStack(spacing: 0) {
-            // The grab strip: the only part that drags, so the chat's own buttons and text keep working.
-            Capsule()
-                .fill(Color.primary.opacity(0.3))
-                .frame(width: 36, height: 4)
-                .frame(maxWidth: .infinity)
-                .frame(height: 14)
-                .contentShape(Rectangle())
-                .gesture(DragGesture(coordinateSpace: .global)
-                    .onChanged { value in
-                        floatingChatOffset = CGSize(width: floatingChatBase.width + value.translation.width,
-                                                    height: floatingChatBase.height + value.translation.height)
-                    }
-                    .onEnded { _ in floatingChatBase = floatingChatOffset })
-                .accessibilityLabel("Move chat")
             DevPanelColumn()
         }
         // As tall as 560 pt, less when the window is shorter.
@@ -347,6 +335,21 @@ struct WindowView: View {
         .clipShape(shape)
         .overlay(shape.strokeBorder(Color.primary.opacity(0.18), lineWidth: 0.75))
         .shadow(color: .black.opacity(0.35), radius: 24, y: 10)
+        // The header is the handle: a drag that starts in the top 56 pt moves the card. Buttons and text below keep working.
+        .simultaneousGesture(DragGesture(coordinateSpace: .global)
+            .onChanged { value in
+                if floatingChatDragging == nil { floatingChatDragging = value.startLocation.y - floatingChatTop < 56 }
+                guard floatingChatDragging == true else { return }
+                floatingChatOffset = CGSize(width: floatingChatBase.width + value.translation.width,
+                                            height: floatingChatBase.height + value.translation.height)
+            }
+            .onEnded { _ in
+                if floatingChatDragging == true { floatingChatBase = floatingChatOffset }
+                floatingChatDragging = nil
+            })
+        .background(GeometryReader { proxy in
+            Color.clear.onChange(of: proxy.frame(in: .global).minY, initial: true) { _, y in floatingChatTop = y }
+        })
         .padding(16)
         .offset(floatingChatOffset)
         .transition(.scale(scale: 0.94, anchor: .bottomTrailing).combined(with: .opacity))
