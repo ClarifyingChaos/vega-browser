@@ -27,6 +27,9 @@ struct WindowView: View {
     @Environment(\.vegaSettings) var vegaSettings
     @Environment(\.openSettings) private var openSettings
     @StateObject private var hoverSidebarManager = HoverSidebarManager()
+    // FORK: where the floating chat card was dragged to, for this window while it is open.
+    @State private var floatingChatOffset: CGSize = .zero
+    @State private var floatingChatBase: CGSize = .zero
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -284,34 +287,73 @@ struct WindowView: View {
 
     @ViewBuilder
     private func SidebarWebViewStack() -> some View {
-        let aiVisible = windowState.isSidebarAIChatVisible
-        let aiAppearsOnTrailingEdge = vegaSettings.sidebarPosition == .left
+        // FORK: the chat is always on the right: docked as a sidebar there, or floating over the page.
+        // It never takes the tab sidebar's side.
+        let aiDocked = windowState.isSidebarAIChatVisible && !vegaSettings.aiChatFloating
         let sidebarVisible = windowState.isSidebarVisible
         let sidebarOnRight = vegaSettings.sidebarPosition == .right
         let sidebarOnLeft = vegaSettings.sidebarPosition == .left
         let bordered = !vegaSettings.hideWebContentBorder
 
         HStack(spacing: 0) {
-            if aiAppearsOnTrailingEdge {
+            if sidebarOnLeft {
                 SpacesSidebar()
                     .zIndex(10)
-                WebContent()
-                if aiVisible {
-                    AISidebar()
+            }
+            WebContent()
+                .overlay(alignment: .bottomTrailing) {
+                    if windowState.isSidebarAIChatVisible && vegaSettings.aiChatFloating {
+                        FloatingAIChat()
+                    }
                 }
-            } else {
-                if aiVisible {
-                    AISidebar()
-                }
-                WebContent()
+            if aiDocked {
+                AISidebar()
+            }
+            if !sidebarOnLeft {
                 SpacesSidebar()
                     .zIndex(10)
             }
         }
-        // Apply padding similar to regular sidebar: remove padding when sidebar/AI is visible on that side
-        // When sidebar is on left, AI appears on right (trailing); when sidebar is on right, AI appears on left (leading)
-        .padding(.trailing, !bordered || (sidebarVisible && sidebarOnRight) || (aiVisible && sidebarOnLeft) ? 0 : VegaDesign.Chrome.pageInset)
-        .padding(.leading, !bordered || (sidebarVisible && sidebarOnLeft) || (aiVisible && sidebarOnRight) ? 0 : VegaDesign.Chrome.pageInset)
+        // No page inset on a side that a sidebar or the docked chat already covers.
+        .padding(.trailing, !bordered || (sidebarVisible && sidebarOnRight) || aiDocked ? 0 : VegaDesign.Chrome.pageInset)
+        .padding(.leading, !bordered || (sidebarVisible && sidebarOnLeft) ? 0 : VegaDesign.Chrome.pageInset)
+    }
+
+    /// The chat as a card over the page's bottom-right corner. Drag its top edge to move it.
+    @ViewBuilder
+    private func FloatingAIChat() -> some View {
+        let shape = VegaDesign.Radius.shape(VegaDesign.Radius.xl)
+        VStack(spacing: 0) {
+            // The grab strip: the only part that drags, so the chat's own buttons and text keep working.
+            Capsule()
+                .fill(Color.primary.opacity(0.3))
+                .frame(width: 36, height: 4)
+                .frame(maxWidth: .infinity)
+                .frame(height: 14)
+                .contentShape(Rectangle())
+                .gesture(DragGesture(coordinateSpace: .global)
+                    .onChanged { value in
+                        floatingChatOffset = CGSize(width: floatingChatBase.width + value.translation.width,
+                                                    height: floatingChatBase.height + value.translation.height)
+                    }
+                    .onEnded { _ in floatingChatBase = floatingChatOffset })
+                .accessibilityLabel("Move chat")
+            DevPanelColumn()
+        }
+        // As tall as 560 pt, less when the window is shorter.
+        .frame(width: min(max(windowState.aiSidebarWidth, 320), 440))
+        .frame(maxHeight: 560)
+        .background(.regularMaterial, in: shape)
+        .clipShape(shape)
+        .overlay(shape.strokeBorder(Color.primary.opacity(0.18), lineWidth: 0.75))
+        .shadow(color: .black.opacity(0.35), radius: 24, y: 10)
+        .padding(16)
+        .offset(floatingChatOffset)
+        .transition(.scale(scale: 0.94, anchor: .bottomTrailing).combined(with: .opacity))
+        .environmentObject(browserManager)
+        .environment(windowState)
+        .environment(vegaSettings)
+        .zIndex(2500)
     }
 
     @ViewBuilder
@@ -421,20 +463,15 @@ struct WindowView: View {
 
     @ViewBuilder
     private func AISidebar() -> some View {
-        let handleAlignment: Alignment = vegaSettings.sidebarPosition == .left ? .leading : .trailing
-        
         DevPanelColumn()
             .frame(width: windowState.aiSidebarWidth)
-            .overlay(alignment: handleAlignment) {
+            .overlay(alignment: .leading) {
                 AISidebarResizeView()
                     .frame(maxHeight: .infinity)
                     .environmentObject(browserManager)
                     .environment(windowState)
             }
-            .transition(
-                .move(edge: vegaSettings.sidebarPosition == .left ? .trailing : .leading)
-                .combined(with: .opacity)
-            )
+            .transition(.move(edge: .trailing).combined(with: .opacity))
             .environmentObject(browserManager)
             .environment(windowState)
             .environment(vegaSettings)

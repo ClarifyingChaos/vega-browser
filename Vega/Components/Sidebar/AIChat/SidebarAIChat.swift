@@ -167,6 +167,14 @@ struct SidebarAIChat: View {
                     .disabled(aiService.messages.isEmpty)
                     .accessibilityLabel("Clear Chat")
                     .help("Clear this chat")
+                    // FORK: float the chat over the page, or dock it back as the right sidebar.
+                    Button {
+                        withAnimation(VegaDesign.Motion.standard) { vegaSettings.aiChatFloating.toggle() }
+                    } label: {
+                        VegaSymbol(vegaSettings.aiChatFloating ? "sidebar.right" : "macwindow.on.rectangle", size: 16)
+                    }
+                    .accessibilityLabel(vegaSettings.aiChatFloating ? "Dock Chat" : "Float Chat")
+                    .help(vegaSettings.aiChatFloating ? "Dock as a sidebar" : "Float over the page")
                     Button {
                         showSettings()
                     } label: {

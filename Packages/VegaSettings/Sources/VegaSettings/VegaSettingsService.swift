@@ -35,6 +35,7 @@ public final class VegaSettingsService {
     private let geminiApiKeyKey = "settings.geminiApiKey"
     private let geminiModelKey = "settings.geminiModel"
     private let showAIAssistantKey = "settings.showAIAssistant"
+    private let aiChatFloatingKey = "settings.aiChatFloating"
     private let browserControlServerKey = "settings.browserControlServer"
     private let developerModeKey = "settings.developerMode"
     private let aiProviderKey = "settings.aiProvider"
@@ -339,6 +340,13 @@ public final class VegaSettingsService {
         }
     }
 
+    /// FORK: the AI chat as a floating card over the page instead of a sidebar on the right.
+    public var aiChatFloating: Bool {
+        didSet {
+            userDefaults.set(aiChatFloating, forKey: aiChatFloatingKey)
+        }
+    }
+
     /// Local MCP server (127.0.0.1:47823) that lets a coding agent drive this browser.
     /// Off by default: anything that can read the token file gets full control of the
     /// browser, including pages the user is signed in to. See DevMCPServer.
@@ -606,6 +614,7 @@ public final class VegaSettingsService {
 
             geminiModelKey: GeminiModel.flash.rawValue,
             showAIAssistantKey: true,
+            aiChatFloatingKey: false,
             browserControlServerKey: false,
             aiProviderKey: AIProvider.gemini.rawValue,
             openRouterModelKey: OpenRouterModel.gpt4o.rawValue,
@@ -732,6 +741,7 @@ public final class VegaSettingsService {
         self.geminiApiKey = ""  // In-memory only; persistent storage via AIKeychainStorage
         self.geminiModel = GeminiModel(rawValue: userDefaults.string(forKey: geminiModelKey) ?? GeminiModel.flash.rawValue) ?? .flash
         self.showAIAssistant = userDefaults.bool(forKey: showAIAssistantKey)
+        self.aiChatFloating = userDefaults.bool(forKey: aiChatFloatingKey)
         let browserControlOn = userDefaults.bool(forKey: browserControlServerKey)
         self.browserControlServerEnabled = browserControlOn
         // Browser Control predates Developer Mode, so anyone who had it on keeps it reachable.

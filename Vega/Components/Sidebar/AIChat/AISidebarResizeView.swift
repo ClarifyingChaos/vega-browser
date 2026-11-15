@@ -26,8 +26,8 @@ struct AISidebarResizeView: View {
     private let maxWidth: CGFloat = 520
     private let standardWidth: CGFloat = 350
 
-    /// The AI panel sits opposite the main sidebar.
-    private var aiSitsOnRight: Bool { vegaSettings.sidebarPosition == .left }
+    /// The AI panel is always on the right, whichever side the tab sidebar is on.
+    private let aiSitsOnRight = true
 
     private var indicatorColor: NSColor {
         if usesDefaultTheme {
