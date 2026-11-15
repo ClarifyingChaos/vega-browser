@@ -57,6 +57,9 @@ public final class PageSession: NSObject, Identifiable {
     public var favicon: SwiftUI.Image
     /// A page the ad blocker stopped from loading. The blocked-page card shows while it is set.
     public internal(set) var blockedURL: URL?
+    /// FORK: the last address this app was asked to load (typed, or a link opened from the app), and when. A blocked
+    /// page is shown as a card only for that one; an ad the page itself tried to open or redirect to is dropped quietly.
+    @ObservationIgnored var lastAppLoad: (url: URL, at: Date)?
     /// The site enhanced fingerprinting protection is off for until the tab leaves it.
     var enhancedFingerprintingProtectionOffHost: String?
 
@@ -603,6 +606,7 @@ public final class PageSession: NSObject, Identifiable {
                 return
             }
         }
+        lastAppLoad = (newURL, Date())
         url = newURL
         // A new page on an unloaded session starts fresh instead of restoring, then leaving, the old one.
         savedHistory = nil
