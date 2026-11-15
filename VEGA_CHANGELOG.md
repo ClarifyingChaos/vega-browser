@@ -31,8 +31,10 @@ Easels, an AI chat that works with your own providers, and a floating chat.
 - **Synced and shared tabs** drop query strings and logins from addresses. Opening a shared space adds it without opening any page.
 
 ### Ad blocking
-- **Pop-up ads.** Ad scripts that open a window on any click, whether with `window.open` or by clicking a hidden link, are stopped. A window to another site opens only when your click landed on a link or a button; same-site windows and sign-in windows still open. Turn it off in Settings › Privacy › Pop-ups (applies after a restart).
-- **Brave's list.** Brave Specific is added to the default filter lists.
+- **Pop-up ads.** Ad scripts that open a window on any click, whether with `window.open` or by clicking a hidden link, are stopped. A window to another site opens only for the link you actually clicked, or a sign-in or payment window; same-site windows still open. Turn it off in Settings › Privacy › Pop-ups (applies after a restart).
+- **Brave's lists.** Brave Unbreak (the rules for streaming sites, including their daily-changing ad domains), Brave Specific, Brave Social, Brave First Party and Brave's cookie-notice list are now on by default, along with a current malware list. A test of Brave's generic ad-path rules blocks in Vega.
+- **Quiet blocking, like Brave.** An ad a page tries to open or send you to is dropped without a word: no "Vega blocked this page" card and no empty tab. The card still shows for an address you asked for.
+- **Ads laid over videos.** A transparent link to another site covering the page is ignored and removed, so the click reaches the player.
 - When the lists are bigger than Vega's rule limit, hiding rules are cut before blocking rules, so more ads and trackers are stopped.
 
 ### Fixes

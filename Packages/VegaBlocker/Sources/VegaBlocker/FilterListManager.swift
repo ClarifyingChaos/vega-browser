@@ -54,8 +54,15 @@ public final class FilterListManager {
         FilterList(name: "uBlock Badware", url: URL(string: "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt")!, filename: "ublock-badware.txt", knownSizeRange: 5_000...2_000_000, category: .malware, isTrusted: true),
         FilterList(name: "uBlock Privacy", url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/privacy.min.txt")!, filename: "ublock-privacy.min.txt", knownSizeRange: 5_000...2_000_000, category: .privacy, isTrusted: true),
         FilterList(name: "uBlock Quick Fixes", url: URL(string: "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/quick-fixes.txt")!, filename: "ublock-quick-fixes.txt", knownSizeRange: 1_000...2_000_000, category: .ads, isTrusted: true),
-        // FORK: Brave's own list of rules its Shields add on top of EasyList and uBlock.
-        FilterList(name: "Brave Specific", url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-specific.txt")!, filename: "brave-specific.txt", knownSizeRange: 500...2_000_000, category: .ads, isTrusted: true),
+        // FORK: what Brave's Shields turn on by default, beyond EasyList and uBlock (from Brave's own list catalog).
+        // Brave Unbreak holds the rules for streaming sites: the ad domains that change daily, and no-window-open.
+        FilterList(name: "Brave Unbreak", url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-unbreak.txt")!, filename: "brave-unbreak.txt", knownSizeRange: 200...3_000_000, category: .ads, isTrusted: true),
+        FilterList(name: "Brave Specific", url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-specific.txt")!, filename: "brave-specific.txt", knownSizeRange: 200...3_000_000, category: .ads, isTrusted: true),
+        FilterList(name: "Brave Social", url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-social.txt")!, filename: "brave-social.txt", knownSizeRange: 50...3_000_000, category: .ads, isTrusted: true),
+        FilterList(name: "Brave Sugarcoat", url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-sugarcoat.txt")!, filename: "brave-sugarcoat.txt", knownSizeRange: 20...3_000_000, category: .ads, isTrusted: true),
+        FilterList(name: "Brave First Party", url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-firstparty.txt")!, filename: "brave-firstparty.txt", knownSizeRange: 200...3_000_000, category: .ads, isTrusted: true),
+        FilterList(name: "Brave Cookie Notices", url: URL(string: "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-cookie-specific.txt")!, filename: "brave-cookie-specific.txt", knownSizeRange: 200...3_000_000, category: .ads, isTrusted: true),
+        FilterList(name: "URLhaus Online Malware", url: URL(string: "https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-agh-online.txt")!, filename: "urlhaus-agh-online.txt", knownSizeRange: 500...3_000_000, category: .malware, isTrusted: true),
         FilterList(name: "AdGuard URL Tracking Protection", url: URL(string: "https://filters.adtidy.org/extension/ublock/filters/17.txt")!, filename: "adguard-url-tracking.txt", knownSizeRange: 20_000...5_000_000, category: .privacy),
     ]
 

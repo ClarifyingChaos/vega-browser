@@ -266,7 +266,20 @@ extension PageSession: WKNavigationDelegate {
         loadingState = .didFailProvisionalNavigation(error)
         let attempted = url
         if Self.isBlockedByContentBlocker(error) {
-            blockedURL = (error as NSError).userInfo[NSURLErrorFailingURLErrorKey] as? URL ?? attempted
+            let failing = (error as NSError).userInfo[NSURLErrorFailingURLErrorKey] as? URL ?? attempted
+            // The blocked-page card is for an address you asked for. An ad the page tried to open or send you to is
+            // dropped without a word, as Brave does: no card, and a window that only held the ad closes.
+            let youAsked = controller?.opener(of: itemID) == nil
+                && lastAppLoad.map { $0.url.host == failing.host && Date().timeIntervalSince($0.at) < 20 } == true
+            if youAsked {
+                blockedURL = failing
+            } else if let controller, controller.opener(of: itemID) != nil,
+                      webView.url == nil || webView.url?.absoluteString == "about:blank",
+                      let window = controller.window(for: self) {
+                let id = itemID
+                DispatchQueue.main.async { controller.returnToOpener(id, in: window) }
+                return
+            }
         }
 
         // didStartProvisionalNavigation moved `url` to the attempted URL. A navigation that
