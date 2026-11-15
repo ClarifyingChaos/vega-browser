@@ -81,16 +81,16 @@ public class BrowserConfiguration {
         )
         config.userContentController.addUserScript(passkeySuppress)
 
-        // FORK: slim page scrollbars, the same thickness as the sidebar's: an 8 pt rounded thumb on a clear track,
+        // FORK: slim page scrollbars, the same thickness as the sidebar's: a 6 pt rounded thumb on a clear track,
         // instead of the system's wide bar. Added at the end of the document's head so the page's own sheets come first.
         config.userContentController.addUserScript(WKUserScript(
             source: """
             // Nook slim scrollbars
             (function() {
-                const css = '::-webkit-scrollbar{width:8px;height:8px;background:transparent}' +
+                const css = '::-webkit-scrollbar{width:6px;height:6px;background:transparent}' +
                             '::-webkit-scrollbar-track{background:transparent}' +
                             '::-webkit-scrollbar-corner{background:transparent}' +
-                            '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55);border-radius:4px;border:0}' +
+                            '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55);border-radius:3px;border:0}' +
                             '::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.8)}';
                 const add = () => { const s = document.createElement('style'); s.textContent = css; (document.head || document.documentElement).appendChild(s); };
                 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add, { once: true }); else add();
