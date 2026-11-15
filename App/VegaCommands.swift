@@ -476,7 +476,7 @@ struct VegaCommands: Commands {
                 #if DEBUG
                 Divider()
                 Button("Open Popup Console") {
-                    browserManager.extensionManager?.showPopupConsole()
+                    browserManager.extensionManager(for: nil)?.showPopupConsole()
                 }
                 #endif
             }
