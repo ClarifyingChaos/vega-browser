@@ -96,37 +96,52 @@ public class BrowserConfiguration {
                         try { const a = bare(new URL(url, location.href).hostname), b = bare(location.hostname);
                               return a === b || a.endsWith('.' + b) || b.endsWith('.' + a); } catch (e) { return true; }
                     };
-                    // The last click you made, and whether it landed on a link or a button.
-                    let trusted = { at: 0, control: false };
+                    // The last click you made, and the link it landed on, if any. A player's play button is a control too,
+                    // and ad scripts ride on exactly that click, so only the link you really clicked may open elsewhere.
+                    let trusted = { at: 0, href: '' };
+                    // A link to another site that covers the page and shows nothing is an ad laid over the video: your click
+                    // is not given to it, and it is removed so the next click reaches the page.
+                    const coversPage = a => {
+                        const r = a.getBoundingClientRect();
+                        if (r.width * r.height < 0.3 * innerWidth * innerHeight) return false;
+                        const empty = !a.textContent.trim() && !a.querySelector('img, svg, video, canvas, picture, iframe, input, button');
+                        return empty || parseFloat(getComputedStyle(a).opacity) < 0.1;
+                    };
                     addEventListener('click', e => {
                         if (!e.isTrusted) return;
-                        const t = e.target;
-                        trusted = { at: Date.now(), control: !!(t && t.closest && t.closest('a, button, [role=button], input[type=button], input[type=submit]')) };
+                        const a = e.target && e.target.closest && e.target.closest('a[href]');
+                        if (a && !sameSite(a.href) && coversPage(a)) { e.preventDefault(); e.stopImmediatePropagation(); a.remove(); return; }
+                        trusted.at = Date.now(); trusted.href = a ? a.href : '';
                     }, true);
-                    const youClickedAControl = () => Date.now() - trusted.at < 1500 && trusted.control;
+                    const sameHost = (x, y) => { try { return new URL(x, location.href).hostname === new URL(y, location.href).hostname; } catch (e) { return false; } };
+                    // Sign-in and payment windows are opened by a button on purpose.
+                    const signIn = u => { try { const t = new URL(u, location.href);
+                        return /(^|\\.)(accounts\\.google|appleid\\.apple|login\\.microsoftonline|login\\.live|github|facebook|discord|auth0|okta|paypal|stripe|twitter|x|linkedin|amazon|slack|zoom)\\.(com|us)$/i.test(t.hostname)
+                            || /\\/(oauth|oauth2|authorize|login|signin|sso|saml|auth|checkout|pay)(\\/|$|\\?)/i.test(t.pathname); } catch (e) { return false; } };
+                    const mayOpen = url => sameSite(url) || signIn(url) || (Date.now() - trusted.at < 1500 && trusted.href && sameHost(url, trusted.href));
                     const opensNewWindow = a => { const t = (a.target || '').toLowerCase(); return t && t !== '_self' && t !== '_top' && t !== '_parent'; };
 
                     // A link clicked or "dispatched" by script, to another site, in a new window.
                     const click = HTMLAnchorElement.prototype.click;
                     HTMLAnchorElement.prototype.click = function() {
-                        if (opensNewWindow(this) && !sameSite(this.href) && !youClickedAControl()) return;
+                        if (opensNewWindow(this) && !mayOpen(this.href)) return;
                         return click.apply(this, arguments);
                     };
                     const dispatch = HTMLAnchorElement.prototype.dispatchEvent;
                     HTMLAnchorElement.prototype.dispatchEvent = function(e) {
-                        if (e && e.type === 'click' && !e.isTrusted && opensNewWindow(this) && !sameSite(this.href) && !youClickedAControl()) return false;
+                        if (e && e.type === 'click' && !e.isTrusted && opensNewWindow(this) && !mayOpen(this.href)) return false;
                         return dispatch.apply(this, arguments);
                     };
                     document.addEventListener('click', e => {
                         if (e.isTrusted) return;
                         const a = e.target && e.target.closest && e.target.closest('a[href]');
-                        if (a && opensNewWindow(a) && !sameSite(a.href) && !youClickedAControl()) { e.preventDefault(); e.stopImmediatePropagation(); }
+                        if (a && opensNewWindow(a) && !mayOpen(a.href)) { e.preventDefault(); e.stopImmediatePropagation(); }
                     }, true);
 
-                    // window.open to another site from a click that was not on a link or a button.
+                    // window.open to another site, unless it is the link you clicked or a sign-in or payment window.
                     const open = window.open;
                     window.open = function(url) {
-                        if (url && !sameSite(url) && !youClickedAControl()) return null;
+                        if (url && !mayOpen(String(url))) return null;
                         return open.apply(this, arguments);
                     };
                 })();

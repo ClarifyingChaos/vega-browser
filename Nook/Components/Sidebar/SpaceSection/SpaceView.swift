@@ -31,6 +31,8 @@ struct SpaceView: View {
     @State private var isNewTabHovering = false
     @State private var isUserScrolling = false
     @State private var showsScrollIndicator = false
+    /// FORK: the scroll position, for the slim indicator drawn below (the system one is too thick).
+    @State private var scrollMetrics = SlimScrollMetrics()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(spaceID: UUID, isActive: Bool, isSidebarHovered: Binding<Bool>) {
@@ -81,8 +83,25 @@ struct SpaceView: View {
             // Inset the rows, not the scroll viewport: the indicator belongs at the sidebar edge.
             .padding(.horizontal, NookDesign.Spacing.sidebarInset)
         }
-        .contentMargins(.trailing, 0, for: .scrollIndicators)
-        .scrollIndicators(showsScrollIndicator && !windowState.isSidebarResizeHovered ? .visible : .hidden)
+        .scrollIndicators(.hidden)
+        .onScrollGeometryChange(for: SlimScrollMetrics.self) { geometry in
+            SlimScrollMetrics(offset: geometry.contentOffset.y + geometry.contentInsets.top, content: geometry.contentSize.height, viewport: geometry.containerSize.height)
+        } action: { _, new in
+            scrollMetrics = new
+        }
+        .overlay(alignment: .topTrailing) {
+            // A 3 pt line instead of the system's thick pill; it appears while you scroll and fades after.
+            if scrollMetrics.needsIndicator {
+                Capsule()
+                    .fill(Color.primary.opacity(0.4))
+                    .frame(width: 3, height: scrollMetrics.thumbHeight)
+                    .offset(y: scrollMetrics.thumbOffset)
+                    .padding(.trailing, 2)
+                    .opacity(showsScrollIndicator && !windowState.isSidebarResizeHovered ? 1 : 0)
+                    .animation(.easeOut(duration: 0.25), value: showsScrollIndicator)
+                    .allowsHitTesting(false)
+            }
+        }
         .onScrollPhaseChange { _, phase in
             // Tracking alone (a finger resting on the pad) is not scrolling.
             isUserScrolling = phase == .interacting || phase == .decelerating
@@ -334,5 +353,21 @@ struct SpaceView: View {
         .onHoverTracking { hovering in
             withAnimation(NookDesign.Motion.hover(hovering)) { isNewTabHovering = hovering }
         }
+    }
+}
+
+
+/// Where the sidebar list is scrolled to, and the slim indicator that follows from it.
+struct SlimScrollMetrics: Equatable {
+    var offset: CGFloat = 0
+    var content: CGFloat = 0
+    var viewport: CGFloat = 0
+
+    var needsIndicator: Bool { content > viewport + 1 && viewport > 0 }
+    var thumbHeight: CGFloat { max(28, viewport * viewport / max(content, 1)) }
+    var thumbOffset: CGFloat {
+        let travel = max(viewport - thumbHeight, 0)
+        let scrollable = max(content - viewport, 1)
+        return min(max(offset / scrollable, 0), 1) * travel
     }
 }
