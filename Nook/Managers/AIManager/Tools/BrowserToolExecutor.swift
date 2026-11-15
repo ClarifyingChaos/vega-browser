@@ -504,7 +504,9 @@ class BrowserToolExecutor {
             // Pairs and singles the model has no need for. Run until nothing changes, so a tag built from
             // pieces (<scr<script>ipt>) cannot survive one pass. The content policy below is the real wall.
             let patterns = ["<script[\\s\\S]*?</script>", "<iframe[\\s\\S]*?</iframe>", "<object[\\s\\S]*?</object>", "<embed[^>]*>",
-                            "<form[\\s\\S]*?</form>", "<meta[^>]*>", "<base[^>]*>", "<link[^>]*>", "<svg[\\s\\S]*?</svg>", "<img[^>]*>",
+                            "<form[\\s\\S]*?</form>", "<meta[^>]*>", "<base[^>]*>", "<link[^>]*>", "<svg[\\s\\S]*?</svg>", "<img[^>]*>", "<(video|audio|source|track|picture|canvas)[\\s\\S]*?>",
+                            // A link may only go to a web address: no file:, data: or app addresses.
+                            "\\shref\\s*=\\s*(\"(?!https?://)[^\"]*\"|'(?!https?://)[^']*'|(?!https?://)[^\\s>]+)",
                             "\\son[a-z]+\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)", "javascript:", "vbscript:", "@import"]
             var previous = ""
             while previous != s {
