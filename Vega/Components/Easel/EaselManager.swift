@@ -63,7 +63,9 @@ final class EaselManager {
     }
 
     private func openPage(_ url: URL) {
-        guard let manager = browserManager, let window = manager.windowRegistry?.activeWindow else { return }
+        // A card only opens a web address, whatever an easel file says.
+        guard ["http", "https"].contains(url.scheme?.lowercased()),
+              let manager = browserManager, let window = manager.windowRegistry?.activeWindow else { return }
         _ = manager.tabs.open(url: url, in: window, placement: .newTab)
         if let main = (window.window as? NSWindow) { main.makeKeyAndOrderFront(nil) }
         NSApp.activate(ignoringOtherApps: true)
