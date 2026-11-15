@@ -53,6 +53,8 @@ public struct AIProviderConfig: Codable, Identifiable, Equatable {
     public var baseURL: String
     public var isEnabled: Bool
     public var customHeaders: [String: String]
+    /// FORK: whether the chat sends the page you are looking at to this provider. Off, it answers without it.
+    public var sendsPageContent: Bool
 
     /// The API key is not part of the config: it lives in the Keychain, reached through the
     /// app-side `apiKey` extension in `Nook/Models/AI/AIKeychainStorage.swift`.
@@ -62,8 +64,10 @@ public struct AIProviderConfig: Codable, Identifiable, Equatable {
         providerType: AIProviderType,
         baseURL: String? = nil,
         isEnabled: Bool = true,
-        customHeaders: [String: String] = [:]
+        customHeaders: [String: String] = [:],
+        sendsPageContent: Bool = true
     ) {
+        self.sendsPageContent = sendsPageContent
         self.id = id
         self.displayName = displayName
         self.providerType = providerType
@@ -80,6 +84,7 @@ public struct AIProviderConfig: Codable, Identifiable, Equatable {
         case baseURL
         case isEnabled
         case customHeaders
+        case sendsPageContent
     }
 
     public init(from decoder: Decoder) throws {
@@ -90,6 +95,7 @@ public struct AIProviderConfig: Codable, Identifiable, Equatable {
         self.baseURL = try container.decode(String.self, forKey: .baseURL)
         self.isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
         self.customHeaders = try container.decode([String: String].self, forKey: .customHeaders)
+        self.sendsPageContent = try container.decodeIfPresent(Bool.self, forKey: .sendsPageContent) ?? true
         // apiKey is loaded from Keychain via computed property
     }
 
@@ -101,6 +107,7 @@ public struct AIProviderConfig: Codable, Identifiable, Equatable {
         try container.encode(baseURL, forKey: .baseURL)
         try container.encode(isEnabled, forKey: .isEnabled)
         try container.encode(customHeaders, forKey: .customHeaders)
+        try container.encode(sendsPageContent, forKey: .sendsPageContent)
         // apiKey is NOT encoded - it's stored in Keychain
     }
 }
@@ -260,5 +267,17 @@ public struct AIConfiguration: Codable {
         self.generationConfig = generationConfig
         self.mcpServers = mcpServers
         self.browserToolsConfig = browserToolsConfig
+    }
+}
+
+// MARK: - Where a key may be sent
+
+public enum AIAddress {
+    /// A key is only sent over HTTPS, or to this Mac (LM Studio, OmniRoute and the like): over plain HTTP to
+    /// another machine it would cross the network readable.
+    public static func isSafe(_ baseURL: String) -> Bool {
+        guard let url = URL(string: baseURL), let scheme = url.scheme?.lowercased(), let host = url.host?.lowercased() else { return false }
+        if scheme == "https" { return true }
+        return scheme == "http" && ["localhost", "127.0.0.1", "::1"].contains(host)
     }
 }

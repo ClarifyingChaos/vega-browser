@@ -149,7 +149,7 @@ struct SidebarAIChat: View {
                         .foregroundStyle(.primary)
                     // The page the chat is about, so it is clear what "this page" means.
                     if let host = pageHost {
-                        Text(host)
+                        Text(host + sharingNote)
                             .font(NookDesign.Font.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -203,6 +203,15 @@ struct SidebarAIChat: View {
         }
         // Blurred glass behind the header, extended up to the window's top edge, so replies scrolling under it stay legible.
         .background(.regularMaterial, ignoresSafeAreaEdges: .top)
+    }
+
+    /// Where the page text goes, said plainly: nothing is hidden about what leaves this Mac.
+    private var sharingNote: String {
+        guard !windowState.isIncognito, let provider = configService.activeProvider else { return "" }
+        guard provider.sendsPageContent else { return " \u{00B7} page not shared" }
+        let local = provider.providerType == .appleIntelligence || provider.providerType == .ollama
+            || (URL(string: provider.baseURL)?.host).map { ["localhost", "127.0.0.1", "::1"].contains($0) } == true
+        return local ? " \u{00B7} stays on this Mac" : " \u{00B7} shared with \(provider.displayName)"
     }
 
     private var pageHost: String? {
