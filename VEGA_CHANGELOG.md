@@ -18,7 +18,9 @@ Easels, an AI chat that works with your own providers, and a floating chat.
 
 ### Privacy and security
 - **Your keys stay put.** An API key is only sent over https:// (or to this Mac), and keys stay on this Mac's Keychain, not in backups or other devices.
-- **Pages Ask Vega builds can't phone home.** They show text and links only: no scripts, no remote images. They are deleted after 30 days.
+- **Pages Ask Vega builds can't phone home.** They show text and web links only: no scripts, no remote images, no media, no file or app links. They are deleted after 30 days.
+- **Easel cards** only open web addresses, and their images can't point outside the Easels folder.
+- **Model tools still ask first.** Opening pages or tabs for you asks for approval unless you chose Allow All for that chat; private windows never use tools.
 - **Cleaner summaries.** Summarize my tabs sends addresses without query strings, and skips the text of sign-in pages.
 - **Synced and shared tabs** drop query strings and logins from addresses. Opening a shared space adds it without opening any page.
 
