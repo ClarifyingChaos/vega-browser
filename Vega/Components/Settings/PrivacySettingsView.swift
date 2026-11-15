@@ -58,6 +58,14 @@ struct PrivacySettingsView: View {
                 )
             }
 
+            Section("Pop-ups") {
+                settingToggle(
+                    "Block pop-up ads",
+                    detail: "Stops windows a page opens by script when you click or scroll, and windows that open on their own. Links you click and sign-in windows still open.",
+                    isOn: $settings.blockScriptedPopups
+                )
+            }
+
             Section("Network") {
                 settingToggle(
                     "Hide my network address from WebRTC",
