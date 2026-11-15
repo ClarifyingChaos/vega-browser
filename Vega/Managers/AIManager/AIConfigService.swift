@@ -77,6 +77,7 @@ class AIConfigService {
     /// Returns a short message for the settings page.
     func fetchModels(for provider: AIProviderConfig) async -> String {
         let isGemini = provider.providerType == .gemini
+        guard Self.isSafeAddress(provider.baseURL) else { return "Failed: \(Self.insecureMessage)" }
         guard let url = URL(string: provider.baseURL + "/models" + (isGemini ? "?pageSize=1000" : "")) else { return "Failed: the Base URL is not valid" }
         var request = URLRequest(url: url)
         request.timeoutInterval = 10
@@ -139,6 +140,7 @@ class AIConfigService {
     /// FORK: asks a custom provider for one token from a model, so only a model that answers gets added.
     /// Returns nil when it works, else why not.
     func verifyModel(_ modelId: String, for provider: AIProviderConfig) async -> String? {
+        if provider.providerType != .ollama, provider.providerType != .appleIntelligence, !Self.isSafeAddress(provider.baseURL) { return Self.insecureMessage }
         var request: URLRequest
         let body: [String: Any]
         switch provider.providerType {
@@ -169,6 +171,16 @@ class AIConfigService {
             return error.localizedDescription
         }
     }
+
+    /// A key is only sent over HTTPS, or to this Mac (LM Studio, OmniRoute and the like): over plain HTTP to
+    /// another machine it would cross the network readable. The chat's own provider enforces the same rule.
+    static func isSafeAddress(_ baseURL: String) -> Bool {
+        guard let url = URL(string: baseURL), let scheme = url.scheme?.lowercased(), let host = url.host?.lowercased() else { return false }
+        if scheme == "https" { return true }
+        return scheme == "http" && ["localhost", "127.0.0.1", "::1"].contains(host)
+    }
+
+    static let insecureMessage = "the address must start with https:// (http:// is only allowed for this Mac)"
 
     static func reason(_ status: Int) -> String {
         switch status {

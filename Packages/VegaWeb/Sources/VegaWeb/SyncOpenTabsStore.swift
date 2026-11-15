@@ -13,6 +13,16 @@ import Foundation
 import VegaTabsCore
 #endif
 
+public extension OpenTabsSnapshot {
+    /// The address without its query, fragment or login: those carry tokens and search terms, and the files are
+    /// plain text in iCloud or Drive.
+    static func clean(_ url: URL) -> URL? {
+        var parts = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        parts?.query = nil; parts?.fragment = nil; parts?.user = nil; parts?.password = nil
+        return parts?.url
+    }
+}
+
 public struct OpenTabsSnapshot: Codable, Equatable, Sendable, Identifiable {
     public struct Entry: Codable, Equatable, Sendable, Identifiable {
         public var title: String

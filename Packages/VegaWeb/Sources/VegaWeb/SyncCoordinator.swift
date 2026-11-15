@@ -185,7 +185,8 @@ public final class SyncCoordinator {
         deleteKey()
         let data = key.withUnsafeBytes { Data($0) }
         SecItemAdd([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService,
-                    kSecValueData as String: data, kSecAttrLabel as String: "Vega sync key"] as CFDictionary, nil)
+                    kSecValueData as String: data, kSecAttrLabel as String: "Vega sync key",
+                    kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly] as CFDictionary, nil)
     }
     private static func deleteKey() {
         SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService] as CFDictionary)

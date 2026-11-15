@@ -70,7 +70,7 @@ final class AIKeychainStorage: @unchecked Sendable {
 
         let attributes: [String: Any] = [
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
 
         // FORK: an item left by another build of the app (other signature) cannot be updated in place, so typing
@@ -82,7 +82,7 @@ final class AIKeychainStorage: @unchecked Sendable {
             SecItemDelete(query as CFDictionary)
             var insert = query
             insert[kSecValueData as String] = data
-            insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
+            insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
             status = SecItemAdd(insert as CFDictionary, nil)
         }
 
