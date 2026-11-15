@@ -10,10 +10,16 @@ import AppKit
 import SwiftUI
 import VegaUI
 import VegaDesign
+import VegaWeb
+import VegaSettings
 
 struct ExtensionsSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
+    @Environment(TabsController.self) private var tabs
     @ObservedObject var extensionManager: ExtensionManager
+    /// The extension sets in use and the one shown, for the picker once there is more than one.
+    var sets: [ExtensionSetChoice] = []
+    var shownSet: Binding<UUID>?
     @State private var showingInstallDialog = false
     @State private var safariExtensions: [ExtensionManager.SafariExtensionInfo] = []
     @State private var isScanningSafari = false
@@ -23,9 +29,20 @@ struct ExtensionsSettingsView: View {
         Form {
             SettingsHero(symbol: "puzzlepiece.extension", title: "Extensions", detail: "Add, turn off or remove browser extensions.")
 
+            if sets.count > 1, let shownSet {
+                Section {
+                    Picker("Profiles", selection: shownSet) {
+                        ForEach(sets, id: \.set) { choice in
+                            Text(choice.members.compactMap { id in tabs.profiles.first { $0.id == id }?.name }.joined(separator: ", "))
+                                .tag(choice.set)
+                        }
+                    }
+                }
+            }
+
             Section {
                 Button("Install Extension…", vegaIcon: "plus") {
-                    browserManager.showExtensionInstallDialog()
+                    extensionManager.showExtensionInstallDialog()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
@@ -49,7 +66,7 @@ struct ExtensionsSettingsView: View {
             } else {
                 Section("Installed Extensions") {
                     ForEach(extensionManager.installedExtensions, id: \.id) { ext in
-                        ExtensionRowView(extension: ext)
+                        ExtensionRowView(extension: ext, extensionManager: extensionManager)
                             .environmentObject(browserManager)
                             .padding(.vertical, VegaDesign.Spacing.md)
                     }
@@ -182,6 +199,8 @@ private struct SafariExtensionRowView: View {
 
 private struct ExtensionRowView: View {
     let `extension`: InstalledExtension
+    /// The extension set this row's extension is installed in.
+    let extensionManager: ExtensionManager
     @EnvironmentObject var browserManager: BrowserManager
 
     var body: some View {
@@ -231,9 +250,9 @@ private struct ExtensionRowView: View {
                         get: { `extension`.isEnabled },
                         set: { isEnabled in
                             if isEnabled {
-                                browserManager.enableExtension(`extension`.id)
+                                extensionManager.enableExtension(`extension`.id)
                             } else {
-                                browserManager.disableExtension(`extension`.id)
+                                extensionManager.disableExtension(`extension`.id)
                             }
                         }
                     )
@@ -246,12 +265,12 @@ private struct ExtensionRowView: View {
                         "Allow in Private Browsing",
                         isOn: Binding(
                             get: { `extension`.allowsPrivateBrowsing },
-                            set: { browserManager.extensionManager?.setAllowsPrivateBrowsing(`extension`.id, allowed: $0) }
+                            set: { extensionManager.setAllowsPrivateBrowsing(`extension`.id, allowed: $0) }
                         )
                     )
                     Divider()
                     Button("Remove", vegaIcon: "trash", role: .destructive) {
-                        browserManager.uninstallExtension(`extension`.id)
+                        extensionManager.uninstallExtension(`extension`.id)
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -265,5 +284,28 @@ private struct ExtensionRowView: View {
                 .accessibilityLabel("More options for \(`extension`.name)")
             }
         }
+    }
+}
+
+/// Settings > Extensions for one extension set, the active window's until another is picked.
+struct ExtensionSetsSettingsView: View {
+    @EnvironmentObject var browserManager: BrowserManager
+    @Environment(TabsController.self) private var tabs
+    @Environment(\.vegaSettings) private var settings
+    @State private var picked: UUID?
+
+    var body: some View {
+        let registry = ExtensionSetRegistry.shared
+        let sets = settings.extensionSets.choices(profiles: tabs.profiles.map(\.id), defaultSet: registry.defaultSetID)
+        let active = browserManager.windowRegistry?.activeWindow.map(registry.setID(for:))
+        // Only a set a profile uses is shown: asking for any other id would create it.
+        let set = [picked, active].compactMap { $0 }.first { id in sets.contains { $0.set == id } }
+            ?? sets.first?.set ?? registry.defaultSetID
+        ExtensionsSettingsView(
+            extensionManager: registry.manager(forSet: set),
+            sets: sets,
+            shownSet: Binding(get: { set }, set: { picked = $0 })
+        )
+        .id(set)
     }
 }
