@@ -11,7 +11,9 @@
 //  drop position math in `VegaDragSessionManager` relies on.
 //
 
+import AppKit
 import SwiftUI
+import WebKit
 import VegaDesign
 import VegaTabsCore
 import VegaWeb
@@ -82,21 +84,31 @@ struct SpaceView: View {
             .frame(minWidth: 0, maxWidth: innerWidth, alignment: .leading)
             // Inset the rows, not the scroll viewport: the indicator belongs at the sidebar edge.
             .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
+            // The system scroller is switched off at the AppKit level too: with "Show scroll bars: Always" it stayed.
+            .background(SystemScrollerHider())
         }
         .scrollIndicators(.hidden)
         .onScrollGeometryChange(for: SlimScrollMetrics.self) { geometry in
             SlimScrollMetrics(offset: geometry.contentOffset.y + geometry.contentInsets.top, content: geometry.contentSize.height, viewport: geometry.containerSize.height)
-        } action: { _, new in
+        } action: { old, new in
             scrollMetrics = new
+            // Any movement of the list shows the indicator, scrolled by hand or by a shortcut.
+            if abs(new.offset - old.offset) > 0.5 { showsScrollIndicator = true }
+        }
+        .task(id: scrollMetrics.offset) {
+            // Hides it a moment after the list stops moving.
+            guard showsScrollIndicator, !isUserScrolling else { return }
+            try? await Task.sleep(for: .milliseconds(900))
+            if !Task.isCancelled { showsScrollIndicator = false }
         }
         .overlay(alignment: .topTrailing) {
-            // A 3 pt line instead of the system's thick pill; it appears while you scroll and fades after.
+            // A 6 pt pill instead of the system's thick one; it appears while you scroll and fades after.
             if scrollMetrics.needsIndicator {
                 Capsule()
-                    .fill(Color.primary.opacity(0.4))
-                    .frame(width: 3, height: scrollMetrics.thumbHeight)
+                    .fill(Color.primary.opacity(0.5))
+                    .frame(width: 6, height: scrollMetrics.thumbHeight)
                     .offset(y: scrollMetrics.thumbOffset)
-                    .padding(.trailing, 2)
+                    .padding(.trailing, 3)
                     .opacity(showsScrollIndicator && !windowState.isSidebarResizeHovered ? 1 : 0)
                     .animation(.easeOut(duration: 0.25), value: showsScrollIndicator)
                     .allowsHitTesting(false)
@@ -369,5 +381,29 @@ struct SlimScrollMetrics: Equatable {
         let travel = max(viewport - thumbHeight, 0)
         let scrollable = max(content - viewport, 1)
         return min(max(offset / scrollable, 0), 1) * travel
+    }
+}
+
+
+/// Turns off the vertical scrollers of the sidebar's scroll views, so only the slim indicator shows. The tab list's
+/// scroll view is made a moment after the sidebar appears and uses the wide "legacy" scroller on a Mac set to always
+/// show scroll bars, so this runs a few times, until the list exists.
+private struct SystemScrollerHider: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { NSView() }
+    func updateNSView(_ view: NSView, context: Context) {
+        for delay in [0.1, 0.6, 1.5, 3.0, 6.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak view] in
+                guard let root = view?.window?.contentView else { return }
+                func visit(_ v: NSView) {
+                    if v is WKWebView { return }   // a page keeps its own scrollbar
+                    if let scroll = v as? NSScrollView, scroll.hasVerticalScroller {
+                        scroll.hasVerticalScroller = false
+                        scroll.verticalScroller?.isHidden = true
+                    }
+                    v.subviews.forEach(visit)
+                }
+                visit(root)
+            }
+        }
     }
 }

@@ -81,6 +81,25 @@ public class BrowserConfiguration {
         )
         config.userContentController.addUserScript(passkeySuppress)
 
+        // FORK: slim page scrollbars, the same thickness as the sidebar's: an 8 pt rounded thumb on a clear track,
+        // instead of the system's wide bar. Added at the end of the document's head so the page's own sheets come first.
+        config.userContentController.addUserScript(WKUserScript(
+            source: """
+            // Vega slim scrollbars
+            (function() {
+                const css = '::-webkit-scrollbar{width:8px;height:8px;background:transparent}' +
+                            '::-webkit-scrollbar-track{background:transparent}' +
+                            '::-webkit-scrollbar-corner{background:transparent}' +
+                            '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55);border-radius:4px;border:0}' +
+                            '::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.8)}';
+                const add = () => { const s = document.createElement('style'); s.textContent = css; (document.head || document.documentElement).appendChild(s); };
+                if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add, { once: true }); else add();
+            })();
+            """,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        ))
+
         // FORK: pop-up ads. Ad scripts open their window on any click by making a link and clicking it from script,
         // or by calling window.open. Neither is a link you clicked: a window to another site opens only when the click
         // you made landed on a link or a button. Runs in every frame; read once, at start-up (on unless turned off).
@@ -118,7 +137,11 @@ public class BrowserConfiguration {
                     const signIn = u => { try { const t = new URL(u, location.href);
                         return /(^|\\.)(accounts\\.google|appleid\\.apple|login\\.microsoftonline|login\\.live|github|facebook|discord|auth0|okta|paypal|stripe|twitter|x|linkedin|amazon|slack|zoom)\\.(com|us)$/i.test(t.hostname)
                             || /\\/(oauth|oauth2|authorize|login|signin|sso|saml|auth|checkout|pay)(\\/|$|\\?)/i.test(t.pathname); } catch (e) { return false; } };
-                    const mayOpen = url => sameSite(url) || signIn(url) || (Date.now() - trusted.at < 1500 && trusted.href && sameHost(url, trusted.href));
+                    // Share buttons open the network's own share address (a tweet, a post, a pin), never an ad domain.
+                    const share = u => { try { const t = new URL(u, location.href); const h = t.hostname.replace(/^www\\./, '');
+                        const net = /(^|\\.)(twitter\\.com|x\\.com|facebook\\.com|linkedin\\.com|pinterest\\.[a-z.]+|reddit\\.com|tumblr\\.com|vk\\.com|t\\.me|telegram\\.me|wa\\.me|whatsapp\\.com|api\\.whatsapp\\.com|line\\.me|weibo\\.com|ok\\.ru|bsky\\.app|threads\\.net|mastodon\\.social|getpocket\\.com|flipboard\\.com|buffer\\.com|mail\\.google\\.com|outlook\\.live\\.com)$/i.test(h);
+                        return net && /(share|sharer|intent|submit|post|compose|dialog|send|pin\\/create|add)/i.test(t.pathname + t.search); } catch (e) { return false; } };
+                    const mayOpen = url => sameSite(url) || signIn(url) || share(url) || (Date.now() - trusted.at < 1500 && trusted.href && sameHost(url, trusted.href));
                     const opensNewWindow = a => { const t = (a.target || '').toLowerCase(); return t && t !== '_self' && t !== '_top' && t !== '_parent'; };
 
                     // A link clicked or "dispatched" by script, to another site, in a new window.
