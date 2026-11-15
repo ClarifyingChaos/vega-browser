@@ -31,6 +31,8 @@ Easels, an AI chat that works with your own providers, and a floating chat.
 - **Synced and shared tabs** drop query strings and logins from addresses. Opening a shared space adds it without opening any page.
 
 ### Ad blocking
+- **Pop-up ads.** A window a page's script opens when you click, or one that opens on its own, is blocked when it goes to another site. Links you click and sign-in windows still open. Turn it off in Settings › Privacy › Pop-ups.
+- **Brave's list.** Brave Specific is added to the default filter lists.
 - When the lists are bigger than Vega's rule limit, hiding rules are cut before blocking rules, so more ads and trackers are stopped.
 
 ### Fixes
