@@ -644,6 +644,19 @@ struct SettingsAITab: View {
             }
 
             // Gemini and OpenRouter list their models too, once they have a key.
+            if provider.providerType != .appleIntelligence {
+                Toggle(isOn: Binding(
+                    get: { provider.sendsPageContent },
+                    set: { on in var updated = provider; updated.sendsPageContent = on; configService.updateProvider(updated) }
+                )) {
+                    VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
+                        Text("Send the page to this provider").font(NookDesign.Font.secondary)
+                        Text("Off, it answers from your question alone. Private windows never send a page.")
+                            .font(NookDesign.Font.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             if provider.providerType == .gemini || provider.providerType == .openRouter {
                 Button("Fetch Models") {
                     saveKey(provider)

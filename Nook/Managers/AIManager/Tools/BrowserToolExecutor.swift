@@ -495,6 +495,19 @@ class BrowserToolExecutor {
 
     /// The page the model built, opened in a new tab from a file in the app's folder. Scripts are stripped and a
     /// content policy blocks any that remain, so a page the model wrote can show text and links and nothing else: no remote images either, which could carry what it read to a stranger's server.
+    /// Pages the model built hold what it read for you, so they do not pile up: older than 30 days go.
+    /// Runs when a page is made and once at launch.
+    static func prunePages() {
+        let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(Bundle.main.bundleIdentifier ?? "Vega").appendingPathComponent("Pages", isDirectory: true)
+        let cutoff = Date().addingTimeInterval(-30 * 86_400)
+        for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [] {
+            if let date = try? old.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate, date < cutoff {
+                try? FileManager.default.removeItem(at: old)
+            }
+        }
+    }
+
     private func executeShowPage(_ args: [String: Any], browserManager: BrowserManager, windowState: BrowserWindowState) -> String {
         guard let title = args["title"] as? String, let body = args["html"] as? String, !body.isEmpty else {
             return "Missing title or html"
@@ -534,13 +547,7 @@ class BrowserToolExecutor {
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             try page.write(to: file, atomically: true, encoding: .utf8)
-            // Pages the model built hold what it read for you, so they do not pile up: older than 30 days go.
-            let cutoff = Date().addingTimeInterval(-30 * 86_400)
-            for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [] {
-                if let date = try? old.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate, date < cutoff {
-                    try? FileManager.default.removeItem(at: old)
-                }
-            }
+            Self.prunePages()
         } catch { return "Could not save the page: \(error.localizedDescription)" }
         guard openTab(file, browserManager.tabs, windowState) != nil else { return "Could not open the page" }
         return "Opened the page \"\(title)\" in a new tab."
