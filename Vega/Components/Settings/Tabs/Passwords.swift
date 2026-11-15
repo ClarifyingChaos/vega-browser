@@ -74,6 +74,7 @@ private struct PasswordsContent: View {
     @State private var adding = false
     @State private var deleting: SavedLogin?
     @State private var importResult: String?
+    @State private var breachResult: String?
 
     private let vault: PasswordVault = KeychainVault.shared
 
@@ -114,6 +115,7 @@ private struct PasswordsContent: View {
                         Menu {
                             Button("Copy Username", vegaIcon: "doc.on.doc") { copy(login.username) }
                             Button("Copy Password", vegaIcon: "key") { reveal(login) { copy($0) } }
+                            Button("Check if Leaked", vegaIcon: "shield") { reveal(login) { checkLeaked($0, for: login) } }
                             Divider()
                             Button("Edit…", vegaIcon: "pencil") { reveal(login) { _ in editing = login } }
                             Button("Delete…", vegaIcon: "trash", role: .destructive) { deleting = login }
@@ -128,6 +130,9 @@ private struct PasswordsContent: View {
                         .accessibilityLabel("More for \(login.host)")
                     }
                     .padding(.vertical, VegaDesign.Spacing.xxs)
+                }
+                if let breachResult {
+                    Text(breachResult).font(VegaDesign.Font.caption).foregroundStyle(breachResult.hasPrefix("Found") ? .red : .secondary)
                 }
                 HStack {
                     Button("Add Password…", vegaIcon: "plus") { adding = true }
@@ -200,6 +205,19 @@ private struct PasswordsContent: View {
             guard ok else { return }
             Task { @MainActor in
                 if let secret = vault.password(host: login.host, username: login.username) { use(secret) }
+            }
+        }
+    }
+
+    /// Asks Have I Been Pwned with only the first 5 characters of the password's hash.
+    private func checkLeaked(_ password: String, for login: SavedLogin) {
+        breachResult = "Checking \(login.host)\u{2026}"
+        Task {
+            let seen = await PasswordBreach.timesSeen(password)
+            breachResult = switch seen {
+            case nil: "Could not reach the breach service. Nothing was sent that identifies you."
+            case 0: "Not found in known leaks: \(login.host)."
+            case let n?: "Found in known leaks \(n.formatted()) times: change the password for \(login.host)."
             }
         }
     }

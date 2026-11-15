@@ -22,6 +22,8 @@ public final class VegaSettingsService {
     private let enhancedFingerprintingProtectionKey = "settings.enhancedFingerprintingProtection"
     private let removeTrackingFromLinksKey = "settings.removeTrackingFromLinks"
     private let warnBeforeHTTPKey = "settings.warnBeforeHTTP"
+    private let clearDataOnQuitKey = "settings.clearDataOnQuit"
+    private let webRTCRelayOnlyKey = "settings.webRTCRelayOnly"
     private let adBlockerEnabledKey = "settings.adBlockerEnabled"
     private let adBlockerWhitelistKey = "settings.adBlockerWhitelist"
     private let adBlockerLastUpdateKey = "settings.adBlockerLastUpdate"
@@ -212,6 +214,17 @@ public final class VegaSettingsService {
         didSet {
             userDefaults.set(removeTrackingFromLinks.rawValue, forKey: removeTrackingFromLinksKey)
         }
+    }
+
+    /// FORK: cookies, site data and history are erased every time Vega quits.
+    public var clearDataOnQuit: Bool {
+        didSet { userDefaults.set(clearDataOnQuit, forKey: clearDataOnQuitKey) }
+    }
+
+    /// FORK: WebRTC may only connect through a relay, so a site cannot read this Mac's own network address.
+    /// Read when Vega starts (the script is installed once), so a change applies after a restart.
+    public var webRTCRelayOnly: Bool {
+        didSet { userDefaults.set(webRTCRelayOnly, forKey: webRTCRelayOnlyKey) }
     }
 
     public var warnBeforeHTTP: Bool {
@@ -708,6 +721,8 @@ public final class VegaSettingsService {
             rawValue: userDefaults.string(forKey: removeTrackingFromLinksKey) ?? ""
         ) ?? .privateWindows
         self.warnBeforeHTTP = userDefaults.bool(forKey: warnBeforeHTTPKey)
+        self.clearDataOnQuit = userDefaults.bool(forKey: clearDataOnQuitKey)
+        self.webRTCRelayOnly = userDefaults.bool(forKey: webRTCRelayOnlyKey)
         if let wlData = userDefaults.data(forKey: adBlockerWhitelistKey),
            let decoded = try? JSONDecoder().decode([String].self, from: wlData) {
             self.adBlockerWhitelist = decoded

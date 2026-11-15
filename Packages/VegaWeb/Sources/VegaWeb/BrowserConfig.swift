@@ -81,6 +81,29 @@ public class BrowserConfiguration {
         )
         config.userContentController.addUserScript(passkeySuppress)
 
+        // FORK: relay-only WebRTC when the person turned it on (read once, at start-up).
+        if UserDefaults.standard.bool(forKey: "settings.webRTCRelayOnly") {
+            config.userContentController.addUserScript(WKUserScript(
+                source: """
+                (function() {
+                    const Native = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+                    if (!Native) return;
+                    function Relay(configuration, constraints) {
+                        const c = Object.assign({}, configuration || {});
+                        c.iceTransportPolicy = 'relay';
+                        return new Native(c, constraints);
+                    }
+                    Relay.prototype = Native.prototype;
+                    Object.setPrototypeOf(Relay, Native);
+                    window.RTCPeerConnection = Relay;
+                    if (window.webkitRTCPeerConnection) window.webkitRTCPeerConnection = Relay;
+                })();
+                """,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            ))
+        }
+
         return config
     }()
 

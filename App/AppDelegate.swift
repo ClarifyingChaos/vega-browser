@@ -223,6 +223,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     /// Every quit path (Cmd+Q with or without the warning, Dock, logout, restart) comes
     /// through here, so this is the one place that guarantees the final save. Pages are not
     /// closed first: the WebContent processes exit with the app anyway.
+    private var clearedDataAtQuit = false
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if let count = browserManager?.downloadManager.activeDownloads.count, count > 0 {
             let alert = NSAlert()
@@ -231,6 +233,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             alert.addButton(withTitle: "Quit")
             alert.addButton(withTitle: "Cancel")
             if alert.runModal() != .alertFirstButtonReturn { return .terminateCancel }
+        }
+        // FORK: "Clear … when Vega quits": clear first, then quit again; the second pass goes straight through.
+        if let manager = browserManager, manager.vegaSettings?.clearDataOnQuit == true, !clearedDataAtQuit {
+            clearedDataAtQuit = true
+            Task { @MainActor in
+                await manager.clearWebsiteDataAtQuit()
+                NSApp.terminate(nil)
+            }
+            return .terminateCancel
         }
         let start = CFAbsoluteTimeGetCurrent()
         if let manager = browserManager {
