@@ -179,6 +179,14 @@ extension PageSession {
         }
     }
 
+    /// FORK: samples the page's colour again whatever the domain. The colour behind a page is what shows while the page
+    /// is resized (the AI panel opening or being dragged), and a site that switches between light and dark kept the
+    /// colour it had the first time, which showed as a white band beside the chat.
+    public func resampleBackgroundColor() {
+        guard let webView = primaryWebView else { return }
+        extractBackgroundColorWithJavaScript(from: webView)
+    }
+
     func updateBackgroundColor(from webView: WKWebView) {
         // Check if we should sample based on domain change
         guard let currentURL = webView.url,
