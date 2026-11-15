@@ -81,10 +81,66 @@ public class BrowserConfiguration {
         )
         config.userContentController.addUserScript(passkeySuppress)
 
+        // FORK: pop-up ads. Ad scripts open their window on any click by making a link and clicking it from script,
+        // or by calling window.open. Neither is a link you clicked: a window to another site opens only when the click
+        // you made landed on a link or a button. Runs in every frame; read once, at start-up (on unless turned off).
+        if (UserDefaults.standard.object(forKey: "settings.blockScriptedPopups") as? Bool) ?? true {
+            config.userContentController.addUserScript(WKUserScript(
+                source: """
+                // Vega popup guard
+                (function() {
+                    if (window.__vegaPopupGuard) return;
+                    Object.defineProperty(window, '__vegaPopupGuard', { value: true });
+                    const bare = h => h.replace(/^www\\./, '');
+                    const sameSite = url => {
+                        try { const a = bare(new URL(url, location.href).hostname), b = bare(location.hostname);
+                              return a === b || a.endsWith('.' + b) || b.endsWith('.' + a); } catch (e) { return true; }
+                    };
+                    // The last click you made, and whether it landed on a link or a button.
+                    let trusted = { at: 0, control: false };
+                    addEventListener('click', e => {
+                        if (!e.isTrusted) return;
+                        const t = e.target;
+                        trusted = { at: Date.now(), control: !!(t && t.closest && t.closest('a, button, [role=button], input[type=button], input[type=submit]')) };
+                    }, true);
+                    const youClickedAControl = () => Date.now() - trusted.at < 1500 && trusted.control;
+                    const opensNewWindow = a => { const t = (a.target || '').toLowerCase(); return t && t !== '_self' && t !== '_top' && t !== '_parent'; };
+
+                    // A link clicked or "dispatched" by script, to another site, in a new window.
+                    const click = HTMLAnchorElement.prototype.click;
+                    HTMLAnchorElement.prototype.click = function() {
+                        if (opensNewWindow(this) && !sameSite(this.href) && !youClickedAControl()) return;
+                        return click.apply(this, arguments);
+                    };
+                    const dispatch = HTMLAnchorElement.prototype.dispatchEvent;
+                    HTMLAnchorElement.prototype.dispatchEvent = function(e) {
+                        if (e && e.type === 'click' && !e.isTrusted && opensNewWindow(this) && !sameSite(this.href) && !youClickedAControl()) return false;
+                        return dispatch.apply(this, arguments);
+                    };
+                    document.addEventListener('click', e => {
+                        if (e.isTrusted) return;
+                        const a = e.target && e.target.closest && e.target.closest('a[href]');
+                        if (a && opensNewWindow(a) && !sameSite(a.href) && !youClickedAControl()) { e.preventDefault(); e.stopImmediatePropagation(); }
+                    }, true);
+
+                    // window.open to another site from a click that was not on a link or a button.
+                    const open = window.open;
+                    window.open = function(url) {
+                        if (url && !sameSite(url) && !youClickedAControl()) return null;
+                        return open.apply(this, arguments);
+                    };
+                })();
+                """,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            ))
+        }
+
         // FORK: relay-only WebRTC when the person turned it on (read once, at start-up).
         if UserDefaults.standard.bool(forKey: "settings.webRTCRelayOnly") {
             config.userContentController.addUserScript(WKUserScript(
                 source: """
+                // Vega WebRTC relay
                 (function() {
                     const Native = window.RTCPeerConnection || window.webkitRTCPeerConnection;
                     if (!Native) return;

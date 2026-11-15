@@ -112,14 +112,13 @@ extension PageSession: WKUIDelegate {
             return popup.webView
         }
 
-        // FORK: pop-up ads. A window a page's script opens (not a link you clicked) is blocked when it opens without
-        // a click, or goes to another site: ad scripts open one on any click. A link with target=_blank, a same-site
-        // window and a sign-in window (handled above) are not touched.
+        // FORK: pop-up ads. A window a page's script opens without any click is blocked. With a click behind it, the
+        // guard script in BrowserConfig decides. A link with target=_blank and a sign-in window (handled above) are not touched.
         if !isFromExtension, !isAgentPage, controller?.settings.blockScriptedPopups == true,
            navigationAction.navigationType == .other {
             let target = url.flatMap { Self.destinationHost(of: $0) }
-            let crossSite = target.map { !Self.isSameSite(self.url.host, $0) } ?? false
-            if !navigationAction.vegaIsUserInitiated || crossSite {
+            // With a click behind it, the page's own guard script decides (a click on a link or button is let through).
+            if !navigationAction.vegaIsUserInitiated {
                 Self.popupLog.info("Blocked a pop-up from \(self.url.host ?? "?", privacy: .private) to \(target ?? "a blank window", privacy: .private)")
                 return nil
             }
@@ -339,3 +338,4 @@ extension PageSession: WKUIDelegate {
         }
     }
 }
+
