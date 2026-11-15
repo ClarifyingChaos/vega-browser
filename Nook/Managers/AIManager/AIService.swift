@@ -62,9 +62,6 @@ class AIService {
         "executeJavaScript", "navigateToURL", "clickElement", "createTab", "switchTab"
     ]
 
-    /// Size of the scrolling argument view in the approval dialog
-    private static let approvalArgsSize = NSSize(width: 420, height: 160)
-
     init(configService: AIConfigService) {
         self.configService = configService
     }
@@ -464,37 +461,33 @@ class AIService {
     /// Shows an NSAlert asking the user to approve a mutating browser tool or MCP tool call.
     private func requestToolApproval(toolName: String, args: [String: Any], mcpServerId: String? = nil, offerAllowAll: Bool = true) async -> ToolApprovalResult {
         let alert = NSAlert()
-        alert.messageText = "AI Tool Request"
-        if let mcpServerId {
-            alert.informativeText = "The AI wants to call '\(toolName)' on the MCP server '\(mcpServerId)' with the parameters below."
-        } else {
-            var host = "the current tab"
-            if let windowState = browserToolExecutor?.windowState,
-               let pageHost = browserManager?.tabs.selectedSession(in: windowState)?.url.host {
-                host = pageHost
-            }
-            alert.informativeText = "The AI wants to execute '\(toolName)' on \(host) with the parameters below."
+        // FORK: one plain sentence, no code or parameters: what it wants to do, and where.
+        let host = (browserToolExecutor?.windowState).flatMap { browserManager?.tabs.selectedSession(in: $0)?.url.host() } ?? "this page"
+        func site(_ key: String = "url") -> String {
+            let text = (args[key] as? String) ?? ""
+            return URL(string: text.contains("://") ? text : "https://" + text)?.host() ?? "a web page"
         }
-        alert.alertStyle = .warning
-
-        // The whole argument text, scrollable, so nothing hides past a cut
-        let scrollView = NSTextView.scrollableTextView()
-        scrollView.frame = NSRect(origin: .zero, size: Self.approvalArgsSize)
-        scrollView.borderType = .bezelBorder
-        if let textView = scrollView.documentView as? NSTextView {
-            textView.isEditable = false
-            textView.isSelectable = true
-            textView.font = .monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
-            textView.string = formatArgs(args)
+        let sentence: String
+        switch toolName {
+        case "navigateToURL": sentence = "open \(site()) in the tab"
+        case "createTab": sentence = "open \(site()) in a new tab"
+        case "switchTab": sentence = "switch to another tab"
+        case "clickElement": sentence = "click something on \(host)"
+        case "executeJavaScript": sentence = "run a script on \(host)"
+        default: sentence = mcpServerId.map { "use the \($0) tool" } ?? "do something in your browser"
         }
-        alert.accessoryView = scrollView
+        alert.messageText = "Let Vega\u{2019}s AI \(sentence)?"
+        alert.informativeText = toolName == "executeJavaScript"
+            ? "Only allow this if you asked for it. A script can change or read the page."
+            : ""
+        alert.alertStyle = .informational
 
         // Deny goes first: NSAlert makes the first button the Return-key default, and the
         // dialog can appear while the user is typing in the chat field. Allow gets no key.
-        alert.addButton(withTitle: "Deny")
-        alert.addButton(withTitle: "Allow")
+        alert.addButton(withTitle: "Don\u{2019}t Allow")
+        alert.addButton(withTitle: "Allow Once")
         if offerAllowAll {
-            alert.addButton(withTitle: "Allow All This Chat")
+            alert.addButton(withTitle: "Allow for This Chat")
         }
 
         let response = alert.runModal()
@@ -506,15 +499,6 @@ class AIService {
         default:
             return .deny
         }
-    }
-
-    /// Formats tool arguments into a readable string for the approval dialog.
-    private func formatArgs(_ args: [String: Any]) -> String {
-        var lines: [String] = []
-        for (key, value) in args.sorted(by: { $0.key < $1.key }) {
-            lines.append("  \(key): \(String(describing: value))")
-        }
-        return lines.isEmpty ? "(none)" : lines.joined(separator: "\n")
     }
 
     // MARK: - Page Context Extraction
