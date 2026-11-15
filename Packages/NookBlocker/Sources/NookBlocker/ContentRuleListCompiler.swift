@@ -52,7 +52,7 @@ final class ContentRuleListCompiler {
     private static var chunkCountFile: URL { cacheDir.appendingPathComponent("chunk-count.txt") }
     /// Written only by saveCache. Its absence means the cache predates the adblock-rust swap.
     /// The hash is over the input rules, so bump this name when the converter's output changes.
-    private static var converterStampFile: URL { cacheDir.appendingPathComponent("converter-adblock-rust-v4") }
+    private static var converterStampFile: URL { cacheDir.appendingPathComponent("converter-adblock-rust-v5") }
 
     // MARK: - Public API
 
@@ -87,9 +87,26 @@ final class ContentRuleListCompiler {
 
         cbLog.info("adblock-rust: \(rules.count) source, \(converted.ruleCount) safari, \(converted.skippedCount) skipped (cancel other rules), \(converted.unconvertedCount) no Safari equivalent")
 
-        let allEntries = Array(converted.entries.prefix(maxEntries))
+        // FORK: when there are more rules than the cap, what is cut should be hiding rules, not blocking rules.
+        // Ads and trackers are stopped by the blocking rules; a hiding rule only tidies what got through. So the
+        // blocking rules and their exceptions go first, in their own order, then the hiding rules and theirs.
+        func isHiding(_ entry: [String: Any]) -> Bool {
+            let action = (entry["action"] as? [String: Any])?["type"] as? String
+            if action == "css-display-none" { return true }
+            // An exception on every URL, limited by site, belongs to the hiding rules it cancels.
+            let trigger = entry["trigger"] as? [String: Any]
+            return action == "ignore-previous-rules" && (trigger?["url-filter"] as? String) == ".*" && trigger?["resource-type"] == nil
+        }
+        let ordered: [[String: Any]]
         if converted.entries.count > maxEntries {
-            cbLog.info("Capped network rules at \(maxEntries) of \(converted.entries.count)")
+            ordered = converted.entries.filter { !isHiding($0) } + converted.entries.filter(isHiding)
+        } else {
+            ordered = converted.entries
+        }
+        let allEntries = Array(ordered.prefix(maxEntries))
+        if converted.entries.count > maxEntries {
+            let kept = allEntries.filter { !isHiding($0) }.count
+            cbLog.info("Capped rules at \(maxEntries) of \(converted.entries.count): \(kept) blocking rules kept, hiding rules cut first")
         }
 
         // Remove old rule lists
