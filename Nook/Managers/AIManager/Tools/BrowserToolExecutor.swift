@@ -470,6 +470,8 @@ class BrowserToolExecutor {
             (function() {
                 const clone = document.body ? document.body.cloneNode(true) : null;
                 if (!clone) return '';
+                // A page with a password box is a sign-in or payment page: its text stays on this Mac.
+                if (document.querySelector('input[type=password]')) return '(sign-in page, not read)';
                 clone.querySelectorAll('script, style, noscript, nav, footer, header').forEach(el => el.remove());
                 return (clone.innerText || '').replace(/\\s+/g, ' ').trim().substring(0, \(limit));
             })();
@@ -477,7 +479,11 @@ class BrowserToolExecutor {
         var out: [String] = []
         for (index, itemID) in order.enumerated() {
             let session = controller.session(for: itemID)
-            let url = (session?.url ?? controller.item(itemID)?.url)?.absoluteString ?? ""
+            let fullURL = (session?.url ?? controller.item(itemID)?.url)
+            // Query strings and fragments carry tokens and search terms; the provider only needs the page.
+            var parts = fullURL.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+            parts?.query = nil; parts?.fragment = nil; parts?.user = nil; parts?.password = nil
+            let url = parts?.url?.absoluteString ?? ""
             var excerpt = ""
             if let webView = session?.webView, !webView.isLoading, url.hasPrefix("http") {
                 excerpt = ((try? await webView.evaluateJavaScript(script)) as? String) ?? ""
@@ -488,24 +494,31 @@ class BrowserToolExecutor {
     }
 
     /// The page the model built, opened in a new tab from a file in the app's folder. Scripts are stripped and a
-    /// content policy blocks any that remain, so a page the model wrote can show text, images and links and nothing else.
+    /// content policy blocks any that remain, so a page the model wrote can show text and links and nothing else: no remote images either, which could carry what it read to a stranger's server.
     private func executeShowPage(_ args: [String: Any], browserManager: BrowserManager, windowState: BrowserWindowState) -> String {
         guard let title = args["title"] as? String, let body = args["html"] as? String, !body.isEmpty else {
             return "Missing title or html"
         }
         func strip(_ html: String) -> String {
             var s = html
+            // Pairs and singles the model has no need for. Run until nothing changes, so a tag built from
+            // pieces (<scr<script>ipt>) cannot survive one pass. The content policy below is the real wall.
             let patterns = ["<script[\\s\\S]*?</script>", "<iframe[\\s\\S]*?</iframe>", "<object[\\s\\S]*?</object>", "<embed[^>]*>",
-                            "<form[\\s\\S]*?</form>", "\\son[a-z]+\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)", "javascript:"]
-            for pattern in patterns {
-                s = s.replacingOccurrences(of: pattern, with: "", options: [.regularExpression, .caseInsensitive])
+                            "<form[\\s\\S]*?</form>", "<meta[^>]*>", "<base[^>]*>", "<link[^>]*>", "<svg[\\s\\S]*?</svg>", "<img[^>]*>",
+                            "\\son[a-z]+\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)", "javascript:", "vbscript:", "@import"]
+            var previous = ""
+            while previous != s {
+                previous = s
+                for pattern in patterns {
+                    s = s.replacingOccurrences(of: pattern, with: "", options: [.regularExpression, .caseInsensitive])
+                }
             }
             return s
         }
         let escapedTitle = title.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
         let page = """
             <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
             <title>\(escapedTitle)</title>
             <style>
             :root{color-scheme:light dark} body{font:17px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;max-width:720px;margin:48px auto;padding:0 24px}
@@ -519,6 +532,13 @@ class BrowserToolExecutor {
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             try page.write(to: file, atomically: true, encoding: .utf8)
+            // Pages the model built hold what it read for you, so they do not pile up: older than 30 days go.
+            let cutoff = Date().addingTimeInterval(-30 * 86_400)
+            for old in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [] {
+                if let date = try? old.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate, date < cutoff {
+                    try? FileManager.default.removeItem(at: old)
+                }
+            }
         } catch { return "Could not save the page: \(error.localizedDescription)" }
         guard openTab(file, browserManager.tabs, windowState) != nil else { return "Could not open the page" }
         return "Opened the page \"\(title)\" in a new tab."

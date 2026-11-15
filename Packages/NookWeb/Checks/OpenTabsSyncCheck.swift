@@ -23,6 +23,7 @@ struct OpenTabsSyncCheck {
         func snap(_ id: UUID, _ name: String, _ tabs: [OpenTabsSnapshot.Entry], at date: Date = Date()) -> OpenTabsSnapshot {
             OpenTabsSnapshot(deviceID: id, deviceName: name, writtenAt: date, tabs: tabs)
         }
+        precondition(OpenTabsSnapshot.clean(URL(string: "https://u:p@bank.example/acct?token=SECRET&q=x#frag")!)?.absoluteString == "https://bank.example/acct", "query, fragment and login are dropped")
         let tab = { (t: String, u: String) in OpenTabsSnapshot.Entry(title: t, url: u, space: "Personal") }
         try await store.writeOpenTabs(snap(a, "Studio", [tab("Apple", "https://apple.com"), tab("Swift", "https://swift.org")]))
         try await store.writeOpenTabs(snap(b, "Laptop", [tab("Vega", "https://example.com")]))

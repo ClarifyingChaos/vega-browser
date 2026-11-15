@@ -79,7 +79,9 @@ extension BrowserManager {
 
     /// Asks before adding: a file from someone else brings a list of links.
     func openSharedSpace(at url: URL) {
-        guard let data = try? Data(contentsOf: url), let shared = TabsController.decodeSharedSpace(data) else {
+        // Size first: a huge file is refused before it is read into memory.
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        guard size > 0, size < 4_000_000, let data = try? Data(contentsOf: url), let shared = TabsController.decodeSharedSpace(data) else {
             let alert = NSAlert()
             alert.messageText = "That isn't a Vega space"
             alert.informativeText = "The file couldn't be read, or it was made by a newer version of Vega."
@@ -91,8 +93,9 @@ extension BrowserManager {
         alert.informativeText = "It has \(shared.tabCount) \(shared.tabCount == 1 ? "page" : "pages"). Nothing is opened until you click it, and no logins come with it."
         alert.addButton(withTitle: "Add Space")
         alert.addButton(withTitle: "Cancel")
-        guard alert.runModal() == .alertFirstButtonReturn, let spaceID = tabs.importSharedSpace(shared),
-              let window = windowRegistry?.activeWindow else { return }
-        tabs.setSpace(spaceID, in: window)
+        // The space is added, not switched to: switching selects a tab and loads its page, and a file from
+        // someone else must not open a link before you have looked at the list.
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        _ = tabs.importSharedSpace(shared)
     }
 }

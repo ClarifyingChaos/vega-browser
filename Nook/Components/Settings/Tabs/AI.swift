@@ -931,6 +931,10 @@ struct SettingsAITab: View {
             case .ollama: path = "/api/tags"
             case .openAICompatible: if !key.isEmpty { header = ("Authorization", "Bearer \(key)") }
             }
+            guard AIConfigService.isSafeAddress(provider.baseURL) || provider.providerType == .ollama else {
+                connectionTestResults[provider.id] = "Failed: \(AIConfigService.insecureMessage)"
+                return
+            }
             guard let url = URL(string: provider.baseURL + path), url.scheme != nil else {
                 connectionTestResults[provider.id] = "Failed: the Base URL is not valid"
                 return
