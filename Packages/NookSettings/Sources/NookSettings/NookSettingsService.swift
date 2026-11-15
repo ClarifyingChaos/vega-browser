@@ -23,6 +23,7 @@ public final class NookSettingsService {
     private let removeTrackingFromLinksKey = "settings.removeTrackingFromLinks"
     private let warnBeforeHTTPKey = "settings.warnBeforeHTTP"
     private let clearDataOnQuitKey = "settings.clearDataOnQuit"
+    private let blockScriptedPopupsKey = "settings.blockScriptedPopups"
     private let webRTCRelayOnlyKey = "settings.webRTCRelayOnly"
     private let adBlockerEnabledKey = "settings.adBlockerEnabled"
     private let adBlockerWhitelistKey = "settings.adBlockerWhitelist"
@@ -214,6 +215,11 @@ public final class NookSettingsService {
         didSet {
             userDefaults.set(removeTrackingFromLinks.rawValue, forKey: removeTrackingFromLinksKey)
         }
+    }
+
+    /// FORK: windows a page's script opens without a click, or onto another site, are blocked (pop-up ads).
+    public var blockScriptedPopups: Bool {
+        didSet { userDefaults.set(blockScriptedPopups, forKey: blockScriptedPopupsKey) }
     }
 
     /// FORK: cookies, site data and history are erased every time Vega quits.
@@ -628,6 +634,7 @@ public final class NookSettingsService {
             geminiModelKey: GeminiModel.flash.rawValue,
             showAIAssistantKey: true,
             aiChatFloatingKey: false,
+            blockScriptedPopupsKey: true,
             browserControlServerKey: false,
             aiProviderKey: AIProvider.gemini.rawValue,
             openRouterModelKey: OpenRouterModel.gpt4o.rawValue,
@@ -721,6 +728,7 @@ public final class NookSettingsService {
             rawValue: userDefaults.string(forKey: removeTrackingFromLinksKey) ?? ""
         ) ?? .privateWindows
         self.warnBeforeHTTP = userDefaults.bool(forKey: warnBeforeHTTPKey)
+        self.blockScriptedPopups = userDefaults.bool(forKey: blockScriptedPopupsKey)
         self.clearDataOnQuit = userDefaults.bool(forKey: clearDataOnQuitKey)
         self.webRTCRelayOnly = userDefaults.bool(forKey: webRTCRelayOnlyKey)
         if let wlData = userDefaults.data(forKey: adBlockerWhitelistKey),

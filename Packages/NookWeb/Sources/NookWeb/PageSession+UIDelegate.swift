@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import OSLog
 import WebKit
 import NookBlocker
 import NookSettings
@@ -70,6 +71,8 @@ extension PageSession {
 
 // MARK: - WKUIDelegate
 extension PageSession: WKUIDelegate {
+    private static let popupLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Nook", category: "PopupBlocker")
+
     public func webView(
         _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,
@@ -107,6 +110,19 @@ extension PageSession: WKUIDelegate {
             else { return nil }
             delegate.presentPopupWindow(popup)
             return popup.webView
+        }
+
+        // FORK: pop-up ads. A window a page's script opens (not a link you clicked) is blocked when it opens without
+        // a click, or goes to another site: ad scripts open one on any click. A link with target=_blank, a same-site
+        // window and a sign-in window (handled above) are not touched.
+        if !isFromExtension, !isAgentPage, controller?.settings.blockScriptedPopups == true,
+           navigationAction.navigationType == .other {
+            let target = url.flatMap { Self.destinationHost(of: $0) }
+            let crossSite = target.map { !Self.isSameSite(self.url.host, $0) } ?? false
+            if !navigationAction.nookIsUserInitiated || crossSite {
+                Self.popupLog.info("Blocked a pop-up from \(self.url.host ?? "?", privacy: .private) to \(target ?? "a blank window", privacy: .private)")
+                return nil
+            }
         }
 
         // Air Traffic Control: route popup URLs to designated spaces.
