@@ -11,7 +11,8 @@ import VegaTabsCore
 
 extension SyncCoordinator {
     /// Every web tab open in this Mac's spaces (the Agent space and private windows are never listed).
-    func ownOpenTabs(in tabs: TabsController) -> [OpenTabsSnapshot.Entry] {
+    /// `keepFullAddresses` only when the list will be sealed; plain text loses query strings, fragments and logins.
+    func ownOpenTabs(in tabs: TabsController, keepFullAddresses: Bool = false) -> [OpenTabsSnapshot.Entry] {
         var out: [OpenTabsSnapshot.Entry] = []
         for space in tabs.orderedSpaces where !space.isAgent {
             for id in tabs.displayOrder(inSpace: space.id) {
@@ -19,7 +20,7 @@ extension SyncCoordinator {
                 guard let url = session?.url ?? tabs.item(id)?.url, ["http", "https"].contains(url.scheme?.lowercased()) else { continue }
                 let title = session?.title.isEmpty == false ? session!.title : (tabs.item(id)?.displayTitle ?? url.host() ?? "")
                 // The folder is plain text in iCloud or Drive, so keep tokens and search terms out of it.
-                guard let clean = OpenTabsSnapshot.clean(url) else { continue }
+                guard let clean = keepFullAddresses ? url : OpenTabsSnapshot.clean(url) else { continue }
                 out.append(.init(title: title, url: clean.absoluteString, space: space.name))
             }
         }

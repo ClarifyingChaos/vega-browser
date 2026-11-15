@@ -280,7 +280,9 @@ private struct SyncSection: View {
                 }
                 if sync.backend == .google { GoogleRow() }
                 Toggle("Share open tabs", isOn: Binding(get: { sync.sharesOpenTabs }, set: { sync.sharesOpenTabs = $0 }))
-                Text("Lists the titles and addresses of this Mac's open tabs in your sync folder. Your other Macs show them under Spaces › Tabs from Other Macs.")
+                Text(sync.passwordsEnabled
+                     ? "Lists this Mac's open tabs, sealed with your sync passphrase so neither iCloud nor Google can read them. Your other Macs show them under Spaces › Tabs from Other Macs."
+                     : "Lists this Mac's open tabs in your sync folder as plain text, without anything after the page address. Turn on password sync to seal them and keep full addresses. Your other Macs show them under Spaces › Tabs from Other Macs.")
                     .font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
             }
             if sync.isEnabled {

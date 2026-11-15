@@ -265,12 +265,14 @@ public final class SyncCoordinator {
     /// Writes this Mac's open tabs (when shared, and only when they changed) and reads the others'.
     private func syncOpenTabs(store: any SyncBlobStore, tabs: TabsController, own: UUID) async {
         do {
-            let entries = sharesOpenTabs ? ownOpenTabs(in: tabs) : []
+            // The passwords key seals the list, so full addresses can travel. Without it the list is plain text and cleaned.
+            let key = Self.loadKey()
+            let entries = sharesOpenTabs ? ownOpenTabs(in: tabs, keepFullAddresses: key != nil) : []
             if entries != lastOpenTabs {
-                try await store.writeOpenTabs(OpenTabsSnapshot(deviceID: own, deviceName: deviceName, writtenAt: Date(), tabs: entries))
+                try await store.writeOpenTabs(OpenTabsSnapshot(deviceID: own, deviceName: deviceName, writtenAt: Date(), tabs: entries), key: key)
                 lastOpenTabs = entries
             }
-            otherMacsTabs = try await store.readOtherOpenTabs(excluding: own)
+            otherMacsTabs = try await store.readOtherOpenTabs(excluding: own, key: key)
         } catch {
             Self.logger.error("open tabs sync failed: \(error.localizedDescription, privacy: .public)")
         }
