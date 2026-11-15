@@ -167,6 +167,14 @@ struct SidebarAIChat: View {
                     .disabled(aiService.messages.isEmpty)
                     .accessibilityLabel("Clear Chat")
                     .help("Clear this chat")
+                    // FORK: float the chat over the page, or dock it back as the right sidebar.
+                    Button {
+                        withAnimation(NookDesign.Motion.standard) { nookSettings.aiChatFloating.toggle() }
+                    } label: {
+                        NookSymbol(nookSettings.aiChatFloating ? "sidebar.right" : "macwindow.on.rectangle", size: 16)
+                    }
+                    .accessibilityLabel(nookSettings.aiChatFloating ? "Dock Chat" : "Float Chat")
+                    .help(nookSettings.aiChatFloating ? "Dock as a sidebar" : "Float over the page")
                     Button {
                         showSettings()
                     } label: {

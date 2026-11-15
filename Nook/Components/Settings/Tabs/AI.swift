@@ -54,6 +54,20 @@ struct SettingsAITab: View {
                             .font(NookDesign.Font.caption)
                             .foregroundStyle(.secondary)
                     }
+
+                // FORK: where the chat opens. Either way it stays on the right and leaves the tab sidebar alone.
+                Picker(selection: $settings.aiChatFloating) {
+                    Text("Sidebar on the right").tag(false)
+                    Text("Floating over the page").tag(true)
+                } label: {
+                    VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
+                        Text("Chat Position")
+                            .font(NookDesign.Font.body)
+                        Text("Floating keeps the page at full width; drag the card by its top edge")
+                            .font(NookDesign.Font.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 }
             }
 
