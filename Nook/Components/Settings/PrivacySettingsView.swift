@@ -58,6 +58,14 @@ struct PrivacySettingsView: View {
                 )
             }
 
+            Section("Network") {
+                settingToggle(
+                    "Hide my network address from WebRTC",
+                    detail: "Calls and video chats connect through a relay, so a site can't read your address. Some calls may not connect. Applies after you restart Vega.",
+                    isOn: $settings.webRTCRelayOnly
+                )
+            }
+
             Section("History") {
                 settingToggle(
                     "Search page text in history",
@@ -70,6 +78,11 @@ struct PrivacySettingsView: View {
             }
 
             Section {
+                settingToggle(
+                    "Clear cookies, site data and history when Vega quits",
+                    detail: "Signs you out of sites each time you quit. Saved passwords and your tabs stay.",
+                    isOn: $settings.clearDataOnQuit
+                )
                 cookiesRow
                 cacheRow
                 HStack {
