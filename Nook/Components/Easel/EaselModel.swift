@@ -89,7 +89,8 @@ final class EaselStore: ObservableObject {
     }
 
     private func fileURL(_ id: UUID) -> URL { folder.appendingPathComponent("\(id.uuidString).json") }
-    func imageURL(_ file: String) -> URL { folder.appendingPathComponent(file) }
+    /// Only a bare file name: a tampered easel file cannot point outside the folder.
+    func imageURL(_ file: String) -> URL { folder.appendingPathComponent((file as NSString).lastPathComponent) }
 
     private func write(_ easel: Easel) {
         let encoder = JSONEncoder()

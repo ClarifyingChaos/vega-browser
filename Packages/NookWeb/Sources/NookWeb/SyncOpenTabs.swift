@@ -18,7 +18,9 @@ extension SyncCoordinator {
                 let session = tabs.session(for: id)
                 guard let url = session?.url ?? tabs.item(id)?.url, ["http", "https"].contains(url.scheme?.lowercased()) else { continue }
                 let title = session?.title.isEmpty == false ? session!.title : (tabs.item(id)?.displayTitle ?? url.host() ?? "")
-                out.append(.init(title: title, url: url.absoluteString, space: space.name))
+                // The folder is plain text in iCloud or Drive, so keep tokens and search terms out of it.
+                guard let clean = OpenTabsSnapshot.clean(url) else { continue }
+                out.append(.init(title: title, url: clean.absoluteString, space: space.name))
             }
         }
         return Array(out.prefix(200))
