@@ -98,9 +98,13 @@ public struct SpacesSettingsView: View {
             Button("Add") {
                 let name = newProfileName.trimmingCharacters(in: .whitespaces)
                 guard !name.isEmpty else { return }
-                // A profile is the spaces sharing one set of sign-ins, so a new one starts with its own first space.
-                tabs.createSpace(name: name, icon: "", accentHex: tabs.orderedSpaces.last?.accentHex ?? "#0A84FF",
-                                 after: tabs.orderedSpaces.last?.id, profileName: name)
+                // A profile is the spaces sharing one set of sign-ins, so a new one starts with its own first space,
+                // and opens in its own window, as a new Chrome profile does.
+                if let space = tabs.createSpace(name: name, icon: "", accentHex: tabs.orderedSpaces.last?.accentHex ?? "#0A84FF",
+                                                after: tabs.orderedSpaces.last?.id, profileName: name),
+                   let storeID = tabs.profiles.first(where: { $0.spaceIDs.contains(space) })?.id {
+                    actions?.openWindow(forProfile: storeID)
+                }
             }
             Button("Cancel", role: .cancel) {}
         } message: {

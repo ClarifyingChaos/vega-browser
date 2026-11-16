@@ -129,7 +129,7 @@ struct PeekOverlayView: View {
     /// Open as a tab: asks which space, the window's own first.
     @ViewBuilder private var openInSpaceMenu: some View {
         let current = windowState.spaceID.flatMap { tabs.space($0) }
-        let others = windowState.isIncognito ? [] : tabs.orderedSpaces.filter { $0.id != current?.id }
+        let others = windowState.isIncognito ? [] : tabs.switchableSpaces(for: windowState).filter { $0.id != current?.id }
         if others.isEmpty {
             circleButton(fallback: "arrow.up.left.and.arrow.down.right", help: "Open as a tab") { peek.moveToNewTab() }
         } else {
