@@ -136,10 +136,7 @@ public struct SpacesSettingsView: View {
     private func profileRow(_ profile: ProfileSummary) -> some View {
         let count = profile.spaceIDs.count
         return HStack(spacing: VegaDesign.Spacing.lg) {
-            Image(systemName: "person.crop.circle.fill")
-                .font(.system(size: 28))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.secondary)
+            ProfileAvatarView(id: profile.id, size: 30)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
                 Text(profile.name)
@@ -315,17 +312,30 @@ private struct ProfileDetailsSheet: View {
     @State private var name = ""
     @State private var confirmingClear = false
     @State private var confirmingDelete = false
+    @State private var choosingPicture = false
     @State private var moveTo: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header: avatar beside the name and a quiet summary, no card.
             HStack(spacing: VegaDesign.Spacing.lg) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 44))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                // The picture is the button that changes it, as in Chrome and System Settings.
+                Button { choosingPicture = true } label: {
+                    ProfileAvatarView(id: profile.id, size: 48)
+                        .overlay(alignment: .bottomTrailing) {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.system(size: 16))
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, Color.accentColor)
+                                .offset(x: 2, y: 2)
+                        }
+                }
+                .buttonStyle(.plain)
+                .help("Change Picture")
+                .accessibilityLabel("Change picture for \(profile.name)")
+                #if os(macOS)
+                .popover(isPresented: $choosingPicture, arrowEdge: .bottom) { ProfileAvatarPicker(id: profile.id) }
+                #endif
                 VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
                     Text(name.isEmpty ? profile.name : name)
                         .font(.system(size: 15, weight: .semibold))
