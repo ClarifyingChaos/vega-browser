@@ -46,7 +46,7 @@ struct AccountStage: View {
             if google.isSignedIn {
                 VStack(alignment: .leading, spacing: 12) {
                     row("Sync spaces, favorites and pinned tabs", isOn: Binding(get: { sync.isEnabled }, set: { sync.isEnabled = $0 }))
-                    row("Show my open tabs on my other Macs", isOn: Binding(get: { sync.sharesOpenTabs }, set: { sync.sharesOpenTabs = $0 }))
+                    row("Keep my open tabs the same on my Macs", isOn: Binding(get: { sync.mirrorsTabs }, set: { sync.mirrorsTabs = $0 }))
                         .disabled(!sync.isEnabled)
                     row("Sync passwords", isOn: Binding(
                         get: { sync.passwordsEnabled },

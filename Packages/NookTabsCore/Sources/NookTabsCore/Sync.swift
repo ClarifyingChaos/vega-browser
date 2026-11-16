@@ -34,12 +34,17 @@ public enum SyncMerge {
     /// Tombstones older than this are left out of snapshots, so the files stay small. A Mac that
     /// has been offline longer can resurrect something deleted meanwhile.
     public static let tombstoneDays = 30
+    /// A closed tab is a short-lived thing, and there are many: its deletion is kept for a week.
+    public static let tabTombstoneDays = 7
 
     /// The synced scope of a tree. The Agent space is this Mac's own and never travels.
     /// `profile`: only that profile's spaces and what is in them (a profile has its own account, so nothing of another
     /// profile may reach it); nil takes every space.
-    public static func snapshot(of tree: TabTree, deviceID: UUID, deviceName: String, profile: UUID? = nil, now: Date = Date()) -> SyncSnapshot {
+    /// `includeTabs`: also the open tabs and folders (which otherwise stay on their Mac), so the other Macs show the
+    /// same tabs and closing one closes it there.
+    public static func snapshot(of tree: TabTree, deviceID: UUID, deviceName: String, profile: UUID? = nil, includeTabs: Bool = false, now: Date = Date()) -> SyncSnapshot {
         let cutoff = now.addingTimeInterval(-Double(tombstoneDays) * 86_400)
+        let tabCutoff = now.addingTimeInterval(-Double(tabTombstoneDays) * 86_400)
         func kept(_ deleted: Date?) -> Bool { deleted.map { $0 > cutoff } ?? true }
         let agentIDs = Set(tree.spaces.values.filter(\.isAgent).map(\.id))
         // A profile's account carries its own spaces. It also carries the deletions of spaces whose profile no longer
@@ -55,7 +60,10 @@ public enum SyncMerge {
         }
         let inScope = Set(spaces.map(\.id))
         let items = tree.items.values.filter { item in
-            guard kept(item.deletedAt), tree.scope(of: item.id) == .synced else { return false }
+            let synced = tree.scope(of: item.id) == .synced
+            guard synced || includeTabs else { return false }
+            // A closed tab's deletion is kept briefly; favorites and pinned tabs keep theirs for the full time.
+            guard kept(item.deletedAt), synced || item.deletedAt.map({ $0 > tabCutoff }) ?? true else { return false }
             guard let space = tree.spaceID(of: item.id) else { return false }
             if agentIDs.contains(space) { return false }
             return profile == nil || (inScope.contains(space) && tree.dataStoreID(for: space) == profile)

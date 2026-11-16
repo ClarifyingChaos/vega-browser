@@ -23,6 +23,31 @@ struct SyncTests {
         #expect(other.favorites(of: f.spaceA).map(\.displayTitle) == ["one"])
     }
 
+    @Test func openTabsTravelWhenAskedAndAClosedOneIsClosedOnTheOtherMac() throws {
+        var f = Fixture()
+        let tab = f.tab("open", in: .tabs(spaceID: f.spaceA))
+        var other = f.tree
+
+        #expect(!SyncMerge.snapshot(of: f.tree, deviceID: macA, deviceName: "A", now: later).items.contains { $0.id == tab }, "off: a tab stays on its Mac")
+        let with = SyncMerge.snapshot(of: f.tree, deviceID: macA, deviceName: "A", includeTabs: true, now: later)
+        #expect(with.items.contains { $0.id == tab }, "on: the tab is in the snapshot")
+
+        var empty = TabTree(spaces: Array(f.tree.spaces.values), items: [])
+        empty.apply(SyncMerge.change(applying: with, to: empty))
+        #expect(empty.item(tab)?.displayTitle == "open", "the other Mac gets the tab")
+
+        // Closed on A: the deletion reaches B.
+        _ = try f.tree.close(tab, now: later.addingTimeInterval(5))
+        let closed = SyncMerge.snapshot(of: f.tree, deviceID: macA, deviceName: "A", includeTabs: true, now: later.addingTimeInterval(6))
+        #expect(closed.items.contains { $0.id == tab && $0.deletedAt != nil }, "the closing travels")
+        other.apply(SyncMerge.change(applying: closed, to: other))
+        #expect(other.item(tab) == nil || other.item(tab)?.deletedAt != nil, "and the tab is gone on the other Mac")
+
+        // A week later the closing is forgotten, so the files do not collect every tab ever closed.
+        let old = SyncMerge.snapshot(of: f.tree, deviceID: macA, deviceName: "A", includeTabs: true, now: later.addingTimeInterval(8 * 86_400))
+        #expect(!old.items.contains { $0.id == tab }, "an old closed tab drops out after a week")
+    }
+
     @Test func aProfilesSnapshotHoldsOnlyItsOwnSpacesAndTabs() throws {
         var f = Fixture()
         let store = UUID(), otherStore = UUID()
