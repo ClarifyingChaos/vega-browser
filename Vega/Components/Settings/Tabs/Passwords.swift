@@ -76,7 +76,11 @@ private struct PasswordsContent: View {
     @State private var importResult: String?
     @State private var breachResult: String?
 
-    private let vault: PasswordVault = KeychainVault.shared
+    @EnvironmentObject private var browserManager: BrowserManager
+    /// Whose passwords are shown: the profile of the window in front, or the one picked.
+    @State private var profileID: UUID?
+
+    private var vault: PasswordVault { KeychainVault.forProfile(profileID) }
 
     private var shown: [SavedLogin] {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
@@ -96,6 +100,14 @@ private struct PasswordsContent: View {
             }
 
             Section {
+                // Each profile keeps its own passwords, as in Chrome.
+                if browserManager.tabs.profiles.count > 1 {
+                    Picker("Profile", selection: $profileID) {
+                        ForEach(browserManager.tabs.profiles) { profile in
+                            Text(profile.name).tag(UUID?.some(profile.id))
+                        }
+                    }
+                }
                 if !logins.isEmpty {
                     SidebarMenuSearchField(prompt: "Search passwords...", text: $query)
                 }
@@ -163,7 +175,14 @@ private struct PasswordsContent: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear(perform: reload)
+        .onAppear {
+            if profileID == nil {
+                profileID = browserManager.windowRegistry?.activeWindow.flatMap { browserManager.tabs.profileID(of: $0) }
+                    ?? browserManager.tabs.profiles.first?.id
+            }
+            reload()
+        }
+        .onChange(of: profileID) { reload() }
         .sheet(isPresented: $adding) { LoginEditor(host: "", username: "", password: "", isNew: true) { save($0, $1, $2) } }
         .sheet(item: $editing) { login in
             LoginEditor(host: login.host, username: login.username, password: vault.password(host: login.host, username: login.username) ?? "", isNew: false) { save($0, $1, $2) }
