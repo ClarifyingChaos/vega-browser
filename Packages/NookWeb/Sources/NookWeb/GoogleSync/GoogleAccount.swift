@@ -14,11 +14,31 @@ import Security
 
 @MainActor @Observable
 public final class GoogleAccount {
-    public static let shared = GoogleAccount()
+    /// The first profile's account.
+    public static let shared = GoogleAccount(profileID: nil)
 
-    public private(set) var email: String? = UserDefaults.standard.string(forKey: "fork.google.email")
+    // FORK: each profile signs in to its own Google account, as in Chrome.
+    private static var others: [UUID: GoogleAccount] = [:]
+    public static func forProfile(_ profileID: UUID?) -> GoogleAccount {
+        guard let profileID, !ProfileScope.isPrimary(profileID) else { return shared }
+        if let existing = others[profileID] { return existing }
+        let account = GoogleAccount(profileID: profileID)
+        others[profileID] = account
+        return account
+    }
+
+    private let suffix: String
+    private var emailKey: String { "fork.google.email" + suffix }
+    private var service: String { "com.vega.browser.google" + suffix }
+
+    private init(profileID: UUID?) {
+        suffix = ProfileScope.suffix(for: profileID)
+        email = UserDefaults.standard.string(forKey: "fork.google.email" + suffix)
+    }
+
+    public private(set) var email: String?
     public private(set) var isSigningIn = false
-    public var isSignedIn: Bool { email != nil && Self.loadRefreshToken() != nil }
+    public var isSignedIn: Bool { email != nil && loadRefreshToken() != nil }
     /// False in a build without a Google client: the sign-in button says so instead of failing.
     public var isAvailable: Bool { GoogleOAuthConfig.load() != nil }
 
@@ -38,19 +58,19 @@ public final class GoogleAccount {
         let code = try await server.code()
         let tokens = try await GoogleOAuth.exchange(code: code, config: config, port: port, verifier: pkce.verifier)
         guard let refresh = tokens.refresh else { throw GoogleOAuth.OAuthError.badResponse }
-        Self.saveRefreshToken(refresh)
+        saveRefreshToken(refresh)
         access = tokens
         email = tokens.email
-        UserDefaults.standard.set(tokens.email, forKey: "fork.google.email")
+        UserDefaults.standard.set(tokens.email, forKey: emailKey)
     }
 
     public func cancelSignIn() { loopback?.cancel() }
 
     public func signOut() {
-        Self.deleteRefreshToken()
+        deleteRefreshToken()
         access = nil
         email = nil
-        UserDefaults.standard.removeObject(forKey: "fork.google.email")
+        UserDefaults.standard.removeObject(forKey: emailKey)
     }
 
     /// A store for the sync code, or nil when nobody is signed in.
@@ -61,26 +81,25 @@ public final class GoogleAccount {
 
     private func accessToken() async throws -> String {
         if let access, access.expires > Date() { return access.access }
-        guard let config = GoogleOAuthConfig.load(), let refresh = Self.loadRefreshToken() else { throw GoogleOAuth.OAuthError.notConfigured }
+        guard let config = GoogleOAuthConfig.load(), let refresh = loadRefreshToken() else { throw GoogleOAuth.OAuthError.notConfigured }
         let fresh = try await GoogleOAuth.refresh(refresh, config: config)
         access = fresh
         return fresh.access
     }
 
-    private static let service = "com.vega.browser.google"
-    private static func loadRefreshToken() -> String? {
+    private func loadRefreshToken() -> String? {
         let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
                                 kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
         var r: CFTypeRef?
         guard SecItemCopyMatching(q as CFDictionary, &r) == errSecSuccess, let d = r as? Data else { return nil }
         return String(data: d, encoding: .utf8)
     }
-    private static func saveRefreshToken(_ token: String) {
+    private func saveRefreshToken(_ token: String) {
         deleteRefreshToken()
         SecItemAdd([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
                     kSecValueData as String: Data(token.utf8), kSecAttrLabel as String: "Vega Google Account"] as CFDictionary, nil)
     }
-    private static func deleteRefreshToken() {
+    private func deleteRefreshToken() {
         SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service] as CFDictionary)
     }
 }

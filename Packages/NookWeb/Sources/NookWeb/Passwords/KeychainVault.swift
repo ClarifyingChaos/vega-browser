@@ -34,7 +34,7 @@ public final class KeychainVault: PasswordVault {
     }
 
     // FORK: each profile keeps its own passwords, as in Chrome.
-    private static let primaryKey = "fork.passwords.primaryProfile"
+    private static let primaryKey = ProfileScope.primaryKey
     nonisolated(unsafe) private static var vaults: [UUID: KeychainVault] = [:]
 
     /// The profile that owns the passwords saved before profiles had their own. Set once, on the first launch
