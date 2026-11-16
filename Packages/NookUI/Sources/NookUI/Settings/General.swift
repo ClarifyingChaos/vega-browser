@@ -257,6 +257,7 @@ private extension SyncCoordinator.Status {
 private struct SyncSection: View {
     @State private var sync = SyncCoordinator.shared
     @State private var askingPassphrase = false
+    @State private var changingPassphrase = false
 
     private var detail: String {
         switch sync.status {
@@ -288,10 +289,19 @@ private struct SyncSection: View {
             if sync.isEnabled {
                 Toggle("Sync passwords", isOn: Binding(
                     get: { sync.passwordsEnabled },
-                    set: { on in if on { askingPassphrase = true } else { sync.disablePasswords() } }
+                    // Back on with the key this Mac kept; the passphrase is asked only when that key no longer fits.
+                    set: { on in
+                        if on { Task { if await !sync.resumePasswords() { askingPassphrase = true } } }
+                        else { sync.disablePasswords() }
+                    }
                 ))
-                if sync.passwordsEnabled, let line = sync.passwordStatus {
-                    Text(line).font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                if sync.passwordsEnabled {
+                    HStack {
+                        Text(sync.passwordStatus ?? "Sealed with your sync passphrase before it leaves this Mac.")
+                            .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Change Passphrase\u{2026}") { changingPassphrase = true }
+                    }
                 }
                 HStack {
                     Text(detail)
@@ -308,7 +318,8 @@ private struct SyncSection: View {
             if !sync.isEnabled { Text(detail) }
             else if !sync.passwordsEnabled { Text("Passwords sync end to end encrypted with a passphrase only you know. iCloud never sees them.") }
         }
-        .sheet(isPresented: $askingPassphrase) { PassphraseSheet(sync: sync) }
+        .sheet(isPresented: $askingPassphrase) { PassphraseSheet(sync: sync, changing: false) }
+        .sheet(isPresented: $changingPassphrase) { PassphraseSheet(sync: sync, changing: true) }
     }
 }
 
@@ -351,36 +362,71 @@ private struct GoogleRow: View {
     }
 }
 
-/// Asks for the sync passphrase: the first Mac creates it, every other Mac enters the same one.
+/// The sync passphrase: the first Mac creates it, every other Mac enters the same one, and any Mac can change it.
 private struct PassphraseSheet: View {
     let sync: SyncCoordinator
+    /// Changing the passphrase of a sync that is already on, rather than turning it on.
+    let changing: Bool
     @Environment(\.dismiss) private var dismiss
     @State private var passphrase = ""
     @State private var error: String?
     @State private var working = false
+    @State private var copied = false
+    /// Whether another Mac already chose it: nil while the sync folder is being read or when it can't be.
+    @State private var exists: Bool?
+    @State private var checked = false
+
+    /// Entering the one another Mac chose, as opposed to choosing one.
+    private var entering: Bool { !changing && exists == true }
+
+    private var title: String {
+        changing ? "Change Sync Passphrase" : entering ? "Enter Sync Passphrase" : exists == false ? "Create Sync Passphrase" : "Sync Passphrase"
+    }
+
+    private var footer: String {
+        if changing { return "Your other Macs will ask for the new passphrase. Vega can't show it again, so keep it somewhere safe, like your Passwords app." }
+        if entering { return "Enter the passphrase you chose on your other Mac. On that Mac, Change Passphrase\u{2026} sets a new one if you don't have it." }
+        if checked && exists == nil { return "Vega couldn't reach your sync folder to see whether another Mac has a passphrase. If one does, enter the same one here." }
+        return "Enter this passphrase on your other Macs to sync passwords with them. Vega can't show it again, so keep it somewhere safe, like your Passwords app."
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             Form {
                 Section {
-                    SecureField("Passphrase", text: $passphrase)
+                    HStack {
+                        TextField("Passphrase", text: $passphrase)
+                            .font(.body.monospaced())
+                            .onChange(of: passphrase) { copied = false }
+                        if !entering {
+                            Button("Suggest") { passphrase = PasswordSyncMeta.suggestedPassphrase() }
+                        }
+                        Button(copied ? "Copied" : "Copy") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(passphrase, forType: .string)
+                            copied = true
+                        }
+                        .disabled(passphrase.isEmpty)
+                    }
                 } header: {
-                    Text("Sync Passphrase")
+                    Text(title)
                 } footer: {
-                    if let error { Text(error).foregroundStyle(.red) }
-                    else { Text("On your first Mac this creates the passphrase; on your other Macs enter the same one. It locks your passwords before they leave this Mac, so it can't be recovered: write it down.") }
+                    if let error { Text(error).foregroundStyle(.red) } else { Text(footer) }
                 }
             }
             .formStyle(.grouped)
             HStack {
-                if working { ProgressView().controlSize(.small) }
+                if working || (!checked && !changing) { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
-                Button("Turn On") {
+                Button(changing ? "Change" : "Turn On") {
                     working = true
                     Task {
-                        do { try await sync.enablePasswords(passphrase: passphrase); dismiss() }
-                        catch { self.error = error.localizedDescription }
+                        do {
+                            if changing { try await sync.changePassphrase(to: passphrase) }
+                            else { try await sync.enablePasswords(passphrase: passphrase) }
+                            dismiss()
+                        } catch { self.error = error.localizedDescription }
                         working = false
                     }
                 }
@@ -389,7 +435,12 @@ private struct PassphraseSheet: View {
             }
             .padding(NookDesign.Spacing.xl)
         }
-        .frame(width: 440)
+        .frame(width: 480)
+        .task {
+            guard !changing else { return }
+            exists = await sync.passphraseExists()
+            checked = true
+        }
     }
 }
 #endif

@@ -106,6 +106,17 @@ public struct PasswordSyncMeta: Codable, Equatable, Sendable {
         return (PasswordSyncMeta(salt: salt, iterations: iterations, check: try PasswordCrypto.seal(word, with: key)), key)
     }
 
+    /// True when `key` is the one this salt and passphrase make.
+    public func opens(with key: SymmetricKey) -> Bool { PasswordCrypto.open(check, with: key) == Self.word }
+
+    /// A strong passphrase that is easy to type on another Mac: three groups of six letters and digits, no
+    /// look-alikes (0/o, 1/l/i). About 93 bits of randomness.
+    public static func suggestedPassphrase() -> String {
+        let alphabet = Array("abcdefghjkmnpqrstuvwxyz23456789")
+        var rng = SystemRandomNumberGenerator()
+        return (0..<3).map { _ in String((0..<6).map { _ in alphabet.randomElement(using: &rng)! }) }.joined(separator: "-")
+    }
+
     /// The key when the passphrase is right, nil when it is not.
     public func key(for passphrase: String) -> SymmetricKey? {
         let key = PasswordCrypto.deriveKey(passphrase: passphrase, salt: salt, iterations: iterations)
