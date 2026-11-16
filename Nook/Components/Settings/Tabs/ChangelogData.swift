@@ -24,9 +24,22 @@ Easels, an AI chat that works with your own providers, and a floating chat.
 - **Your keys stay put.** An API key is only sent over https:// (or to this Mac), and keys stay on this Mac's Keychain, not in backups or other devices.
 - **Pages Ask Vega builds can't phone home.** They show text and web links only: no scripts, no remote images, no media, no file or app links. They are deleted after 30 days.
 - **Easel cards** only open web addresses, and their images can't point outside the Easels folder.
-- **Model tools still ask first.** Opening pages or tabs for you asks for approval unless you chose Allow All for that chat; private windows never use tools.
+- **Model tools ask in plain words.** "Let Vega's AI open google.com in a new tab?" with Don't Allow, Allow Once and Allow for This Chat: no code shown. Allow for This Chat still asks again before the AI opens a site it hasn't opened yet, and before it shows you a page it wrote. Private windows never use tools.
+- **You can see what leaves your Mac.** The chat header says whether the page stays on this Mac or is shared with your provider, and each provider has a switch to stop sending the page. Private windows never send a page.
+- **Synced open tabs are sealed.** With password sync on, the list of open tabs is encrypted with your passphrase and keeps full addresses; without it, it's plain text with no query strings.
+- **Clear on quit.** Settings › Privacy can erase cookies, site data and history each time you quit.
+- **Hide your address from WebRTC.** An option in Settings › Privacy makes calls connect through a relay, so a site can't read your network address.
+- **Leaked password check.** Passwords › ⋯ › Check if Leaked asks Have I Been Pwned using only the first 5 characters of the password's hash.
+- **Easel pictures** are limited to 25 MB and scaled down.
 - **Cleaner summaries.** Summarize my tabs sends addresses without query strings, and skips the text of sign-in pages.
 - **Synced and shared tabs** drop query strings and logins from addresses. Opening a shared space adds it without opening any page.
+
+### Ad blocking
+- **Pop-up ads.** Ad scripts that open a window on any click, whether with `window.open` or by clicking a hidden link, are stopped. A window to another site opens only for the link you actually clicked, or a sign-in, payment or share window (Share buttons for X, Facebook, WhatsApp and the like still work); same-site windows still open. Turn it off in Settings › Privacy › Pop-ups (applies after a restart).
+- **Brave's lists.** Brave Unbreak (the rules for streaming sites, including their daily-changing ad domains), Brave Specific, Brave Social, Brave First Party and Brave's cookie-notice list are now on by default, along with a current malware list. A test of Brave's generic ad-path rules blocks in Vega.
+- **Quiet blocking, like Brave.** An ad a page tries to open or send you to is dropped without a word: no "Vega blocked this page" card and no empty tab. The card still shows for an address you asked for.
+- **Ads laid over videos.** A transparent link to another site covering the page is ignored and removed, so the click reaches the player.
+- When the lists are bigger than Vega's rule limit, hiding rules are cut before blocking rules, so more ads and trackers are stopped.
 
 ### Fixes
 - API keys save with Save or Return; typing no longer drops the field's focus.
