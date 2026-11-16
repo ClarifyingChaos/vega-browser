@@ -6,6 +6,22 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.7.6 (2026-11-16)
+
+### Privacy and security
+- Filling a saved password asks for Touch ID or your Mac password first, as Apple's Passwords does. One approval covers the same site for a minute, so a sign-in that fills a username and then a password asks once.
+
+- Updates no longer make the Keychain ask about your saved passwords again. Releases are signed with a certificate (an ad-hoc signature is a new identity every build, so every approval was lost). You approve each item once more after this update, then not again.
+- Saved passwords live in new Keychain items owned by Vega's stable signature, so the Keychain no longer asks before using them. A password saved by an older build is moved over the first time it is used (one last Keychain dialog for it, plain Allow is enough). Importing the same passwords again moves them all with no dialog.
+- Password sync never shows a dialog and no longer reads every saved password at launch. It reads them only when one changed, and a password the Keychain would ask about waits until you have used it.
+
+### Changes
+- Every floating page has one look: links from other apps and sign-in pop-ups open in the same card as Peek, over the window you're in. The small separate window is kept for when no Vega window is open.
+- Peek's Close, Open as Tab and Split buttons show their icons again.
+- Peek's Open as Tab button asks which space to open the page in: the window's own space first, then your other spaces.
+- Filling a saved login now fills the username too on sites that keep it outside the password's form.
+- Saved passwords are offered under a login field, including a username-only first step. The prompts use Apple's wording: Save Password, Update Password, Not Now, Never for This Website.
+
 ## Vega 1.7.5 (2026-11-16)
 
 ### Fixes
