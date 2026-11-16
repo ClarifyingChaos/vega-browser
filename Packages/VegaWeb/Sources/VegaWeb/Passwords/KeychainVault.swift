@@ -35,6 +35,13 @@ public final class KeychainVault: PasswordVault {
         data.flatMap { String(data: $0, encoding: .utf8) }.flatMap(Double.init).map(Date.init(timeIntervalSince1970:))
     }
 
+    @available(macOS, deprecated: 10.10, message: "the only switch for the file Keychain's access prompts")
+    public func quietly<T>(_ body: () -> T) -> T {
+        SecKeychainSetUserInteractionAllowed(false)
+        defer { SecKeychainSetUserInteractionAllowed(true) }
+        return body()
+    }
+
     public func all() -> [SavedLogin] {
         var query = base()
         query[kSecReturnAttributes as String] = true

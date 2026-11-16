@@ -78,7 +78,7 @@ public final class GoogleAccount {
     private static func saveRefreshToken(_ token: String) {
         deleteRefreshToken()
         SecItemAdd([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                    kSecValueData as String: Data(token.utf8), kSecAttrLabel as String: "Vega Google sign-in"] as CFDictionary, nil)
+                    kSecValueData as String: Data(token.utf8), kSecAttrLabel as String: "Vega Google Account"] as CFDictionary, nil)
     }
     private static func deleteRefreshToken() {
         SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service] as CFDictionary)

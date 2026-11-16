@@ -82,7 +82,7 @@ public final class SyncCoordinator {
             UserDefaults.standard.set(newValue.rawValue, forKey: Self.backendKey)
             // Another place is another set of files: start each side from scratch.
             lastWritten = nil
-            lastPasswordFingerprint = nil
+            forgetPasswordFingerprint()
             if isEnabled { begin() }
         }
     }
@@ -112,8 +112,21 @@ public final class SyncCoordinator {
         }
     }
 
-    public var passwordsEnabled: Bool { UserDefaults.standard.bool(forKey: Self.passwordsKey) && Self.loadKey() != nil }
-    @ObservationIgnored private var lastPasswordFingerprint: [String: Date]?
+    // The switch only: reading the key from the Keychain here would ask for it each time Settings looked.
+    public var passwordsEnabled: Bool { UserDefaults.standard.bool(forKey: Self.passwordsKey) }
+
+    // What the last written password snapshot covered. Kept across launches: with it only in memory, every launch
+    // read every saved password to write a snapshot again, and the Keychain asked about each one.
+    private static let fingerprintKey = "fork.sync.passwordsFingerprint"
+    @ObservationIgnored private var forcePasswordWrite = false
+    private func forgetPasswordFingerprint() {
+        UserDefaults.standard.removeObject(forKey: Self.fingerprintKey)
+        forcePasswordWrite = true
+    }
+    private static func digest(_ light: [PasswordRecord]) -> String {
+        let lines = light.map { "\($0.key)\($0.deleted ? "\u{0}" : "")|\(Int($0.modified.timeIntervalSince1970))" }.sorted().joined(separator: "\n")
+        return SHA256.hash(data: Data(lines.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 
     // MARK: - Password sync
 
@@ -135,7 +148,7 @@ public final class SyncCoordinator {
         }
         Self.saveKey(key)
         UserDefaults.standard.set(true, forKey: Self.passwordsKey)
-        lastPasswordFingerprint = nil
+        forgetPasswordFingerprint()
         await tick()
     }
 
@@ -143,7 +156,7 @@ public final class SyncCoordinator {
         UserDefaults.standard.set(false, forKey: Self.passwordsKey)
         Self.deleteKey()
         passwordStatus = nil
-        lastPasswordFingerprint = nil
+        forgetPasswordFingerprint()
     }
 
     private func syncPasswords(store place: any SyncBlobStore) async {
@@ -157,14 +170,26 @@ public final class SyncCoordinator {
             var changed = 0
             for snapshot in others {
                 let changes = PasswordMerge.changes(applying: snapshot.records, to: light)
-                if !changes.isEmpty { vault.apply(changes); changed += changes.count }
+                if !changes.isEmpty { vault.quietly { vault.apply(changes) }; changed += changes.count }
                 light = vault.all().map { PasswordRecord(host: $0.host, username: $0.username, password: "", modified: $0.modified) } + vault.tombstones()
             }
             // Own snapshot (with passwords) only when a login or a deletion changed since the last write.
-            let fingerprint = Dictionary(light.map { ($0.key + ($0.deleted ? "\u{0}" : ""), $0.modified) }, uniquingKeysWith: { a, _ in a })
-            if fingerprint != lastPasswordFingerprint {
-                try await store.write(PasswordSnapshot(deviceID: deviceID, records: vault.records()), key: key)
-                lastPasswordFingerprint = fingerprint
+            let fingerprint = Self.digest(light)
+            let stored = UserDefaults.standard.string(forKey: Self.fingerprintKey)
+            if stored == nil && !forcePasswordWrite {
+                // First run with this memory: the snapshot an earlier version wrote still stands, so read nothing.
+                UserDefaults.standard.set(fingerprint, forKey: Self.fingerprintKey)
+            } else if fingerprint != stored || forcePasswordWrite {
+                // Without a single dialog: a password the Keychain would ask about is left out for now, and
+                // goes in once the person has used it (filled or opened it) and said Always Allow.
+                let records = vault.quietly { vault.records() }
+                try await store.write(PasswordSnapshot(deviceID: deviceID, records: records), key: key)
+                if records.filter({ !$0.deleted }).count == light.filter({ !$0.deleted }).count {
+                    UserDefaults.standard.set(fingerprint, forKey: Self.fingerprintKey)
+                    forcePasswordWrite = false
+                } else {
+                    forcePasswordWrite = true
+                }
             }
             passwordStatus = changed > 0 ? "Passwords synced · \(changed) updated" : "Passwords synced"
         } catch {
@@ -174,21 +199,27 @@ public final class SyncCoordinator {
 
     // The derived key, in this Mac's Keychain so the passphrase is asked once.
     private static let keyService = "com.vega.browser.syncKey"
+    // Read from the Keychain once per launch, not on every sync round.
+    nonisolated(unsafe) private static var cachedKey: SymmetricKey?
     private static func loadKey() -> SymmetricKey? {
+        if let cachedKey { return cachedKey }
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService,
                                     kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
         var result: CFTypeRef?
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
-        return SymmetricKey(data: data)
+        cachedKey = SymmetricKey(data: data)
+        return cachedKey
     }
     private static func saveKey(_ key: SymmetricKey) {
         deleteKey()
+        cachedKey = key
         let data = key.withUnsafeBytes { Data($0) }
         SecItemAdd([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService,
-                    kSecValueData as String: data, kSecAttrLabel as String: "Vega sync key",
+                    kSecValueData as String: data, kSecAttrLabel as String: "Vega Sync",
                     kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly] as CFDictionary, nil)
     }
     private static func deleteKey() {
+        cachedKey = nil
         SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService] as CFDictionary)
     }
 
