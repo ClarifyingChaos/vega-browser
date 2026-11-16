@@ -112,8 +112,9 @@ public final class SyncCoordinator {
         }
     }
 
-    // The switch only: reading the key from the Keychain here would ask for it each time Settings looked.
-    public var passwordsEnabled: Bool { UserDefaults.standard.bool(forKey: Self.passwordsKey) }
+    // The switch only, stored so Settings redraws when it changes (a computed read of UserDefaults left the toggle
+    // showing On after it was turned off, so the next click turned it back on and asked for the passphrase).
+    public private(set) var passwordsEnabled: Bool = UserDefaults.standard.bool(forKey: SyncCoordinator.passwordsKey)
 
     // What the last written password snapshot covered. Kept across launches: with it only in memory, every launch
     // read every saved password to write a snapshot again, and the Keychain asked about each one.
@@ -148,13 +149,48 @@ public final class SyncCoordinator {
         }
         Self.saveKey(key)
         UserDefaults.standard.set(true, forKey: Self.passwordsKey)
+        passwordsEnabled = true
         forgetPasswordFingerprint()
         await tick()
     }
 
+    /// True when another Mac already chose the passphrase (this Mac must enter the same one), false when this
+    /// Mac would create it, nil when the sync folder can't be read.
+    public func passphraseExists() async -> Bool? {
+        guard isEnabled, let place = currentStore() else { return nil }
+        return (try? await PasswordSyncStore(store: place.store).meta()).map { $0 != nil }
+    }
+
+    /// A new passphrase for every Mac: a new salt and key, this Mac's passwords sealed again with it. The other
+    /// Macs notice the change and ask for the new passphrase.
+    public func changePassphrase(to passphrase: String) async throws {
+        guard isEnabled, passwordsEnabled else { throw PasswordSyncError.syncOff }
+        guard let place = currentStore() else { throw PasswordSyncError.noFolder }
+        guard passphrase.count >= 8 else { throw PasswordSyncError.emptyPassphrase }
+        let made = try await Task.detached { try PasswordSyncMeta.create(passphrase: passphrase) }.value
+        try await PasswordSyncStore(store: place.store).writeMeta(made.meta)
+        Self.saveKey(made.key)
+        forgetPasswordFingerprint()
+        await tick()
+    }
+
+    /// Turns password sync back on with the key this Mac kept, without asking, when that key still opens the
+    /// sync folder's passphrase. False when it has to ask: no key, a folder with no passphrase yet, or a
+    /// passphrase changed on another Mac.
+    public func resumePasswords() async -> Bool {
+        guard isEnabled, let place = currentStore(), let key = Self.loadKey(),
+              let meta = try? await PasswordSyncStore(store: place.store).meta(), meta.opens(with: key) else { return false }
+        UserDefaults.standard.set(true, forKey: Self.passwordsKey)
+        passwordsEnabled = true
+        forgetPasswordFingerprint()
+        await tick()
+        return true
+    }
+
+    /// Stops syncing passwords. The key stays in this Mac's Keychain so turning it on again doesn't ask.
     public func disablePasswords() {
         UserDefaults.standard.set(false, forKey: Self.passwordsKey)
-        Self.deleteKey()
+        passwordsEnabled = false
         passwordStatus = nil
         forgetPasswordFingerprint()
     }
@@ -164,6 +200,11 @@ public final class SyncCoordinator {
         let store = PasswordSyncStore(store: place)
         let vault = PasswordPrompter.shared.vault
         do {
+            // The passphrase was changed on another Mac: say so instead of syncing with a key nobody else uses.
+            if let meta = try await store.meta(), !meta.opens(with: key) {
+                passwordStatus = "Your sync passphrase was changed on another Mac. Turn Sync Passwords off and on, and enter the new one."
+                return
+            }
             let (others, _) = try await store.readOthers(excluding: deviceID, key: key)
             // Merge decisions need only each login's key and time, so no password is read for them.
             var light = vault.all().map { PasswordRecord(host: $0.host, username: $0.username, password: "", modified: $0.modified) } + vault.tombstones()

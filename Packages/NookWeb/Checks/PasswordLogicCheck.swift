@@ -84,6 +84,20 @@ struct PasswordLogicCheck {
         precondition(PasswordCrypto.open(sealed, with: PasswordCrypto.deriveKey(passphrase: "x", salt: made.meta.salt, iterations: 1_000)) == nil)
         var tampered = sealed; tampered[tampered.count - 1] ^= 1
         precondition(PasswordCrypto.open(tampered, with: made.key) == nil, "altered data is rejected")
+
+        // A changed passphrase: the old key no longer opens the new salt, so the other Macs can tell.
+        precondition(made.meta.opens(with: made.key), "the key opens its own salt")
+        let changed = try! PasswordSyncMeta.create(passphrase: "correct horse", iterations: 1_000)
+        precondition(!changed.meta.opens(with: made.key), "same words, new salt: the old key is noticed as stale")
+
+        // Suggested passphrases: three groups of six, no look-alike characters, never the same twice.
+        let suggested = (0..<50).map { _ in PasswordSyncMeta.suggestedPassphrase() }
+        for p in suggested {
+            let groups = p.split(separator: "-")
+            precondition(groups.count == 3 && groups.allSatisfy { $0.count == 6 }, "shape: \(p)")
+            precondition(p.allSatisfy { "abcdefghjkmnpqrstuvwxyz23456789-".contains($0) }, "no look-alikes: \(p)")
+        }
+        precondition(Set(suggested).count == suggested.count, "every suggestion is new")
         print("PasswordLogicCheck passed")
     }
 }
