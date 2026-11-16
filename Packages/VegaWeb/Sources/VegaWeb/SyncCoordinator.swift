@@ -62,10 +62,10 @@ public final class SyncCoordinator {
     /// The tabs open on the other Macs, as of the last sync.
     public private(set) var otherMacsTabs: [OpenTabsSnapshot] = []
     /// Whether this Mac lists its open tabs (titles and addresses) in the sync folder for the others.
-    public var sharesOpenTabs: Bool {
-        get { UserDefaults.standard.bool(forKey: Self.openTabsKey) }
-        set {
-            UserDefaults.standard.set(newValue, forKey: Self.openTabsKey)
+    // Stored, not read from UserDefaults on each access, so the switches redraw when they change.
+    public var sharesOpenTabs: Bool = UserDefaults.standard.bool(forKey: SyncCoordinator.openTabsKey) {
+        didSet {
+            UserDefaults.standard.set(sharesOpenTabs, forKey: Self.openTabsKey)
             lastOpenTabs = nil
             if isEnabled { syncNow() }
         }
@@ -76,10 +76,10 @@ public final class SyncCoordinator {
     @ObservationIgnored private var lastWritten: SyncSnapshot?
     @ObservationIgnored private var observers: [Any] = []
 
-    public var backend: Backend {
-        get { Backend(rawValue: UserDefaults.standard.string(forKey: Self.backendKey) ?? "") ?? .iCloud }
-        set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: Self.backendKey)
+    public var backend: Backend = Backend(rawValue: UserDefaults.standard.string(forKey: SyncCoordinator.backendKey) ?? "") ?? .iCloud {
+        didSet {
+            guard backend != oldValue else { return }
+            UserDefaults.standard.set(backend.rawValue, forKey: Self.backendKey)
             // Another place is another set of files: start each side from scratch.
             lastWritten = nil
             forgetPasswordFingerprint()
@@ -104,11 +104,11 @@ public final class SyncCoordinator {
                            : "Sign in with Google to sync."
     }
 
-    public var isEnabled: Bool {
-        get { UserDefaults.standard.bool(forKey: Self.enabledKey) }
-        set {
-            UserDefaults.standard.set(newValue, forKey: Self.enabledKey)
-            newValue ? begin() : stop()
+    public var isEnabled: Bool = UserDefaults.standard.bool(forKey: SyncCoordinator.enabledKey) {
+        didSet {
+            guard isEnabled != oldValue else { return }
+            UserDefaults.standard.set(isEnabled, forKey: Self.enabledKey)
+            isEnabled ? begin() : stop()
         }
     }
 

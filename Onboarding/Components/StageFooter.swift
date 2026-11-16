@@ -20,7 +20,7 @@ struct StageFooter: View {
     var secondaryText: String {
         switch currentStage {
         case 0: return ""
-        case 1: return "Skip"
+        case 1, 2: return "Skip"
         default: return "Back"
         }
     }
@@ -33,7 +33,8 @@ struct StageFooter: View {
         } else {
             switch currentStage {
             case 0: return "Get Started"
-            case 1: return "Move your data"
+            case 1: return "Continue"
+            case 2: return "Move your data"
             default: return "Continue"
             }
         }
@@ -69,7 +70,7 @@ struct StageFooter: View {
             .disabled(isLoading)
             if !(currentStage == 0) {
                 Button {
-                    if currentStage == 1, let onSkip { onSkip() } else { onBack() }
+                    if currentStage == 1 || currentStage == 2, let onSkip { onSkip() } else { onBack() }
                 } label: {
                     Text(secondaryText)
                         .font(.system(size: 14, weight: .semibold))

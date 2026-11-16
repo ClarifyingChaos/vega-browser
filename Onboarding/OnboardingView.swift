@@ -32,7 +32,7 @@ struct OnboardingView: View {
                 .ignoresSafeArea()
 
             VStack {
-                StageIndicator(stages: 3, activeStage: currentStage)
+                StageIndicator(stages: 4, activeStage: currentStage)
                 Spacer()
                 stageView
                     .transition(.slideAndBlur)
@@ -40,7 +40,7 @@ struct OnboardingView: View {
                 if !showSafariImportFlow {
                     StageFooter(
                         currentStage: currentStage,
-                        totalStages: 3,
+                        totalStages: 4,
                         isLoading: isLoading,
                         onContinue: advance,
                         onBack: goBack,
@@ -83,25 +83,26 @@ struct OnboardingView: View {
         } else {
             switch currentStage {
             case 0: HelloStage()
-            case 1: ImportStage(selectedBrowser: $selectedBrowser)
-            case 2: FinalStage()
+            case 1: AccountStage()
+            case 2: ImportStage(selectedBrowser: $selectedBrowser)
+            case 3: FinalStage()
             default: EmptyView()
             }
         }
     }
 
     private func advance() {
-        guard currentStage < 3 else { return }
-        if currentStage == 2 {
+        guard currentStage < 4 else { return }
+        if currentStage == 3 {
             vegaSettings.didFinishOnboarding = true
             return
         }
 
-        if currentStage == 1 && selectedBrowser == .safari {
+        if currentStage == 2 && selectedBrowser == .safari {
             withAnimation(.easeInOut(duration: 0.25)) {
                 showSafariImportFlow = true
             }
-        } else if currentStage == 1 {
+        } else if currentStage == 2 {
             withAnimation(.easeInOut(duration: 0.25)) {
                 isLoading = true
             }
@@ -134,9 +135,10 @@ struct OnboardingView: View {
         }
     }
 
+    /// Skip moves past the sign-in step or the import step to the next one.
     private func skipImport() {
         withAnimation(.easeInOut(duration: 0.25)) {
-            currentStage = 2
+            currentStage += 1
         }
     }
 
