@@ -37,6 +37,18 @@ struct SyncTests {
         #expect(snapshot.items.map(\.id) == [myTab], "and only what is in it")
         #expect(!snapshot.items.contains { $0.id == theirTab })
 
+        // A space deleted when its profile was merged away still travels, so the other Mac drops it too; a deleted
+        // space of a profile that still exists does not (that profile's own account carries it).
+        let gone = UUID(), goneStore = UUID(), keptDeleted = UUID()
+        f.tree.createSpace(id: gone, name: "Old", icon: "o", accentHex: "#333", after: theirs, dataStoreID: goneStore, now: later)
+        f.tree.createSpace(id: keptDeleted, name: "Mine too", icon: "k", accentHex: "#444", after: gone, dataStoreID: otherStore, now: later)
+        _ = try f.tree.deleteSpace(gone, now: later)
+        _ = try f.tree.deleteSpace(keptDeleted, now: later)
+        let withDeletions = SyncMerge.snapshot(of: f.tree, deviceID: macA, deviceName: "A", profile: store, now: later)
+        #expect(withDeletions.spaces.contains { $0.id == gone && $0.deletedAt != nil }, "the deletion of a merged-away space travels")
+        #expect(!withDeletions.spaces.contains { $0.id == keptDeleted }, "another live profile's deletion stays with it")
+        #expect(!withDeletions.spaces.contains { $0.id == theirs }, "and its live space still does")
+
         let everything = SyncMerge.snapshot(of: f.tree, deviceID: macA, deviceName: "A", now: later)
         #expect(everything.spaces.count == f.tree.spaces.count - (f.tree.spaces.values.filter(\.isAgent).count), "no profile asked for: every space, as before")
     }

@@ -100,6 +100,8 @@ public final class SyncCoordinator {
     public private(set) var status: Status = .off
     /// Where password sync stands, shown under its switch.
     public private(set) var passwordStatus: String?
+    /// Set when settings from another Mac were applied and need a restart.
+    public internal(set) var settingsStatus: String?
     /// The tabs open on the other Macs, as of the last sync.
     public private(set) var otherMacsTabs: [OpenTabsSnapshot] = []
     /// Whether this Mac lists its open tabs (titles and addresses) in the sync folder for the others.
@@ -351,7 +353,7 @@ public final class SyncCoordinator {
         if !keepStatus { status = .off }
     }
 
-    private var deviceName: String { Host.current().localizedName ?? "Mac" }
+    var deviceName: String { Host.current().localizedName ?? "Mac" }
 
     private func tick() async {
         guard isEnabled, let tabs else { return }
@@ -368,6 +370,7 @@ public final class SyncCoordinator {
             try await writeOwn(store: store)
             await writeProfileFile(store: store)
             await syncPasswords(store: store)
+            await syncSettings(store: store, own: own, deviceName: deviceName)
             await syncOpenTabs(store: store, tabs: tabs, own: own)
             // Names only: which devices have a snapshot in the store, so a failed sync can be told from an empty one.
             let present = (try? await store.list("devices").names) ?? []

@@ -77,6 +77,8 @@ struct AccountStage: View {
                                 // A new Mac signing in as its first profile takes the account's profile, not a second one.
                                 await ProfileAdoption.reconcileFirstProfile(tabs: browserManager.tabs)
                                 sync.backend = .google
+                                // Everything is shared by default: other Macs list this one's open tabs too.
+                                sync.sharesOpenTabs = true
                                 sync.isEnabled = true
                             } catch { self.error = error.localizedDescription }
                         }

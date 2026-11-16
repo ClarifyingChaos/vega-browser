@@ -349,6 +349,20 @@ private struct SyncSection: View {
                     Button("Sync Now") { sync.syncNow() }
                         .disabled(sync.status == .syncing || sync.status.isUnavailable)
                 }
+                // Settings from the other Mac arrive in the background and apply at the next launch.
+                if let line = sync.settingsStatus {
+                    HStack {
+                        Text(line).font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Restart Vega") {
+                            let configuration = NSWorkspace.OpenConfiguration()
+                            configuration.createsNewApplicationInstance = true
+                            NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
+                                DispatchQueue.main.async { NSApp.terminate(nil) }
+                            }
+                        }
+                    }
+                }
             }
         } header: {
             Text("Sync")
