@@ -32,6 +32,8 @@ class AIService {
     // Conversation state
     var messages: [ChatMessage] = []
     var isLoading: Bool = false
+    /// The running reply, so Stop can cancel it.
+    private var replyTask: Task<Void, Never>?
     var streamingText: String = ""
     var isExecutingTools: Bool = false
     var currentToolName: String? = nil
@@ -127,6 +129,14 @@ class AIService {
             }
         }
     }
+
+    /// Starts a reply that Stop can cancel.
+    func startMessage(_ text: String, windowState: BrowserWindowState, task: ChatTask = .chat) {
+        guard !isLoading else { return }
+        replyTask = Task { await sendMessage(text, windowState: windowState, task: task) }
+    }
+
+    func stop() { replyTask?.cancel() }
 
     func sendMessage(_ text: String, windowState: BrowserWindowState, task: ChatTask = .chat) async {
         guard !text.isEmpty, hasApiKey else { return }
@@ -228,6 +238,7 @@ class AIService {
                 // Execute tool calls
                 var toolResults: [AIToolResult] = []
                 for toolCall in response.toolCalls {
+                    try Task.checkCancellation()
                     currentToolName = availableTools.mcpToolsByFunctionName[toolCall.name]?.qualifiedName
                         ?? toolCall.name
                     let result = await executeToolCall(
@@ -277,6 +288,13 @@ class AIService {
             assistantMessage.usedWebSearch = config.webSearchEnabled && !response.citations.isEmpty
             messages.append(assistantMessage)
 
+        } catch where Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
+            isExecutingTools = false
+            currentToolName = nil
+            // Keep what had streamed in, marked as stopped
+            if !streamingText.isEmpty {
+                messages.append(ChatMessage(role: .assistant, content: streamingText, timestamp: Date()))
+            }
         } catch {
             isExecutingTools = false
             currentToolName = nil
@@ -291,6 +309,7 @@ class AIService {
 
         isLoading = false
         streamingText = ""
+        replyTask = nil
     }
 
     // MARK: - Clear Messages
