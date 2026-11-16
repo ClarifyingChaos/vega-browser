@@ -54,7 +54,7 @@ public struct SpacesSettingsView: View {
             } header: {
                 Text("Profiles")
             } footer: {
-                Text("Like profiles in Chrome: give each person their own, with their own spaces and sign-ins.")
+                Text("Give each person their own profile, with their own spaces, passwords and sign-ins.")
             }
 
             Section {

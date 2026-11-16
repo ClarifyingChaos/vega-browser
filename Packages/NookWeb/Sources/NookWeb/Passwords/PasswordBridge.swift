@@ -20,6 +20,8 @@ public struct PendingPassword: Identifiable, Equatable, Sendable {
     /// True when this site and user are saved with another password.
     public let isUpdate: Bool
     public let itemID: UUID
+    /// The profile whose vault it goes into.
+    public let profileID: UUID?
 }
 
 @MainActor @Observable
@@ -32,7 +34,13 @@ public final class PasswordPrompter {
     /// Opens the Passwords settings; the app sets it.
     public var openManager: (() -> Void)?
 
-    func offer(host: String, username: String, password: String, itemID: UUID) {
+    /// The vault of one profile. A vault put in place by a check stands in for every profile.
+    public func vault(for profileID: UUID?) -> PasswordVault {
+        vault === KeychainVault.shared ? KeychainVault.forProfile(profileID) : vault
+    }
+
+    func offer(host: String, username: String, password: String, itemID: UUID, profileID: UUID?) {
+        let vault = vault(for: profileID)
         let settings = PasswordSettings.shared
         guard settings.offerToSave, !settings.isNeverSaved(host), !password.isEmpty else { return }
         // Compared without a dialog. If the Keychain won't hand it over quietly, skip the offer rather than ask:
@@ -42,7 +50,7 @@ public final class PasswordPrompter {
         let known = vault.all().contains { $0.host == PasswordHosts.normalized(host) && $0.username == username }
         if saved == nil && known { return }
         pending = PendingPassword(host: PasswordHosts.normalized(host), username: username, password: password,
-                                  isUpdate: saved != nil, itemID: itemID)
+                                  isUpdate: saved != nil, itemID: itemID, profileID: profileID)
         expiry?.cancel()
         expiry = Task { [weak self] in
             try? await Task.sleep(for: .seconds(120))
@@ -52,7 +60,7 @@ public final class PasswordPrompter {
 
     public func savePending() {
         guard let p = pending else { return }
-        vault.save(host: p.host, username: p.username, password: p.password)
+        vault(for: p.profileID).save(host: p.host, username: p.username, password: p.password)
         dismiss()
     }
 
@@ -96,24 +104,27 @@ public final class PasswordBridge: NSObject, WKScriptMessageHandlerWithReply {
               PasswordHosts.isUsable(scheme: origin.protocol, host: origin.host) else { return replyHandler(nil, nil) }
         let host = origin.host
         let prompter = PasswordPrompter.shared
+        // Each profile fills from and saves to its own passwords.
+        let profileID = session.profile?.id
+        let vault = prompter.vault(for: profileID)
         switch op {
         case "list":
             guard PasswordSettings.shared.autofill else { return replyHandler([], nil) }
-            replyHandler(prompter.vault.logins(forPageHost: host).map { ["u": $0.username] }, nil)
+            replyHandler(vault.logins(forPageHost: host).map { ["u": $0.username] }, nil)
         case "fill":
             guard PasswordSettings.shared.autofill, let user = body["u"] as? String,
-                  let login = prompter.vault.logins(forPageHost: host).first(where: { $0.username == user }) else { return replyHandler(nil, nil) }
+                  let login = vault.logins(forPageHost: host).first(where: { $0.username == user }) else { return replyHandler(nil, nil) }
             // The password leaves the Keychain only after Touch ID or the Mac's password.
             Task { @MainActor in
                 guard await PasswordGate.shared.allows(host: login.host) else { return replyHandler(nil, nil) }
-                replyHandler(prompter.vault.password(host: login.host, username: login.username), nil)
+                replyHandler(vault.password(host: login.host, username: login.username), nil)
             }
         case "manage":
             prompter.openManager?()
             replyHandler(nil, nil)
         case "submit":
             if let user = body["u"] as? String, let secret = body["p"] as? String {
-                prompter.offer(host: host, username: user, password: secret, itemID: session.itemID)
+                prompter.offer(host: host, username: user, password: secret, itemID: session.itemID, profileID: profileID)
             }
             replyHandler(nil, nil)
         default:
