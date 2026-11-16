@@ -56,9 +56,9 @@ extension TabsController {
         session(for: item.id)?.url ?? item.url
     }
 
-    /// The spaces a window pages through: a private window's own spaces, else every space.
+    /// The spaces a window pages through: a private window's own spaces, else the spaces of the window's profile.
     public func switchableSpaces(for window: BrowserWindowState) -> [SpaceRecord] {
-        window.privateTree?.orderedSpaces ?? orderedSpaces
+        window.privateTree?.orderedSpaces ?? spaces(ofProfile: profileID(of: window))
     }
 
     /// Tabs under a parent, counting inside folders at any depth.

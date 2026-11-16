@@ -1031,6 +1031,31 @@ class BrowserManager: ObservableObject {
         return window
     }
 
+    /// A new window for the same person as the window in front: it opens on that profile's space, not another's.
+    @discardableResult
+    func createWindowForActiveProfile() -> BrowserWindowState? {
+        let profile = windowRegistry?.activeWindow.flatMap { $0.isIncognito ? nil : tabs.profileID(of: $0) }
+        guard let window = createNewWindow() else { return nil }
+        if let profile, tabs.profileID(of: window) != profile,
+           let first = tabs.spaces(ofProfile: profile).first(where: { !$0.isAgent }) {
+            tabs.setSpace(first.id, in: window)
+        }
+        return window
+    }
+
+    /// FORK: the window of one profile, like Chrome's profile windows: an open one that shows that profile, else a
+    /// new window on the profile's first space.
+    func openWindow(forProfile storeID: UUID) {
+        if let existing = windowRegistry?.windows.values.first(where: { !$0.isIncognito && tabs.profileID(of: $0) == storeID }) {
+            activateBrowserWindow(existing)
+            return
+        }
+        guard let first = tabs.spaces(ofProfile: storeID).first(where: { !$0.isAgent }),
+              let window = createNewWindow() else { return }
+        tabs.setSpace(first.id, in: window)
+        activateBrowserWindow(window)
+    }
+
     /// Presents an explicitly chosen window without changing its browsing context.
     func activateBrowserWindow(_ window: BrowserWindowState) {
         windowRegistry?.setActive(window)

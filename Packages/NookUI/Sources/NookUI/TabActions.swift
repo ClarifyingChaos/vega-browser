@@ -27,6 +27,8 @@ import NookWeb
     func confirmSpaceDeletion(spaceName: String, tabCount: Int, isLastSpace: Bool, onDelete: @escaping () -> Void)
     /// Opens Settings on the Spaces tab.
     func openSpaceSettings()
+    /// A profile's own window (an open one, or a new one on its first space).
+    func openWindow(forProfile storeID: UUID)
     func hideTabClosureToast()
     var tabClosureToastCount: Int { get }
     /// The active space's accent, already published for the window.

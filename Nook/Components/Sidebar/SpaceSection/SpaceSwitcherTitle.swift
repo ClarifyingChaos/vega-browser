@@ -14,6 +14,7 @@ import NookUI
 
 struct SpaceSwitcherTitle: View {
     @Environment(TabsController.self) private var tabs
+    @EnvironmentObject private var browserManager: BrowserManager
     @Environment(BrowserWindowState.self) private var windowState
     @Environment(\.nookSettings) private var nookSettings
     @Environment(\.openSettings) private var openSettings
@@ -132,7 +133,7 @@ struct SpaceSwitcherTitle: View {
 
     @ViewBuilder
     private func menuContent(current: SpaceRecord) -> some View {
-        ForEach(tabs.orderedSpaces) { space in
+        ForEach(tabs.switchableSpaces(for: windowState)) { space in
             Button {
                 tabs.setSpace(space.id, in: windowState)
             } label: {
@@ -140,6 +141,18 @@ struct SpaceSwitcherTitle: View {
                     Label(space.name, nookIcon: "checkmark")
                 } else {
                     Text(space.name)
+                }
+            }
+        }
+        // Other people's profiles open in their own window, as in Chrome.
+        let others = windowState.isIncognito ? [] : tabs.profiles.filter { $0.id != tabs.profileID(of: windowState) }
+        if !others.isEmpty {
+            Divider()
+            Section("Profiles") {
+                ForEach(others) { profile in
+                    Button("Open \(profile.name)\u{2019}s Window", nookIcon: "person.crop.circle") {
+                        browserManager.openWindow(forProfile: profile.id)
+                    }
                 }
             }
         }
