@@ -21,7 +21,7 @@
 ## Install
 
 1. Download `Vega-X.Y.Z.dmg` from the [latest release](https://github.com/ClarifyingChaos/vega-browser/releases/latest) and drag Vega to Applications.
-2. Test builds aren't notarized yet, so the first open is blocked once: open Vega, then System Settings › Privacy & Security › **Open Anyway**.
+2. Vega isn't notarized yet, so the first open is blocked once: open Vega, then System Settings › Privacy & Security › **Open Anyway**.
 3. After that Vega updates itself (Vega › Check for Updates… checks now).
 
 Feedback and bugs: [Issues](https://github.com/ClarifyingChaos/vega-browser/issues).
@@ -29,11 +29,16 @@ Feedback and bugs: [Issues](https://github.com/ClarifyingChaos/vega-browser/issu
 ## Features
 
 - **Sidebar-first navigation**: vertical tabs, spaces, favorites and pinned tabs that stay out of your way, with a command palette that lists every open tab.
+- **Peek**: links from other apps, Option-clicked links and sign-in pop-ups open in a floating card over your window. Keep it as a tab in any space, or open it in split view.
+- **Easels**: a freeform canvas for notes, links and images.
+- **AI chat** that docks on the right or floats. It works with Apple Intelligence on your Mac, Gemini, OpenRouter, Ollama or any OpenAI-compatible provider (your own key, or a gateway like OmniRoute). It can summarize your tabs, browse for you, and asks before it acts, with Allow Once or Allow for This Chat and a Stop button.
+- **Passwords** in your Keychain. Saved logins are suggested under a login field, and Touch ID or your Mac password unlocks each fill. Import from Chrome or Safari, and check a password against known leaks without sending it anywhere.
+- **Sync** of spaces, favorites, open tabs and passwords between your Macs, through iCloud Drive or a Google account. Open tabs and passwords are encrypted end to end. No paid account needed.
+- **Sharing**: send a tab or a whole space as a file another Vega opens.
+- **Ad and tracker blocking like Brave**: Brave's and uBlock's lists, plus silent blocking of the pop-ups and click-hijacking overlays streaming sites use.
+- **Privacy switches**: clear website data when Vega quits, relay-only WebRTC so sites can't see your local IP, and a pop-up guard.
 - **Site Controls** with per-site settings: JavaScript, the mobile version of a site, automatic picture-in-picture.
 - **Picture-in-picture** that floats by default and docks in the sidebar when you drag it there. **Cast** to AirPlay, page **Capture**, and a **Media** grid of your downloads.
-- **Passwords** saved in your Keychain, filled only when you pick them, locked behind Touch ID, and importable from Chrome or Safari.
-- **Sync** of spaces, favorites and encrypted passwords between your Macs through iCloud Drive or a Google account. No paid account needed.
-- **Built-in ad and tracker blocking**, notes in the sidebar, and richer downloads.
 - **Settings that match macOS 27 System Settings**, Liquid Glass, Reduce Motion, Increase Contrast and VoiceOver support.
 - **Updates itself**: Vega › Check for Updates… or just keep it open.
 
@@ -73,7 +78,9 @@ open Vega.xcodeproj
 
 Vega builds for Apple Silicon only: the bundled adblock-rust framework ships an arm64 slice and nothing else. Xcode resolves the Swift packages on open.
 
-You’ll need to set your personal Development Team in Signing to build locally.
+You’ll need to set your personal Development Team in Signing to build locally. Building from the command line works unsigned; sign the result with `scripts/sign-local.sh path/to/Vega.app` before you run it, so the Keychain keeps its approvals across rebuilds (it uses the Apple Development certificate in your login Keychain).
+
+Run the checks with `python3 scripts/run-checks.py`.
 
 ## How Vega is kept
 
@@ -117,8 +124,8 @@ vega-browser/
 ├── Onboarding/                # First-run flow
 ├── VegaiOS/                   # iOS app target, not released yet
 ├── UI/                        # Shared buttons and controls
-├── docs/                      # Ad blocker architecture notes
-├── scripts/                   # Filter list refresh, scriptlet and redirect generators, checks
+├── docs/                      # Releasing, ad blocker architecture, Arc parity notes
+├── scripts/                   # Release, local signing, filter list refresh, scriptlet and redirect generators, checks
 └── assets/                    # Static assets
 ```
 
