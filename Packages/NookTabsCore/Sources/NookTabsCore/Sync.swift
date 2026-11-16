@@ -42,16 +42,23 @@ public enum SyncMerge {
         let cutoff = now.addingTimeInterval(-Double(tombstoneDays) * 86_400)
         func kept(_ deleted: Date?) -> Bool { deleted.map { $0 > cutoff } ?? true }
         let agentIDs = Set(tree.spaces.values.filter(\.isAgent).map(\.id))
+        // A profile's account carries its own spaces. It also carries the deletions of spaces whose profile no longer
+        // exists (merged or removed), or the other Mac keeps them for good: those belong to no account but this one.
+        let liveStores = Set(tree.spaces.values.filter { !$0.isAgent && $0.deletedAt == nil }.compactMap { tree.dataStoreID(for: $0.id) })
         let spaces = tree.spaces.values.filter { space in
             guard !space.isAgent, kept(space.deletedAt) else { return false }
-            return profile == nil || tree.dataStoreID(for: space.id) == profile
+            guard let profile else { return true }
+            // A deleted space no longer resolves through the tree, so read its own record.
+            let store = tree.dataStoreID(for: space.id) ?? space.dataStoreID ?? space.id
+            if store == profile { return true }
+            return space.deletedAt != nil && !liveStores.contains(store)
         }
         let inScope = Set(spaces.map(\.id))
         let items = tree.items.values.filter { item in
             guard kept(item.deletedAt), tree.scope(of: item.id) == .synced else { return false }
             guard let space = tree.spaceID(of: item.id) else { return false }
             if agentIDs.contains(space) { return false }
-            return profile == nil || inScope.contains(space)
+            return profile == nil || (inScope.contains(space) && tree.dataStoreID(for: space) == profile)
         }
         return SyncSnapshot(deviceID: deviceID, deviceName: deviceName, writtenAt: now,
                             spaces: spaces.sorted { $0.id.uuidString < $1.id.uuidString },
