@@ -39,6 +39,9 @@ extension BrowserModel: TabActions {
         present(.deleteSpace(name: spaceName, tabCount: tabCount, isLast: isLastSpace, onDelete: onDelete))
     }
 
+    /// One scene on iOS: profiles have no windows of their own.
+    func openWindow(forProfile storeID: UUID) {}
+
     func openSpaceSettings() {
         settingsPath = [.spaces]
         present(.settings)

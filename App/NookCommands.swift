@@ -157,9 +157,17 @@ struct NookCommands: Commands {
             }
             .modifier(dynamicShortcut(.newTab))
             Button("New Window") {
-                browserManager.createNewWindow()
+                browserManager.createWindowForActiveProfile()
             }
             .modifier(dynamicShortcut(.newWindow))
+            // FORK: one window per person, as in Chrome: a profile's own window.
+            if browserManager.tabs.profiles.count > 1 {
+                Menu("New Window for Profile") {
+                    ForEach(browserManager.tabs.profiles) { profile in
+                        Button(profile.name) { browserManager.openWindow(forProfile: profile.id) }
+                    }
+                }
+            }
             
             Button("New Incognito Window") {
                 browserManager.createIncognitoWindow()

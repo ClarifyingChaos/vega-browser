@@ -283,10 +283,23 @@ public final class TabsController {
 
     public var orderedSpaces: [SpaceRecord] { tree.orderedSpaces }
 
-    /// The spaces a window can move a tab to: its own temporary one when private, else all of them.
+    /// The spaces a window can move a tab to: its own temporary one when private, else its profile's.
     public func spaces(visibleIn window: BrowserWindowState?) -> [SpaceRecord] {
         guard let window else { return orderedSpaces }
-        return tree(owner(of: window)).orderedSpaces
+        if window.privateTree != nil { return tree(owner(of: window)).orderedSpaces }
+        return spaces(ofProfile: profileID(of: window))
+    }
+
+    // FORK: a window belongs to one person, like a Chrome profile window: the profile of the space it shows.
+    /// The profile (data store id) a regular window belongs to.
+    public func profileID(of window: BrowserWindowState) -> UUID? {
+        window.spaceID.flatMap { tree.dataStoreID(for: $0) }
+    }
+
+    /// The spaces of one profile, in order; every space when `storeID` is nil.
+    public func spaces(ofProfile storeID: UUID?) -> [SpaceRecord] {
+        guard let storeID else { return orderedSpaces }
+        return orderedSpaces.filter { tree.dataStoreID(for: $0.id) == storeID }
     }
 
     public func item(_ id: UUID) -> Item? {
