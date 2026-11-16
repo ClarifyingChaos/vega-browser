@@ -482,6 +482,8 @@ class BrowserManager: ObservableObject {
         self.compositorManager.browserManager = self
         self.splitManager.browserManager = self
         self.windowRegistry = windowRegistry
+        // FORK: "Passwords…" in the login suggestions opens Vega's own Passwords settings.
+        PasswordPrompter.shared.openManager = { [weak self] in self?.openSettings(tab: .passwords) }
         // Note: settingsManager will be injected later, so we skip initialization here
         self.tabs.history = self.historyManager
         self.tabs.webViews = self
