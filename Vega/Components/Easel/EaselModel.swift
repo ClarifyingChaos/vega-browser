@@ -110,14 +110,13 @@ final class EaselStore: ObservableObject {
         // A huge picture would fill the disk and memory: scale it so its long side is at most 2400 px.
         let longest = max(image.size.width, image.size.height)
         var image = image
-        if longest > 2400, let rep = image.representations.first {
+        if longest > 2400 {
             let scale = 2400 / longest
             let target = NSSize(width: image.size.width * scale, height: image.size.height * scale)
             let small = NSImage(size: target)
             small.lockFocus()
             image.draw(in: NSRect(origin: .zero, size: target), from: .zero, operation: .copy, fraction: 1)
             small.unlockFocus()
-            _ = rep
             image = small
         }
         guard let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
