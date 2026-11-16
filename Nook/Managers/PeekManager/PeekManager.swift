@@ -20,6 +20,8 @@ final class PeekManager {
     private(set) var windowId: UUID?
     /// The tab Peek was opened from; moving the page to a tab nests it there.
     @ObservationIgnored private var openerID: UUID?
+    /// Runs once when the page leaves Peek, closed or moved to a tab (a sign-in flow waits on it).
+    @ObservationIgnored private var closed: (() -> Void)?
 
     @ObservationIgnored weak var browserManager: BrowserManager?
 
@@ -48,11 +50,31 @@ final class PeekManager {
         openerID = source.itemID
     }
 
+    /// A page made elsewhere (a link from another app, a sign-in popup) in Peek over `window`, so every
+    /// floating page has one look. False when Peek is busy in that window: the caller shows it another way.
+    func present(_ page: PageSession, in window: BrowserWindowState, closed: (() -> Void)? = nil) -> Bool {
+        guard self.page == nil else { return false }
+        page.onClose = { [weak self] in self?.dismissPeek() }
+        self.page = page
+        windowId = window.id
+        openerID = nil
+        self.closed = closed
+        browserManager?.activateBrowserWindow(window)
+        return true
+    }
+
     func dismissPeek() {
         guard let page else { return }
         self.page = nil
         windowId = nil
         browserManager?.tabs.endDetached(page)
+        finish()
+    }
+
+    private func finish() {
+        let done = closed
+        closed = nil
+        done?()
     }
 
     func moveToSplitView() {
@@ -60,6 +82,7 @@ final class PeekManager {
         let previous = window.selectedItemID
         self.page = nil
         windowId = nil
+        finish()
         guard let itemID = browserManager.tabs.adopt(page, in: window, from: openerID) else { return }
         // The adopted page is selected; pair it with the page the window showed before.
         if let previous, previous != itemID {
@@ -72,6 +95,7 @@ final class PeekManager {
         guard let page, let browserManager, let window = page.detachedWindow else { return }
         self.page = nil
         windowId = nil
+        finish()
         browserManager.tabs.adopt(page, in: window, from: openerID)
     }
 

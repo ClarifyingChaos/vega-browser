@@ -38,6 +38,12 @@ final class ExternalMiniWindowManager {
     @discardableResult
     func present(_ page: PageSession, closed: (() -> Void)? = nil) -> Bool {
         guard let browserManager else { return false }
+        // One look for every floating page: Peek over the page's window when there is one and Peek is free there.
+        // The small window stays for when no browser window is open.
+        if let window = page.detachedWindow, browserManager.windowRegistry?.windows[window.id] != nil,
+           browserManager.peekManager.present(page, in: window, closed: closed) {
+            return true
+        }
         let tabs = browserManager.tabs
         let target = page.detachedWindow?.spaceID.flatMap { tabs.space($0) }
             ?? tabs.orderedSpaces.first
