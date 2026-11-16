@@ -35,8 +35,9 @@ enum PasswordScript {
 
       // The username field: the closest visible text-like input before the password field.
       const usernameFor = (pw) => {
-        const scope = pw.form || document;
-        const fields = Array.from(scope.querySelectorAll('input')).filter(isUserField);
+        // Many sites keep the username outside the password's <form>: look in the form first, then the page.
+        let fields = pw.form ? Array.from(pw.form.querySelectorAll('input')).filter(isUserField) : [];
+        if (!fields.length) fields = Array.from(document.querySelectorAll('input')).filter(isUserField);
         const before = fields.filter((el) => el.compareDocumentPosition(pw) & Node.DOCUMENT_POSITION_FOLLOWING);
         const byHint = before.concat(fields).find((el) => /user|email|login|name/i.test((el.autocomplete || '') + (el.name || '') + (el.id || '')));
         return byHint || before[before.length - 1] || null;
@@ -125,7 +126,7 @@ enum PasswordScript {
         rule.className = 'r';
         const manage = document.createElement('div');
         manage.className = 'i';
-        manage.innerHTML = '<div class="x"><div class="n">Passwords…</div></div>';
+        manage.innerHTML = '<div class="x"><div class="n">Passwords\u2026</div></div>';
         manage.addEventListener('mousedown', (e) => e.preventDefault());
         manage.addEventListener('click', (e) => { if (e.isTrusted) { ask({ op: 'manage' }); closeMenu(); } });
         box.append(rule, manage);

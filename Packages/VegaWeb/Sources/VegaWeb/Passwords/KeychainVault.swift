@@ -13,15 +13,21 @@ import Security
 
 public final class KeychainVault: PasswordVault {
     public static let shared = KeychainVault()
-    /// Marks Vega's items among everything else in the Keychain.
-    private static let domain = "com.vega.browser.passwords"
+    /// Marks Vega's items among everything else in the Keychain. The Keychain ties each item to the app build that
+    /// wrote it, and builds before signing was stable each had their own identity, so their items ask before every
+    /// read. New items go under `.v2`, written by the stable identity, and never ask; an old item is copied over the
+    /// first time it is read (or when the same login is saved or imported again) and is not read again.
+    private static let domain = "com.vega.browser.passwords.v2"
+    private static let legacyDomain = "com.vega.browser.passwords"
+    /// Old items the person deleted. An old item cannot be removed without a dialog, so it is hidden instead.
+    private static let hiddenKey = "fork.passwords.hiddenLegacy"
 
     private init() {}
 
-    private func base(host: String? = nil, username: String? = nil) -> [String: Any] {
+    private func base(host: String? = nil, username: String? = nil, domain: String = KeychainVault.domain) -> [String: Any] {
         var query: [String: Any] = [
             kSecClass as String: kSecClassInternetPassword,
-            kSecAttrSecurityDomain as String: Self.domain,
+            kSecAttrSecurityDomain as String: domain,
         ]
         if let host { query[kSecAttrServer as String] = PasswordHosts.normalized(host) }
         if let username { query[kSecAttrAccount as String] = username }
@@ -43,7 +49,14 @@ public final class KeychainVault: PasswordVault {
     }
 
     public func all() -> [SavedLogin] {
-        var query = base()
+        let current = items(in: Self.domain)
+        let have = Set(current.map(\.id))
+        let hidden = Set(UserDefaults.standard.stringArray(forKey: Self.hiddenKey) ?? [])
+        return current + items(in: Self.legacyDomain).filter { !have.contains($0.id) && !hidden.contains($0.id) }
+    }
+
+    private func items(in domain: String) -> [SavedLogin] {
+        var query = base(domain: domain)
         query[kSecReturnAttributes as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitAll
         var result: CFTypeRef?
@@ -59,7 +72,16 @@ public final class KeychainVault: PasswordVault {
     }
 
     public func password(host: String, username: String) -> String? {
-        var query = base(host: host, username: username)
+        if let secret = read(base(host: host, username: username)) { return secret }
+        // An old item: this read may ask once. Copy it under the stable identity so it never asks again.
+        guard let login = items(in: Self.legacyDomain).first(where: { $0.host == PasswordHosts.normalized(host) && $0.username == username }),
+              let secret = read(base(host: host, username: username, domain: Self.legacyDomain)) else { return nil }
+        save(host: host, username: username, password: secret, modified: login.modified)
+        return secret
+    }
+
+    private func read(_ query: [String: Any]) -> String? {
+        var query = query
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
@@ -83,6 +105,12 @@ public final class KeychainVault: PasswordVault {
 
     public func delete(host: String, username: String, at: Date) {
         SecItemDelete(base(host: host, username: username) as CFDictionary)
+        // An old copy cannot be deleted without a dialog: hide it instead.
+        if !items(in: Self.legacyDomain).filter({ $0.host == PasswordHosts.normalized(host) && $0.username == username }).isEmpty {
+            let id = SavedLogin(host: PasswordHosts.normalized(host), username: username).id
+            var hidden = UserDefaults.standard.stringArray(forKey: Self.hiddenKey) ?? []
+            if !hidden.contains(id) { hidden.append(id); UserDefaults.standard.set(hidden, forKey: Self.hiddenKey) }
+        }
         var all = storedTombstones().filter { $0.key != PasswordRecord(host: PasswordHosts.normalized(host), username: username, password: "", modified: at).key }
         all.append(PasswordRecord(host: PasswordHosts.normalized(host), username: username, password: "", modified: at, deleted: true))
         storeTombstones(all)
