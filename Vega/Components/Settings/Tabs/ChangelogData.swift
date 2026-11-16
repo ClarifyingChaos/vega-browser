@@ -6,6 +6,21 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.7.8 (2026-11-16)
+
+> **Passwords and sync now belong to a profile.** Your current profile keeps everything it had: its saved passwords, Google account, sync passphrase and sync switches. A profile you add gets its own, and its spaces and open tabs go only to its own account. Nothing of one profile reaches another's account.
+
+### New
+- **Sign in on first launch.** Onboarding now starts with signing in with Google (or iCloud Drive), which turns sync on, with switches for open tabs and passwords. Skip it and Settings › General › Account has the same sign-in.
+- **A window per person.** Each window belongs to one profile and shows only its spaces. The space menu lists other profiles with **Open …'s Window**, File › **New Window for Profile** opens one, New Window keeps the profile you're in, and a new profile opens in its own window.
+- **Each profile has its own passwords and sync.** Passwords, the Google account, the sync passphrase and the sync switches are per profile, and a profile's spaces and shared open tabs go only to its own account. Settings › General › Account and Sync follow the profile you pick. Your current profile keeps everything it had.
+- **Bring a profile to another Mac.** Add Profile › **Sign in with Google…** brings the profile that account holds from your other Mac, with its spaces, and turns its sync on. A fresh Mac that signs in on first launch takes the account's profile as its first one, so it doesn't end up with two.
+- **Profile pictures.** Click a profile's picture in Settings › Spaces to pick one of 12 pixel icons in Vega's style or choose a photo.
+- **Add and delete profiles.** Add Profile and Delete Profile in Settings › Spaces, so two people can share a Mac with their own spaces and sign-ins. Deleting a profile moves its spaces into the one you pick, which also merges two profiles into one.
+
+### Fixes
+- The sync switches (Sync my Macs, Sync with, Share open tabs) redraw as soon as they change.
+
 ## Vega 1.7.7 (2026-11-16)
 
 > **Password sync: set up your passphrase again if a Mac asks for one.** Each sync place (iCloud Drive or Google) has its own passphrase. If you switched places, the new one has none yet: on your first Mac turn on **Sync Passwords**, press **Suggest**, copy it, and enter the same passphrase on your other Macs. Forgot it? **Change Passphrase…** sets a new one from any Mac that's already syncing.
