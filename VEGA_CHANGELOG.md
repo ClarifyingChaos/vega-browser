@@ -7,6 +7,7 @@ What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's
 ### New
 - **Sign in on first launch.** Onboarding now starts with signing in with Google (or iCloud Drive), which turns sync on, with switches for open tabs and passwords. Skip it and Settings › General › Account has the same sign-in.
 - **A window per person.** Each window belongs to one profile and shows only its spaces. The space menu lists other profiles with **Open …'s Window**, File › **New Window for Profile** opens one, New Window keeps the profile you're in, and a new profile opens in its own window.
+- **Each profile has its own passwords and sync.** Passwords, the Google account, the sync passphrase and the sync switches are per profile, and a profile's spaces and shared open tabs go only to its own account. Settings › General › Account and Sync follow the profile you pick. Your current profile keeps everything it had.
 - **Profile pictures.** Click a profile's picture in Settings › Spaces to pick one of 12 pixel icons in Vega's style or choose a photo.
 - **Add and delete profiles.** Add Profile and Delete Profile in Settings › Spaces, so two people can share a Mac with their own spaces and sign-ins. Deleting a profile moves its spaces into the one you pick, which also merges two profiles into one.
 

@@ -564,7 +564,7 @@ struct NookCommands: Commands {
                 }
 
                 Menu("Tabs from Other Macs") {
-                    let sync = SyncCoordinator.shared
+                    let sync = SyncCoordinator.forProfile(windowRegistry.activeWindow.flatMap { browserManager.tabs.profileID(of: $0) })
                     if !sync.isEnabled || !sync.sharesOpenTabs {
                         Button("Turn On Sharing in Settings…") { browserManager.openSettings(tab: .general) }
                     } else if sync.otherMacsTabs.isEmpty {
