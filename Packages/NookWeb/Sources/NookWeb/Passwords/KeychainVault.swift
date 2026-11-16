@@ -12,7 +12,8 @@ import Foundation
 import Security
 
 public final class KeychainVault: PasswordVault {
-    public static let shared = KeychainVault()
+    /// The first profile's vault: it keeps the passwords saved before profiles had their own.
+    public static let shared = KeychainVault(domain: KeychainVault.domain, readsLegacy: true)
     /// Marks Vega's items among everything else in the Keychain. The Keychain ties each item to the app build that
     /// wrote it, and builds before signing was stable each had their own identity, so their items ask before every
     /// read. New items go under `.v2`, written by the stable identity, and never ask; an old item is copied over the
@@ -22,9 +23,40 @@ public final class KeychainVault: PasswordVault {
     /// Old items the person deleted. An old item cannot be removed without a dialog, so it is hidden instead.
     private static let hiddenKey = "fork.passwords.hiddenLegacy"
 
-    private init() {}
+    /// This vault's items: the first profile keeps `.v2`, every other profile gets `.v2.<profile id>`.
+    private let domain: String
+    /// Only the first profile has passwords from before `.v2` to move over.
+    private let readsLegacy: Bool
 
-    private func base(host: String? = nil, username: String? = nil, domain: String = KeychainVault.domain) -> [String: Any] {
+    private init(domain: String, readsLegacy: Bool) {
+        self.domain = domain
+        self.readsLegacy = readsLegacy
+    }
+
+    // FORK: each profile keeps its own passwords, as in Chrome.
+    private static let primaryKey = "fork.passwords.primaryProfile"
+    nonisolated(unsafe) private static var vaults: [UUID: KeychainVault] = [:]
+
+    /// The profile that owns the passwords saved before profiles had their own. Set once, on the first launch
+    /// that has profiles; later calls do nothing.
+    public static func claimPrimary(_ profileID: UUID) {
+        if UserDefaults.standard.string(forKey: primaryKey) == nil {
+            UserDefaults.standard.set(profileID.uuidString, forKey: primaryKey)
+        }
+    }
+
+    /// The vault of one profile: `shared` for the first profile (or when the profile is unknown), its own for any other.
+    public static func forProfile(_ profileID: UUID?) -> KeychainVault {
+        guard let profileID, UserDefaults.standard.string(forKey: primaryKey).flatMap(UUID.init(uuidString:)) != profileID,
+              UserDefaults.standard.string(forKey: primaryKey) != nil else { return shared }
+        if let vault = vaults[profileID] { return vault }
+        let vault = KeychainVault(domain: "\(Self.domain).\(profileID.uuidString)", readsLegacy: false)
+        vaults[profileID] = vault
+        return vault
+    }
+
+    private func base(host: String? = nil, username: String? = nil, domain: String? = nil) -> [String: Any] {
+        let domain = domain ?? self.domain
         var query: [String: Any] = [
             kSecClass as String: kSecClassInternetPassword,
             kSecAttrSecurityDomain as String: domain,
@@ -49,7 +81,8 @@ public final class KeychainVault: PasswordVault {
     }
 
     public func all() -> [SavedLogin] {
-        let current = items(in: Self.domain)
+        let current = items(in: domain)
+        guard readsLegacy else { return current }
         let have = Set(current.map(\.id))
         let hidden = Set(UserDefaults.standard.stringArray(forKey: Self.hiddenKey) ?? [])
         return current + items(in: Self.legacyDomain).filter { !have.contains($0.id) && !hidden.contains($0.id) }
@@ -74,7 +107,7 @@ public final class KeychainVault: PasswordVault {
     public func password(host: String, username: String) -> String? {
         if let secret = read(base(host: host, username: username)) { return secret }
         // An old item: this read may ask once. Copy it under the stable identity so it never asks again.
-        guard let login = items(in: Self.legacyDomain).first(where: { $0.host == PasswordHosts.normalized(host) && $0.username == username }),
+        guard readsLegacy, let login = items(in: Self.legacyDomain).first(where: { $0.host == PasswordHosts.normalized(host) && $0.username == username }),
               let secret = read(base(host: host, username: username, domain: Self.legacyDomain)) else { return nil }
         save(host: host, username: username, password: secret, modified: login.modified)
         return secret
@@ -106,7 +139,7 @@ public final class KeychainVault: PasswordVault {
     public func delete(host: String, username: String, at: Date) {
         SecItemDelete(base(host: host, username: username) as CFDictionary)
         // An old copy cannot be deleted without a dialog: hide it instead.
-        if !items(in: Self.legacyDomain).filter({ $0.host == PasswordHosts.normalized(host) && $0.username == username }).isEmpty {
+        if readsLegacy, !items(in: Self.legacyDomain).filter({ $0.host == PasswordHosts.normalized(host) && $0.username == username }).isEmpty {
             let id = SavedLogin(host: PasswordHosts.normalized(host), username: username).id
             var hidden = UserDefaults.standard.stringArray(forKey: Self.hiddenKey) ?? []
             if !hidden.contains(id) { hidden.append(id); UserDefaults.standard.set(hidden, forKey: Self.hiddenKey) }
@@ -118,19 +151,20 @@ public final class KeychainVault: PasswordVault {
 
     // MARK: - Remembered deletions (no secrets in them)
 
-    private static let tombstoneKey = "fork.passwords.tombstones"
+    /// Each vault remembers its own deletions; the first profile keeps the original key.
+    private var tombstoneKey: String { readsLegacy ? "fork.passwords.tombstones" : "fork.passwords.tombstones.\(domain)" }
 
     public func tombstones() -> [PasswordRecord] { PasswordMerge.pruned(storedTombstones()) }
 
     private func storedTombstones() -> [PasswordRecord] {
-        guard let data = UserDefaults.standard.data(forKey: Self.tombstoneKey) else { return [] }
+        guard let data = UserDefaults.standard.data(forKey: tombstoneKey) else { return [] }
         let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .millisecondsSince1970
         return (try? decoder.decode([PasswordRecord].self, from: data)) ?? []
     }
 
     private func storeTombstones(_ records: [PasswordRecord]) {
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .millisecondsSince1970
-        UserDefaults.standard.set(try? encoder.encode(PasswordMerge.pruned(records)), forKey: Self.tombstoneKey)
+        UserDefaults.standard.set(try? encoder.encode(PasswordMerge.pruned(records)), forKey: tombstoneKey)
     }
 
     private func forgetTombstone(host: String, username: String) {
