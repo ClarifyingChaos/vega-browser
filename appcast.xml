@@ -4,12 +4,12 @@
     <title>Vega</title>
     <link>https://github.com/ClarifyingChaos/vega-browser</link>
     <item>
-      <title>Vega 1.7.7</title>
-      <pubDate>Mon, 16 Nov 2026 10:45:06 +0000</pubDate>
-      <sparkle:version>132</sparkle:version>
-      <sparkle:shortVersionString>1.7.7</sparkle:shortVersionString>
+      <title>Vega 1.7.8</title>
+      <pubDate>Mon, 16 Nov 2026 11:53:56 +0000</pubDate>
+      <sparkle:version>133</sparkle:version>
+      <sparkle:shortVersionString>1.7.8</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>15.5</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/ClarifyingChaos/vega-browser/releases/download/vega-v1.7.7/Vega-1.7.7.dmg" type="application/octet-stream" sparkle:edSignature="IB6TtInI4VttWyBiB2wlL4ROyJwJF4kCLj0IVGacm6H8c5JVeQ08T04Cl1ZxM42s/K5FzL9nX51gnQjwXm8LAw==" length="20279384" />
+      <enclosure url="https://github.com/ClarifyingChaos/vega-browser/releases/download/vega-v1.7.8/Vega-1.7.8.dmg" type="application/octet-stream" sparkle:edSignature="mAzjVRvOL7b/bfjHW10L3vb+tnVyV1tH1FrlkUSXCVMsB/qrBLzDgrM8ezF8JBExYH5Iuz8eczvb4b+vpRCnBw==" length="20441040" />
     </item>
   </channel>
 </rss>
