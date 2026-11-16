@@ -279,11 +279,6 @@ class AIConfigService {
         save()
     }
 
-    /// Update only the API key for a provider (stored in Keychain)
-    func updateProviderAPIKey(_ providerId: String, apiKey: String) {
-        AIKeychainStorage.shared.saveAPIKey(apiKey, for: providerId)
-    }
-
     func addCustomProvider(name: String, baseURL: String, apiKey: String = "") {
         let provider = AIProviderConfig(
             displayName: name,
@@ -326,11 +321,6 @@ class AIConfigService {
 
     func modelsForProvider(_ providerId: String) -> [AIModelConfig] {
         config.models.filter { $0.providerId == providerId }
-    }
-
-    func modelsForActiveProvider() -> [AIModelConfig] {
-        guard let providerId = config.activeProviderId else { return [] }
-        return modelsForProvider(providerId)
     }
 
     // MARK: - MCP Server Management

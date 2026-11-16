@@ -381,7 +381,7 @@ class AIService {
 
             // executeJavaScript is left to the confirmation handler below, which prompts on every call
             if executionMode == .askBeforeExecuting && Self.mutatingTools.contains(toolCall.name)
-                && toolCall.name != "executeJavaScript" && !approved && !autoApprovedThisChat {
+                && toolCall.name != "executeJavaScript" && !approved && (!autoApprovedThisChat || Self.carriesData(toolCall)) {
                 let approval = await requestToolApproval(toolName: toolCall.name, args: toolCall.arguments)
                 switch approval {
                 case .allow:
@@ -465,7 +465,7 @@ class AIService {
            configService.browserToolsConfig.executionMode != .disabled,
            configService.browserToolsConfig.enabledTools.contains(name),
            browserToolExecutor?.windowState?.isIncognito != true {
-            if !autoApprovedThisChat || name == "executeJavaScript" {
+            if !autoApprovedThisChat || name == "executeJavaScript" || Self.carriesData(AIToolCall(name: name, arguments: arguments)) {
                 let answer = await requestToolApproval(toolName: name, args: arguments, offerAllowAll: name != "executeJavaScript")
                 guard answer != .deny else {
                     return wrapUntrusted("The person declined \(name).", tag: tag)
@@ -485,6 +485,14 @@ class AIService {
     // MARK: - Tool Approval Dialog
 
     /// Shows an NSAlert asking the user to approve a mutating browser tool or MCP tool call.
+    /// An address with a long query can carry what the model read out to a stranger's server, so it asks even after
+    /// Allow for This Chat. Ordinary links stay quiet.
+    private static func carriesData(_ call: AIToolCall) -> Bool {
+        guard ["navigateToURL", "createTab"].contains(call.name), let text = call.arguments["url"] as? String,
+              let url = URL(string: text.contains("://") ? text : "https://" + text) else { return false }
+        return ((url.query ?? "") + (url.fragment ?? "")).count > 100
+    }
+
     private func requestToolApproval(toolName: String, args: [String: Any], mcpServerId: String? = nil, offerAllowAll: Bool = true) async -> ToolApprovalResult {
         let alert = NSAlert()
         // FORK: one plain sentence, no code or parameters: what it wants to do, and where.
