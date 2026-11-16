@@ -54,6 +54,15 @@ struct OpenTabsSyncCheck {
         precondition(withKey.contains { $0.deviceName == "Sealed" && $0.tabs[0].url.contains("token=SECRET") }, "the right key opens the full address")
         let withoutKey = try await store.readOtherOpenTabs(excluding: reader, key: wrong)
         precondition(!withoutKey.contains { $0.deviceName == "Sealed" }, "a wrong key shows nothing")
+
+        // A sealed list altered in the folder is refused, and the other lists still arrive.
+        let sealedName = files.first { $0.hasPrefix(sealed.uuidString) }!
+        var bytes = try await store.get("openTabs/\(sealedName)")!
+        bytes[bytes.count / 2] ^= 0xFF
+        try await store.put("openTabs/\(sealedName)", bytes)
+        let afterTamper = try await store.readOtherOpenTabs(excluding: reader, key: key)
+        precondition(!afterTamper.contains { $0.deviceName == "Sealed" }, "a list changed in the folder shows nothing")
+        precondition(afterTamper.contains { $0.deviceName == "Laptop" }, "and does not hide the others")
         print("OpenTabsSync ok: shared lists reach the other Mac, and only those")
     }
 }
