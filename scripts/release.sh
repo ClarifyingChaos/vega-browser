@@ -87,8 +87,17 @@ if [[ -n "$IDENTITY" ]]; then
   codesign --force --options runtime --timestamp --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP"
   xcrun notarytool history --keychain-profile vega-notary >/dev/null 2>&1 && NOTARIZE=true
 else
-  echo "▸ no Developer ID certificate: ad-hoc signature (first open needs Open Anyway)"
-  codesign --force --deep --sign - --entitlements Nook/Nook-CI.entitlements "$APP"
+  # An ad-hoc signature is a new identity with every build, so the Keychain asks about every saved password
+  # again after each update. Any real certificate gives the same identity each time; an Apple Development one
+  # is free and enough (still not notarized: the first open needs Open Anyway).
+  DEV_IDENTITY=$(security find-identity -v -p codesigning | grep -m1 "Apple Development" | grep -oE '"[^"]+"' | tr -d '"' || true)
+  if [[ -n "$DEV_IDENTITY" ]]; then
+    echo "▸ no Developer ID certificate: signing with $DEV_IDENTITY, so the Keychain keeps its approvals across updates"
+    codesign --force --deep --sign "$DEV_IDENTITY" --entitlements Nook/Nook-CI.entitlements "$APP"
+  else
+    echo "▸ no certificate at all: ad-hoc signature (first open needs Open Anyway; the Keychain asks again after every update)"
+    codesign --force --deep --sign - --entitlements Nook/Nook-CI.entitlements "$APP"
+  fi
 fi
 codesign --verify --deep --strict "$APP"
 
