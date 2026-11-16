@@ -25,6 +25,8 @@ public struct SpacesSettingsView: View {
 
     /// Data size per profile, filled in as each store answers.
     @State private var stats: [UUID: String] = [:]
+    @State private var addingProfile = false
+    @State private var newProfileName = ""
     /// The profile whose details sheet is open.
     @State private var detailsFor: UUID?
     /// The space being renamed and the name typed so far.
@@ -48,8 +50,11 @@ public struct SpacesSettingsView: View {
                 ForEach(tabs.profiles, id: \.rowKey) { profile in
                     profileRow(profile)
                 }
+                Button("Add Profile\u{2026}", vegaIcon: "plus") { newProfileName = ""; addingProfile = true }
             } header: {
                 Text("Profiles")
+            } footer: {
+                Text("Like profiles in Chrome: give each person their own, with their own spaces and sign-ins.")
             }
 
             Section {
@@ -78,9 +83,28 @@ public struct SpacesSettingsView: View {
                     dataSize: stats[profile.id],
                     rename: { tabs.renameProfile(profile.id, to: $0) },
                     clearData: { Task { await clearData(profile) } },
+                    others: tabs.profiles.filter { $0.id != profile.id },
+                    delete: { target in
+                        // Its spaces join `target`; moving the last one out deletes this profile's data.
+                        for space in profile.spaceIDs { tabs.setProfile(space, to: target) }
+                        detailsFor = nil
+                    },
                     done: { detailsFor = nil }
                 )
             }
+        }
+        .alert("Add Profile", isPresented: $addingProfile) {
+            TextField("Name", text: $newProfileName)
+            Button("Add") {
+                let name = newProfileName.trimmingCharacters(in: .whitespaces)
+                guard !name.isEmpty else { return }
+                // A profile is the spaces sharing one set of sign-ins, so a new one starts with its own first space.
+                tabs.createSpace(name: name, icon: "", accentHex: tabs.orderedSpaces.last?.accentHex ?? "#0A84FF",
+                                 after: tabs.orderedSpaces.last?.id, profileName: name)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("A new profile starts with one space of its own, signed out of every website.")
         }
         .alert("Rename Space", isPresented: Binding(get: { renamingSpace != nil }, set: { if !$0 { renamingSpace = nil } })) {
             TextField("Name", text: Binding(get: { renamingSpace?.name ?? "" }, set: { renamingSpace?.name = $0 }))
@@ -279,10 +303,15 @@ private struct ProfileDetailsSheet: View {
     let dataSize: String?
     let rename: (String) -> Void
     let clearData: () -> Void
+    /// The profiles its spaces can move to when it is deleted.
+    let others: [ProfileSummary]
+    let delete: (UUID) -> Void
     let done: () -> Void
 
     @State private var name = ""
     @State private var confirmingClear = false
+    @State private var confirmingDelete = false
+    @State private var moveTo: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -332,6 +361,9 @@ private struct ProfileDetailsSheet: View {
             .frame(height: 190)
 
             HStack {
+                if !others.isEmpty {
+                    Button("Delete Profile\u{2026}", role: .destructive) { moveTo = others.first?.id; confirmingDelete = true }
+                }
                 Spacer()
                 Button("Done") { commit(); done() }
                     .keyboardShortcut(.defaultAction)
@@ -349,6 +381,27 @@ private struct ProfileDetailsSheet: View {
                 for window in NSApp.windows where window.isSheet { window.makeFirstResponder(nil) }
             }
             #endif
+        }
+        .sheet(isPresented: $confirmingDelete) {
+            VStack(alignment: .leading, spacing: VegaDesign.Spacing.lg) {
+                Text("Delete \u{201C}\(profile.name)\u{201D}?").font(.headline)
+                Text("Its \(spaceNames.count == 1 ? "space moves" : "\(spaceNames.count) spaces move") to the profile you pick, with their tabs. Its sign-ins, cookies and history are deleted. You can't undo this.")
+                    .font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Picker("Move spaces to", selection: $moveTo) {
+                    ForEach(others) { Text($0.name).tag(UUID?.some($0.id)) }
+                }
+                HStack {
+                    Spacer()
+                    Button("Cancel", role: .cancel) { confirmingDelete = false }
+                    Button("Delete Profile", role: .destructive) {
+                        if let moveTo { confirmingDelete = false; delete(moveTo) }
+                    }
+                    .keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(VegaDesign.Spacing.xl)
+            .frame(width: 400)
         }
         .confirmationDialog("Clear website data for \u{201C}\(profile.name)\u{201D}?", isPresented: $confirmingClear) {
             Button("Clear Website Data", role: .destructive, action: clearData)
