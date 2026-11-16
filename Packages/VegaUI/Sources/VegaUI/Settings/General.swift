@@ -365,6 +365,7 @@ private struct SyncSection: View {
 /// Sign in or out of the Google account Vega syncs with. Signing in turns sync on through it, so one step is enough.
 public struct GoogleAccountRow: View {
     let profileID: UUID?
+    @Environment(TabsController.self) private var tabs
     @State private var google: GoogleAccount
     @State private var error: String?
 
@@ -399,6 +400,8 @@ public struct GoogleAccountRow: View {
                     Task {
                         do {
                             try await google.signIn()
+                            // The first profile on a fresh Mac takes the account's profile instead of making a second.
+                            if ProfileScope.isPrimary(profileID) { await ProfileAdoption.reconcileFirstProfile(tabs: tabs) }
                             let sync = SyncCoordinator.forProfile(profileID)
                             sync.backend = .google
                             if sync.isEnabled { sync.syncNow() } else { sync.isEnabled = true }

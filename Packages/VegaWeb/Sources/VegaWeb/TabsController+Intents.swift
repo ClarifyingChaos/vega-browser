@@ -673,9 +673,9 @@ extension TabsController {
     /// A new space in a new profile with an empty website data store, so it starts logged out.
     /// `sharingLoginsWith` puts it in that space's profile instead.
     @discardableResult
-    public func createSpace(name: String, icon: String, accentHex: String, after: UUID?, sharingLoginsWith: UUID? = nil, profileName: String? = nil) -> UUID? {
+    public func createSpace(name: String, icon: String, accentHex: String, after: UUID?, sharingLoginsWith: UUID? = nil, profileName: String? = nil, dataStoreID: UUID? = nil) -> UUID? {
         let id = UUID()
-        let store = sharingLoginsWith.flatMap { tree.dataStoreID(for: $0) }
+        let store = dataStoreID ?? sharingLoginsWith.flatMap { tree.dataStoreID(for: $0) }
         guard perform(.main, "createSpace", {
             $0.createSpace(id: id, name: name, icon: icon, accentHex: accentHex, after: after, dataStoreID: store,
                            profileName: store == nil ? profileName : nil)

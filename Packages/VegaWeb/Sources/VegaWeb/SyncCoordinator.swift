@@ -364,7 +364,9 @@ public final class SyncCoordinator {
                 let change = SyncMerge.change(applying: snapshot, to: tabs.tree)
                 if !change.isEmpty { tabs.apply(change) }
             }
+            removePlaceholderIfFilled()
             try await writeOwn(store: store)
+            await writeProfileFile(store: store)
             await syncPasswords(store: store)
             await syncOpenTabs(store: store, tabs: tabs, own: own)
             // Names only: which devices have a snapshot in the store, so a failed sync can be told from an empty one.
@@ -392,6 +394,33 @@ public final class SyncCoordinator {
         }
     }
 
+    // MARK: - A profile brought from another Mac
+
+    /// A profile added from an account on another Mac starts with one empty space (a profile needs a space to exist).
+    /// That space stays on this Mac, out of the files, and goes once the profile's real spaces have arrived.
+    public static func placeholderKey(_ profileID: UUID) -> String { "fork.profile.placeholder.\(profileID.uuidString)" }
+    private var placeholderID: UUID? {
+        scopeProfile.flatMap { UserDefaults.standard.string(forKey: Self.placeholderKey($0)) }.flatMap(UUID.init(uuidString:))
+    }
+
+    private func removePlaceholderIfFilled() {
+        guard let tabs, let placeholder = placeholderID, let profile = scopeProfile else { return }
+        let others = tabs.spaces(ofProfile: profile).filter { $0.id != placeholder && !$0.isAgent }
+        guard !others.isEmpty else { return }
+        if tabs.tabCount(inSpace: placeholder) == 0 { tabs.deleteSpace(placeholder) }
+        UserDefaults.standard.removeObject(forKey: Self.placeholderKey(profile))
+    }
+
+    @ObservationIgnored private var lastIdentity: ProfileIdentity?
+
+    /// Says in the account's folder which profile this is, so another Mac can bring the same one.
+    private func writeProfileFile(store: any SyncBlobStore) async {
+        guard let tabs, let id = scopeProfile, let name = tabs.profiles.first(where: { $0.id == id })?.name else { return }
+        let identity = ProfileIdentity(id: id, name: name)
+        guard identity != lastIdentity else { return }
+        if (try? await store.put(ProfileIdentity.path, identity.encoded())) != nil { lastIdentity = identity }
+    }
+
     private func writeOwn() {
         guard isEnabled, let place = currentStore() else { return }
         Task { try? await writeOwn(store: place.store) }
@@ -400,7 +429,11 @@ public final class SyncCoordinator {
     /// Writes only when something other than the timestamp changed.
     private func writeOwn(store: any SyncBlobStore) async throws {
         guard let tabs else { return }
-        let snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName, profile: scopeProfile)
+        var snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName, profile: scopeProfile)
+        if let placeholder = placeholderID {
+            snapshot.spaces.removeAll { $0.id == placeholder }
+            snapshot.items.removeAll { tabs.tree.spaceID(of: $0.id) == placeholder }
+        }
         if let last = lastWritten, last.spaces == snapshot.spaces, last.items == snapshot.items { return }
         try await store.writeSnapshot(snapshot)
         lastWritten = snapshot

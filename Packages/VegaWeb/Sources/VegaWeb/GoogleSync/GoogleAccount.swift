@@ -27,6 +27,9 @@ public final class GoogleAccount {
         return account
     }
 
+    /// Where a sign-in waits until we know which profile it is for (an account added from another Mac).
+    public static let pending = GoogleAccount(suffix: ".pending")
+
     private let suffix: String
     private var emailKey: String { "fork.google.email" + suffix }
     private var service: String { "com.vega.browser.google" + suffix }
@@ -34,6 +37,26 @@ public final class GoogleAccount {
     private init(profileID: UUID?) {
         suffix = ProfileScope.suffix(for: profileID)
         email = UserDefaults.standard.string(forKey: "fork.google.email" + suffix)
+    }
+
+    private init(suffix: String) {
+        self.suffix = suffix
+        email = UserDefaults.standard.string(forKey: "fork.google.email" + suffix)
+    }
+
+    /// Hands this sign-in to a profile: its account from now on. This one is signed out.
+    public func move(to profileID: UUID) {
+        guard let refresh = loadRefreshToken(), let email else { return }
+        let target = Self.forProfile(profileID)
+        target.adopt(refresh: refresh, email: email)
+        signOut()
+    }
+
+    private func adopt(refresh: String, email: String) {
+        saveRefreshToken(refresh)
+        access = nil
+        self.email = email
+        UserDefaults.standard.set(email, forKey: emailKey)
     }
 
     public private(set) var email: String?
