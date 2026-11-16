@@ -57,7 +57,7 @@ struct PasswordsSettingsView: View {
         var error: NSError?
         // No Touch ID and no password set on the Mac: nothing to ask, so it opens.
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { unlocked = true; return }
-        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Show your saved passwords") { ok, _ in
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "show your saved passwords") { ok, _ in
             Task { @MainActor in
                 unlocked = ok
                 failed = !ok
@@ -201,7 +201,7 @@ private struct PasswordsContent: View {
     /// Asks for Touch ID or the Mac's password, then hands over the password.
     private func reveal(_ login: SavedLogin, _ use: @escaping (String) -> Void) {
         let context = LAContext()
-        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Show the password for \(login.host)") { ok, _ in
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "show your saved password for \u{201C}\(login.host)\u{201D}") { ok, _ in
             guard ok else { return }
             Task { @MainActor in
                 if let secret = vault.password(host: login.host, username: login.username) { use(secret) }

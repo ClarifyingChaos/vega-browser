@@ -24,7 +24,7 @@ public final class PasswordGate {
         var error: NSError?
         // No Touch ID and no password on the Mac: nothing to ask, as in Settings › Passwords.
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { return true }
-        return (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "AutoFill your password for \(host)")) ?? false
+        return (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "use your saved password for \u{201C}\(host)\u{201D}")) ?? false
     }
 
     private var provedAt: [String: Date] = [:]
