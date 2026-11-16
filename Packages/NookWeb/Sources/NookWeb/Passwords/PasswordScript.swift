@@ -75,37 +75,63 @@ enum PasswordScript {
         host.style.left = (rect.left + scrollX) + 'px';
         host.style.top = (rect.bottom + scrollY + 4) + 'px';
         const style = document.createElement('style');
-        style.textContent = ':host{color-scheme:light dark}.m{font:13px -apple-system,system-ui;min-width:' + Math.max(rect.width, 220) +
-          'px;background:Canvas;color:CanvasText;border:1px solid rgba(128,128,128,.4);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:4px}' +
-          '.i{padding:7px 10px;border-radius:7px;cursor:default;display:flex;gap:8px;align-items:center}.i:hover{background:rgba(10,132,255,.9);color:#fff}' +
-          '.h{font-size:11px;opacity:.6;padding:4px 10px}';
+        style.textContent = ':host{color-scheme:light dark}' +
+          '.m{font:13px/1.25 -apple-system,system-ui;min-width:' + Math.max(rect.width, 240) + 'px;max-width:340px;background:Canvas;color:CanvasText;' +
+          'border:.5px solid rgba(128,128,128,.45);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.28);padding:5px}' +
+          '.i{padding:6px 8px;border-radius:7px;cursor:default;display:flex;gap:9px;align-items:center}' +
+          '.i.s{background:#0a84ff;color:#fff}.i.s .t{color:rgba(255,255,255,.8)}' +
+          '.k{flex:none;width:26px;height:26px;border-radius:7px;background:#f7a72b;display:flex;align-items:center;justify-content:center}' +
+          '.k svg{width:15px;height:15px;fill:#fff}.n{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+          '.t{font-size:11px;opacity:.65;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.x{display:flex;flex-direction:column;min-width:0}' +
+          '.r{height:1px;background:rgba(128,128,128,.3);margin:4px 6px}';
         const box = document.createElement('div');
         box.className = 'm';
-        const head = document.createElement('div');
-        head.className = 'h';
-        head.textContent = 'Passwords';
-        box.appendChild(head);
-        list.forEach((login) => {
+        const keyIcon = '<svg viewBox="0 0 24 24"><path d="M14.5 2a6.5 6.5 0 0 0-6.1 8.7L2 17.1V22h4.9v-2.2h2.2v-2.2h2.2l1.4-1.4A6.5 6.5 0 1 0 14.5 2zm2 4.2a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z"/></svg>';
+        const rows = [];
+        const choose = async (login) => {
+          if (!pw) { setValue(field, login.u); closeMenu(); return; }
+          // The native side asks for Touch ID or the Mac's password before it hands the password over.
+          const secret = await ask({ op: 'fill', u: login.u });
+          if (!secret) return;
+          const user = pw === field ? usernameFor(pw) : field;
+          if (user) setValue(user, login.u);
+          setValue(pw, secret);
+          closeMenu();
+        };
+        const mark = (i) => rows.forEach((r, j) => r.classList.toggle('s', i === j));
+        list.forEach((login, i) => {
           const row = document.createElement('div');
           row.className = 'i';
-          row.textContent = '🔑 ' + login.u;
+          const icon = document.createElement('div');
+          icon.className = 'k';
+          icon.innerHTML = keyIcon;
+          const text = document.createElement('div');
+          text.className = 'x';
+          const name = document.createElement('div');
+          name.className = 'n';
+          name.textContent = login.u || location.hostname;
+          const site = document.createElement('div');
+          site.className = 't';
+          site.textContent = location.hostname.replace(/^www\./, '');
+          text.append(name, site);
+          row.append(icon, text);
           row.addEventListener('mousedown', (e) => e.preventDefault());
-          row.addEventListener('click', async (e) => {
-            if (!e.isTrusted) return;
-            if (!pw) { setValue(field, login.u); closeMenu(); return; }
-            // The native side asks for Touch ID or the Mac's password before it hands the password over.
-            const secret = await ask({ op: 'fill', u: login.u });
-            if (!secret) return;
-            const user = pw === field ? usernameFor(pw) : field;
-            if (user) setValue(user, login.u);
-            setValue(pw, secret);
-            closeMenu();
-          });
+          row.addEventListener('mouseenter', () => { mark(i); if (menu) menu.index = i; });
+          row.addEventListener('click', (e) => { if (e.isTrusted) choose(login); });
+          rows.push(row);
           box.appendChild(row);
         });
+        const rule = document.createElement('div');
+        rule.className = 'r';
+        const manage = document.createElement('div');
+        manage.className = 'i';
+        manage.innerHTML = '<div class="x"><div class="n">Passwords…</div></div>';
+        manage.addEventListener('mousedown', (e) => e.preventDefault());
+        manage.addEventListener('click', (e) => { if (e.isTrusted) { ask({ op: 'manage' }); closeMenu(); } });
+        box.append(rule, manage);
         root.append(style, box);
         document.documentElement.appendChild(host);
-        menu = { host, field };
+        menu = { host, field, index: -1, rows, list, choose, mark };
       };
 
       document.addEventListener('focusin', (e) => {
@@ -113,7 +139,19 @@ enum PasswordScript {
         if (el && el.tagName === 'INPUT' && (el.type === 'password' || isUserField(el))) openMenu(el);
       }, true);
       document.addEventListener('mousedown', (e) => { if (menu && e.target !== menu.field && !e.composedPath().includes(menu.host)) closeMenu(); }, true);
-      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); }, true);
+      document.addEventListener('keydown', (e) => {
+        if (!menu) return;
+        if (e.key === 'Escape') return closeMenu();
+        const n = menu.rows.length;
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          menu.index = (menu.index + (e.key === 'ArrowDown' ? 1 : -1) + n) % n;
+          menu.mark(menu.index);
+        } else if (e.key === 'Enter' && menu.index >= 0 && e.isTrusted) {
+          e.preventDefault();
+          menu.choose(menu.list[menu.index]);
+        }
+      }, true);
 
       // ---- Noticing a login ---------------------------------------------------------------------
       let candidate = null, timer = null;
