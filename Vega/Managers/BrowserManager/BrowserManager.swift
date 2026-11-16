@@ -456,7 +456,9 @@ class BrowserManager: ObservableObject {
             legacyTree: { [modelContext] in LegacyTabImport.tree(from: modelContext) })
         self.tabs = tabs
         // FORK: spaces and favorites sync through iCloud Drive when the person turns it on.
-        SyncCoordinator.shared.start(tabs: tabs)
+        // FORK: the passwords, Google account and sync saved before profiles had their own belong to the first profile.
+        if let first = tabs.profiles.first { KeychainVault.claimPrimary(first.id) }
+        SyncCoordinator.startAll(tabs: tabs)
         // The first space's data store is the one the app starts on.
         let initialProfile = tabs.orderedSpaces.first.flatMap { tabs.profile(forSpace: $0.id) }
         self.currentProfileSubject = CurrentValueSubject(initialProfile)
@@ -482,8 +484,6 @@ class BrowserManager: ObservableObject {
         self.compositorManager.browserManager = self
         self.splitManager.browserManager = self
         self.windowRegistry = windowRegistry
-        // FORK: the passwords saved before profiles had their own belong to the first profile.
-        if let first = tabs.profiles.first { KeychainVault.claimPrimary(first.id) }
         // FORK: "Passwords…" in the login suggestions opens Vega's own Passwords settings.
         PasswordPrompter.shared.openManager = { [weak self] in self?.openSettings(tab: .passwords) }
         // Note: settingsManager will be injected later, so we skip initialization here

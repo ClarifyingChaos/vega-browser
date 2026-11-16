@@ -36,14 +36,22 @@ public enum SyncMerge {
     public static let tombstoneDays = 30
 
     /// The synced scope of a tree. The Agent space is this Mac's own and never travels.
-    public static func snapshot(of tree: TabTree, deviceID: UUID, deviceName: String, now: Date = Date()) -> SyncSnapshot {
+    /// `profile`: only that profile's spaces and what is in them (a profile has its own account, so nothing of another
+    /// profile may reach it); nil takes every space.
+    public static func snapshot(of tree: TabTree, deviceID: UUID, deviceName: String, profile: UUID? = nil, now: Date = Date()) -> SyncSnapshot {
         let cutoff = now.addingTimeInterval(-Double(tombstoneDays) * 86_400)
         func kept(_ deleted: Date?) -> Bool { deleted.map { $0 > cutoff } ?? true }
         let agentIDs = Set(tree.spaces.values.filter(\.isAgent).map(\.id))
-        let spaces = tree.spaces.values.filter { !$0.isAgent && kept($0.deletedAt) }
+        let spaces = tree.spaces.values.filter { space in
+            guard !space.isAgent, kept(space.deletedAt) else { return false }
+            return profile == nil || tree.dataStoreID(for: space.id) == profile
+        }
+        let inScope = Set(spaces.map(\.id))
         let items = tree.items.values.filter { item in
             guard kept(item.deletedAt), tree.scope(of: item.id) == .synced else { return false }
-            return !(tree.spaceID(of: item.id).map(agentIDs.contains) ?? false)
+            guard let space = tree.spaceID(of: item.id) else { return false }
+            if agentIDs.contains(space) { return false }
+            return profile == nil || inScope.contains(space)
         }
         return SyncSnapshot(deviceID: deviceID, deviceName: deviceName, writtenAt: now,
                             spaces: spaces.sorted { $0.id.uuidString < $1.id.uuidString },

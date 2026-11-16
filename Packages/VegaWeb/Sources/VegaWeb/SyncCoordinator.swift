@@ -19,7 +19,52 @@ import os
 
 @MainActor @Observable
 public final class SyncCoordinator {
-    public static let shared = SyncCoordinator()
+    /// The first profile's sync, with the names every earlier version used.
+    public static let shared = SyncCoordinator(profileID: nil)
+
+    // FORK: each profile syncs on its own: its own account, folder, passphrase and switches. The profile's spaces and
+    // tabs are the only ones that go to its account.
+    private static var others: [UUID: SyncCoordinator] = [:]
+    /// Set at launch so a coordinator made later (a new profile) can find the tabs.
+    private static weak var tabsController: TabsController?
+
+    public static func forProfile(_ profileID: UUID?) -> SyncCoordinator {
+        guard let profileID, !ProfileScope.isPrimary(profileID) else { return shared }
+        if let existing = others[profileID] { return existing }
+        let coordinator = SyncCoordinator(profileID: profileID)
+        others[profileID] = coordinator
+        if let tabs = tabsController { coordinator.start(tabs: tabs) }
+        return coordinator
+    }
+
+    /// Called once at launch with the controller that owns the tree: starts every profile that has sync on.
+    public static func startAll(tabs: TabsController) {
+        tabsController = tabs
+        shared.start(tabs: tabs)
+        for profile in tabs.profiles { _ = forProfile(profile.id) }
+    }
+
+    /// The profile this coordinator syncs; nil for the first one, which keeps the original names.
+    public let profileID: UUID?
+    private let suffix: String
+    private var passwordsKey: String { "fork.sync.passwords" + suffix }
+    private var backendKey: String { "fork.sync.backend" + suffix }
+    private var enabledKey: String { "fork.sync.enabled" + suffix }
+    private var openTabsKey: String { "fork.sync.openTabs" + suffix }
+    private var fingerprintKey: String { "fork.sync.passwordsFingerprint" + suffix }
+    private var keyService: String { "com.vega.browser.syncKey" + suffix }
+    /// The profile whose spaces and tabs go to this account: nil syncs every space (a first profile with no others).
+    private var scopeProfile: UUID? { profileID ?? ProfileScope.primaryID }
+
+    private init(profileID: UUID?) {
+        self.profileID = profileID
+        let suffix = ProfileScope.suffix(for: profileID)
+        self.suffix = suffix
+        isEnabled = UserDefaults.standard.bool(forKey: "fork.sync.enabled" + suffix)
+        backend = Backend(rawValue: UserDefaults.standard.string(forKey: "fork.sync.backend" + suffix) ?? "") ?? .iCloud
+        sharesOpenTabs = UserDefaults.standard.bool(forKey: "fork.sync.openTabs" + suffix)
+        passwordsEnabled = UserDefaults.standard.bool(forKey: "fork.sync.passwords" + suffix)
+    }
 
     public enum Status: Equatable {
         case off
@@ -49,11 +94,7 @@ public final class SyncCoordinator {
     }
 
     private static let logger = Logger(subsystem: "com.vega.browser", category: "sync")
-    private static let passwordsKey = "fork.sync.passwords"
-    private static let backendKey = "fork.sync.backend"
-    private static let enabledKey = "fork.sync.enabled"
     private static let deviceKey = "fork.sync.deviceID"
-    private static let openTabsKey = "fork.sync.openTabs"
     private static let interval: Duration = .seconds(20)
 
     public private(set) var status: Status = .off
@@ -63,9 +104,9 @@ public final class SyncCoordinator {
     public private(set) var otherMacsTabs: [OpenTabsSnapshot] = []
     /// Whether this Mac lists its open tabs (titles and addresses) in the sync folder for the others.
     // Stored, not read from UserDefaults on each access, so the switches redraw when they change.
-    public var sharesOpenTabs: Bool = UserDefaults.standard.bool(forKey: SyncCoordinator.openTabsKey) {
+    public var sharesOpenTabs: Bool {
         didSet {
-            UserDefaults.standard.set(sharesOpenTabs, forKey: Self.openTabsKey)
+            UserDefaults.standard.set(sharesOpenTabs, forKey: openTabsKey)
             lastOpenTabs = nil
             if isEnabled { syncNow() }
         }
@@ -76,10 +117,10 @@ public final class SyncCoordinator {
     @ObservationIgnored private var lastWritten: SyncSnapshot?
     @ObservationIgnored private var observers: [Any] = []
 
-    public var backend: Backend = Backend(rawValue: UserDefaults.standard.string(forKey: SyncCoordinator.backendKey) ?? "") ?? .iCloud {
+    public var backend: Backend {
         didSet {
             guard backend != oldValue else { return }
-            UserDefaults.standard.set(backend.rawValue, forKey: Self.backendKey)
+            UserDefaults.standard.set(backend.rawValue, forKey: backendKey)
             // Another place is another set of files: start each side from scratch.
             lastWritten = nil
             forgetPasswordFingerprint()
@@ -91,10 +132,12 @@ public final class SyncCoordinator {
     func currentStore() -> (store: any SyncBlobStore, missing: String?)? {
         switch backend {
         case .iCloud:
-            guard let url = FolderBlobStore.iCloudDrive() else { return nil }
+            guard var url = FolderBlobStore.iCloudDrive() else { return nil }
+            // One iCloud account holds every profile's files: each other profile gets its own folder.
+            if !suffix.isEmpty, let profileID { url.appendPathComponent("Profiles/\(profileID.uuidString)", isDirectory: true) }
             return (FolderBlobStore(url: url), nil)
         case .google:
-            guard let store = GoogleAccount.shared.store() else { return nil }
+            guard let store = GoogleAccount.forProfile(profileID).store() else { return nil }
             return (store, nil)
         }
     }
@@ -104,24 +147,23 @@ public final class SyncCoordinator {
                            : "Sign in with Google to sync."
     }
 
-    public var isEnabled: Bool = UserDefaults.standard.bool(forKey: SyncCoordinator.enabledKey) {
+    public var isEnabled: Bool {
         didSet {
             guard isEnabled != oldValue else { return }
-            UserDefaults.standard.set(isEnabled, forKey: Self.enabledKey)
+            UserDefaults.standard.set(isEnabled, forKey: enabledKey)
             isEnabled ? begin() : stop()
         }
     }
 
     // The switch only, stored so Settings redraws when it changes (a computed read of UserDefaults left the toggle
     // showing On after it was turned off, so the next click turned it back on and asked for the passphrase).
-    public private(set) var passwordsEnabled: Bool = UserDefaults.standard.bool(forKey: SyncCoordinator.passwordsKey)
+    public private(set) var passwordsEnabled: Bool
 
     // What the last written password snapshot covered. Kept across launches: with it only in memory, every launch
     // read every saved password to write a snapshot again, and the Keychain asked about each one.
-    private static let fingerprintKey = "fork.sync.passwordsFingerprint"
     @ObservationIgnored private var forcePasswordWrite = false
     private func forgetPasswordFingerprint() {
-        UserDefaults.standard.removeObject(forKey: Self.fingerprintKey)
+        UserDefaults.standard.removeObject(forKey: fingerprintKey)
         forcePasswordWrite = true
     }
     private static func digest(_ light: [PasswordRecord]) -> String {
@@ -147,8 +189,8 @@ public final class SyncCoordinator {
             try await store.writeMeta(made.meta)
             key = made.key
         }
-        Self.saveKey(key)
-        UserDefaults.standard.set(true, forKey: Self.passwordsKey)
+        saveKey(key)
+        UserDefaults.standard.set(true, forKey: passwordsKey)
         passwordsEnabled = true
         forgetPasswordFingerprint()
         await tick()
@@ -169,7 +211,7 @@ public final class SyncCoordinator {
         guard passphrase.count >= 8 else { throw PasswordSyncError.emptyPassphrase }
         let made = try await Task.detached { try PasswordSyncMeta.create(passphrase: passphrase) }.value
         try await PasswordSyncStore(store: place.store).writeMeta(made.meta)
-        Self.saveKey(made.key)
+        saveKey(made.key)
         forgetPasswordFingerprint()
         await tick()
     }
@@ -178,9 +220,9 @@ public final class SyncCoordinator {
     /// sync folder's passphrase. False when it has to ask: no key, a folder with no passphrase yet, or a
     /// passphrase changed on another Mac.
     public func resumePasswords() async -> Bool {
-        guard isEnabled, let place = currentStore(), let key = Self.loadKey(),
+        guard isEnabled, let place = currentStore(), let key = loadKey(),
               let meta = try? await PasswordSyncStore(store: place.store).meta(), meta.opens(with: key) else { return false }
-        UserDefaults.standard.set(true, forKey: Self.passwordsKey)
+        UserDefaults.standard.set(true, forKey: passwordsKey)
         passwordsEnabled = true
         forgetPasswordFingerprint()
         await tick()
@@ -189,16 +231,16 @@ public final class SyncCoordinator {
 
     /// Stops syncing passwords. The key stays in this Mac's Keychain so turning it on again doesn't ask.
     public func disablePasswords() {
-        UserDefaults.standard.set(false, forKey: Self.passwordsKey)
+        UserDefaults.standard.set(false, forKey: passwordsKey)
         passwordsEnabled = false
         passwordStatus = nil
         forgetPasswordFingerprint()
     }
 
     private func syncPasswords(store place: any SyncBlobStore) async {
-        guard UserDefaults.standard.bool(forKey: Self.passwordsKey), let key = Self.loadKey() else { return }
+        guard UserDefaults.standard.bool(forKey: passwordsKey), let key = loadKey() else { return }
         let store = PasswordSyncStore(store: place)
-        let vault = PasswordPrompter.shared.vault
+        let vault = PasswordPrompter.shared.vault(for: scopeProfile)
         do {
             // The passphrase was changed on another Mac: say so instead of syncing with a key nobody else uses.
             if let meta = try await store.meta(), !meta.opens(with: key) {
@@ -216,17 +258,17 @@ public final class SyncCoordinator {
             }
             // Own snapshot (with passwords) only when a login or a deletion changed since the last write.
             let fingerprint = Self.digest(light)
-            let stored = UserDefaults.standard.string(forKey: Self.fingerprintKey)
+            let stored = UserDefaults.standard.string(forKey: fingerprintKey)
             if stored == nil && !forcePasswordWrite {
                 // First run with this memory: the snapshot an earlier version wrote still stands, so read nothing.
-                UserDefaults.standard.set(fingerprint, forKey: Self.fingerprintKey)
+                UserDefaults.standard.set(fingerprint, forKey: fingerprintKey)
             } else if fingerprint != stored || forcePasswordWrite {
                 // Without a single dialog: a password the Keychain would ask about is left out for now, and
                 // goes in once the person has used it (filled or opened it) and said Always Allow.
                 let records = vault.quietly { vault.records() }
                 try await store.write(PasswordSnapshot(deviceID: deviceID, records: records), key: key)
                 if records.filter({ !$0.deleted }).count == light.filter({ !$0.deleted }).count {
-                    UserDefaults.standard.set(fingerprint, forKey: Self.fingerprintKey)
+                    UserDefaults.standard.set(fingerprint, forKey: fingerprintKey)
                     forcePasswordWrite = false
                 } else {
                     forcePasswordWrite = true
@@ -241,8 +283,8 @@ public final class SyncCoordinator {
     // The derived key, in this Mac's Keychain so the passphrase is asked once.
     private static let keyService = "com.vega.browser.syncKey"
     // Read from the Keychain once per launch, not on every sync round.
-    nonisolated(unsafe) private static var cachedKey: SymmetricKey?
-    private static func loadKey() -> SymmetricKey? {
+    @ObservationIgnored private var cachedKey: SymmetricKey?
+    private func loadKey() -> SymmetricKey? {
         if let cachedKey { return cachedKey }
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService,
                                     kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
@@ -251,7 +293,7 @@ public final class SyncCoordinator {
         cachedKey = SymmetricKey(data: data)
         return cachedKey
     }
-    private static func saveKey(_ key: SymmetricKey) {
+    private func saveKey(_ key: SymmetricKey) {
         deleteKey()
         cachedKey = key
         let data = key.withUnsafeBytes { Data($0) }
@@ -259,7 +301,7 @@ public final class SyncCoordinator {
                     kSecValueData as String: data, kSecAttrLabel as String: "Vega Sync",
                     kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly] as CFDictionary, nil)
     }
-    private static func deleteKey() {
+    private func deleteKey() {
         cachedKey = nil
         SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService] as CFDictionary)
     }
@@ -338,8 +380,8 @@ public final class SyncCoordinator {
     private func syncOpenTabs(store: any SyncBlobStore, tabs: TabsController, own: UUID) async {
         do {
             // The passwords key seals the list, so full addresses can travel. Without it the list is plain text and cleaned.
-            let key = Self.loadKey()
-            let entries = sharesOpenTabs ? ownOpenTabs(in: tabs, keepFullAddresses: key != nil) : []
+            let key = loadKey()
+            let entries = sharesOpenTabs ? ownOpenTabs(in: tabs, profile: scopeProfile, keepFullAddresses: key != nil) : []
             if entries != lastOpenTabs {
                 try await store.writeOpenTabs(OpenTabsSnapshot(deviceID: own, deviceName: deviceName, writtenAt: Date(), tabs: entries), key: key)
                 lastOpenTabs = entries
@@ -358,7 +400,7 @@ public final class SyncCoordinator {
     /// Writes only when something other than the timestamp changed.
     private func writeOwn(store: any SyncBlobStore) async throws {
         guard let tabs else { return }
-        let snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName)
+        let snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName, profile: scopeProfile)
         if let last = lastWritten, last.spaces == snapshot.spaces, last.items == snapshot.items { return }
         try await store.writeSnapshot(snapshot)
         lastWritten = snapshot
