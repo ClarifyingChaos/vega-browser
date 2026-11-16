@@ -35,8 +35,12 @@ public final class PasswordPrompter {
     func offer(host: String, username: String, password: String, itemID: UUID) {
         let settings = PasswordSettings.shared
         guard settings.offerToSave, !settings.isNeverSaved(host), !password.isEmpty else { return }
-        let saved = vault.password(host: host, username: username)
+        // Compared without a dialog. If the Keychain won't hand it over quietly, skip the offer rather than ask:
+        // the one prompt a person should see is the one for filling.
+        let saved = vault.quietly { vault.password(host: host, username: username) }
         if saved == password { return }
+        let known = vault.all().contains { $0.host == PasswordHosts.normalized(host) && $0.username == username }
+        if saved == nil && known { return }
         pending = PendingPassword(host: PasswordHosts.normalized(host), username: username, password: password,
                                   isUpdate: saved != nil, itemID: itemID)
         expiry?.cancel()
