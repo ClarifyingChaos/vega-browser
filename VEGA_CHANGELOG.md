@@ -12,6 +12,8 @@ What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's
 - Password sync never shows a dialog and no longer reads every saved password at launch. It reads them only when one changed, and a password the Keychain would ask about waits until you have used it.
 
 ### Changes
+- Every floating page has one look: links from other apps and sign-in pop-ups open in the same card as Peek, over the window you're in. The small separate window is kept for when no Vega window is open.
+- Peek's Close, Open as Tab and Split buttons show their icons again.
 - Filling a saved login now fills the username too on sites that keep it outside the password's form.
 - Saved passwords are offered under a login field, including a username-only first step. The prompts use Apple's wording: Save Password, Update Password, Not Now, Never for This Website.
 
