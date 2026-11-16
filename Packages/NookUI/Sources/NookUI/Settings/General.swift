@@ -82,6 +82,15 @@ public struct SettingsGeneralTab: View {
             }
 
             #if os(macOS)
+            Section {
+                GoogleAccountRow()
+            } header: {
+                Text("Account")
+            } footer: {
+                if !GoogleAccount.shared.isSignedIn {
+                    Text("Sign in to sync your spaces, favorites, open tabs and passwords between your Macs.")
+                }
+            }
             SyncSection()
             #endif
 
@@ -279,7 +288,9 @@ private struct SyncSection: View {
                 Picker("Sync with", selection: Binding(get: { sync.backend }, set: { sync.backend = $0 })) {
                     ForEach(SyncCoordinator.Backend.allCases) { Text($0.title).tag($0) }
                 }
-                if sync.backend == .google { GoogleRow() }
+                if sync.backend == .google && !GoogleAccount.shared.isSignedIn {
+                    Text("Sign in under Account above to sync with Google.").font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                }
                 Toggle("Share open tabs", isOn: Binding(get: { sync.sharesOpenTabs }, set: { sync.sharesOpenTabs = $0 }))
                 Text(sync.passwordsEnabled
                      ? "Lists this Mac's open tabs, sealed with your sync passphrase so neither iCloud nor Google can read them. Your other Macs show them under Spaces › Tabs from Other Macs."
@@ -318,17 +329,20 @@ private struct SyncSection: View {
             if !sync.isEnabled { Text(detail) }
             else if !sync.passwordsEnabled { Text("Passwords sync end to end encrypted with a passphrase only you know. iCloud never sees them.") }
         }
-        .sheet(isPresented: $askingPassphrase) { PassphraseSheet(sync: sync, changing: false) }
-        .sheet(isPresented: $changingPassphrase) { PassphraseSheet(sync: sync, changing: true) }
+        .sheet(isPresented: $askingPassphrase) { SyncPassphraseSheet(sync: sync, changing: false) }
+        .sheet(isPresented: $changingPassphrase) { SyncPassphraseSheet(sync: sync, changing: true) }
     }
 }
 
 /// Sign in or out of the Google account that holds the sync files.
-private struct GoogleRow: View {
+/// Sign in or out of the Google account Vega syncs with. Signing in turns sync on through it, so one step is enough.
+public struct GoogleAccountRow: View {
     @State private var google = GoogleAccount.shared
     @State private var error: String?
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
                 Text(google.isSignedIn ? (google.email ?? "Signed in") : "Not signed in")
@@ -352,7 +366,12 @@ private struct GoogleRow: View {
                 Button("Sign in with Google") {
                     error = nil
                     Task {
-                        do { try await google.signIn(); SyncCoordinator.shared.syncNow() }
+                        do {
+                            try await google.signIn()
+                            let sync = SyncCoordinator.shared
+                            sync.backend = .google
+                            if sync.isEnabled { sync.syncNow() } else { sync.isEnabled = true }
+                        }
                         catch { self.error = error.localizedDescription }
                     }
                 }
@@ -363,10 +382,15 @@ private struct GoogleRow: View {
 }
 
 /// The sync passphrase: the first Mac creates it, every other Mac enters the same one, and any Mac can change it.
-private struct PassphraseSheet: View {
+public struct SyncPassphraseSheet: View {
     let sync: SyncCoordinator
     /// Changing the passphrase of a sync that is already on, rather than turning it on.
     let changing: Bool
+
+    public init(sync: SyncCoordinator, changing: Bool) {
+        self.sync = sync
+        self.changing = changing
+    }
     @Environment(\.dismiss) private var dismiss
     @State private var passphrase = ""
     @State private var error: String?
@@ -390,7 +414,7 @@ private struct PassphraseSheet: View {
         return "Enter this passphrase on your other Macs to sync passwords with them. Vega can't show it again, so keep it somewhere safe, like your Passwords app."
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             Form {
                 Section {
