@@ -56,7 +56,7 @@ struct OpenTabsSyncCheck {
         precondition(!withoutKey.contains { $0.deviceName == "Sealed" }, "a wrong key shows nothing")
 
         // A sealed list altered in the folder is refused, and the other lists still arrive.
-        let sealedName = files.first { $0.hasPrefix(sealed.uuidString) }!
+        let sealedName = files.first { $0.hasPrefix(sealed.uuidString) && $0.hasSuffix(".enc") }!
         var bytes = try await store.get("openTabs/\(sealedName)")!
         bytes[bytes.count / 2] ^= 0xFF
         try await store.put("openTabs/\(sealedName)", bytes)
