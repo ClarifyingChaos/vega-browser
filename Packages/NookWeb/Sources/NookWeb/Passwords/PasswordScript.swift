@@ -63,7 +63,8 @@ enum PasswordScript {
 
       const openMenu = async (field) => {
         const pw = passwordFor(field);
-        if (!pw) return;
+        // A username-only first step (two-page sign-ins) still offers the saved username; the password comes on the next page.
+        if (!pw && !/username|email/i.test((field.autocomplete || '') + (field.type || ''))) return;
         const list = await logins();
         if (!list.length || document.activeElement !== field) return;
         closeMenu();
@@ -82,7 +83,7 @@ enum PasswordScript {
         box.className = 'm';
         const head = document.createElement('div');
         head.className = 'h';
-        head.textContent = 'Saved passwords';
+        head.textContent = 'Passwords';
         box.appendChild(head);
         list.forEach((login) => {
           const row = document.createElement('div');
@@ -91,6 +92,8 @@ enum PasswordScript {
           row.addEventListener('mousedown', (e) => e.preventDefault());
           row.addEventListener('click', async (e) => {
             if (!e.isTrusted) return;
+            if (!pw) { setValue(field, login.u); closeMenu(); return; }
+            // The native side asks for Touch ID or the Mac's password before it hands the password over.
             const secret = await ask({ op: 'fill', u: login.u });
             if (!secret) return;
             const user = pw === field ? usernameFor(pw) : field;

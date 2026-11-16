@@ -23,22 +23,22 @@ struct SavePasswordBar: View {
                     Image(systemName: "key.fill")
                         .foregroundStyle(.white)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(pending.isUpdate ? "Update password?" : "Save password?")
+                        Text(pending.isUpdate ? "Update Password?" : "Save Password?")
                             .font(NookDesign.Font.title)
                             .foregroundStyle(.white)
-                        Text(pending.username.isEmpty ? pending.host : "\(pending.username) on \(pending.host)")
+                        Text(pending.isUpdate ? "Update the saved password for \(pending.username.isEmpty ? pending.host : pending.username) on \(pending.host)?" : "Save this password to sign in to \(pending.host) later?")
                             .font(NookDesign.Font.secondary)
                             .foregroundStyle(.white.opacity(0.7))
-                            .lineLimit(1)
+                            .lineLimit(2)
                             .truncationMode(.middle)
                     }
                     Spacer(minLength: 0)
                 }
                 HStack(spacing: NookDesign.Spacing.sm) {
-                    Button("Never") { prompter.neverSavePending() }
+                    if !pending.isUpdate { Button("Never for This Website") { prompter.neverSavePending() } }
                     Button("Not Now") { prompter.dismiss() }
                     Spacer(minLength: 0)
-                    Button(pending.isUpdate ? "Update" : "Save") { prompter.savePending() }
+                    Button(pending.isUpdate ? "Update Password" : "Save Password") { prompter.savePending() }
                         .keyboardShortcut(.defaultAction)
                         .buttonStyle(.borderedProminent)
                 }
