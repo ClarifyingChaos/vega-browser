@@ -280,4 +280,10 @@ public enum AIAddress {
         if scheme == "https" { return true }
         return scheme == "http" && ["localhost", "127.0.0.1", "::1"].contains(host)
     }
+
+    /// An address with a long query or fragment can carry what the model read out to a stranger's server.
+    public static func carriesData(_ text: String) -> Bool {
+        guard let url = URL(string: text.contains("://") ? text : "https://" + text) else { return false }
+        return ((url.query ?? "") + (url.fragment ?? "")).count > 100
+    }
 }

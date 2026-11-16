@@ -484,15 +484,11 @@ class AIService {
 
     // MARK: - Tool Approval Dialog
 
-    /// Shows an NSAlert asking the user to approve a mutating browser tool or MCP tool call.
-    /// An address with a long query can carry what the model read out to a stranger's server, so it asks even after
-    /// Allow for This Chat. Ordinary links stay quiet.
     private static func carriesData(_ call: AIToolCall) -> Bool {
-        guard ["navigateToURL", "createTab"].contains(call.name), let text = call.arguments["url"] as? String,
-              let url = URL(string: text.contains("://") ? text : "https://" + text) else { return false }
-        return ((url.query ?? "") + (url.fragment ?? "")).count > 100
+        ["navigateToURL", "createTab"].contains(call.name) && AIAddress.carriesData(call.arguments["url"] as? String ?? "")
     }
 
+    /// Shows an NSAlert asking the user to approve a mutating browser tool or MCP tool call.
     private func requestToolApproval(toolName: String, args: [String: Any], mcpServerId: String? = nil, offerAllowAll: Bool = true) async -> ToolApprovalResult {
         let alert = NSAlert()
         // FORK: one plain sentence, no code or parameters: what it wants to do, and where.
