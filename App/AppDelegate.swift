@@ -234,15 +234,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             alert.addButton(withTitle: "Cancel")
             if alert.runModal() != .alertFirstButtonReturn { return .terminateCancel }
         }
-        // FORK: "Clear … when Vega quits": clear first, then quit again; the second pass goes straight through.
+        // FORK: "Clear … when Vega quits": hold the quit until the clearing is done, then let it go.
+        // terminateLater (not cancel-and-retry) so a restart or log out never reads this as a veto.
         if let manager = browserManager, manager.vegaSettings?.clearDataOnQuit == true, !clearedDataAtQuit {
             clearedDataAtQuit = true
             Task { @MainActor in
                 await manager.clearWebsiteDataAtQuit()
-                NSApp.terminate(nil)
+                self.saveForQuit()
+                NSApp.reply(toApplicationShouldTerminate: true)
             }
-            return .terminateCancel
+            return .terminateLater
         }
+        saveForQuit()
+        return .terminateNow
+    }
+
+    @MainActor private func saveForQuit() {
         let start = CFAbsoluteTimeGetCurrent()
         if let manager = browserManager {
             manager.tabs.flushSync()
@@ -260,7 +267,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             }
         }
         AppDelegate.log.info("Quit save finished in \(String(format: "%.3f", CFAbsoluteTimeGetCurrent() - start))s")
-        return .terminateNow
     }
 
     func applicationWillTerminate(_ notification: Notification) {
