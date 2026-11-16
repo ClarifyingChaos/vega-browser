@@ -120,20 +120,57 @@ struct PeekOverlayView: View {
     private var actionButtons: some View {
         VStack(spacing: NookDesign.Spacing.sm) {
             circleButton(fallback: "xmark", help: "Close", action: peek.dismissPeek)
-            circleButton(fallback: "arrow.up.left.and.arrow.down.right", help: "Open as a tab", action: peek.moveToNewTab)
+            openInSpaceMenu
             circleButton(fallback: "square.split.2x1", help: "Open in split view", action: peek.moveToSplitView)
                 .disabled(!peek.canEnterSplitView)
         }
     }
 
+    /// Open as a tab: asks which space, the window's own first.
+    @ViewBuilder private var openInSpaceMenu: some View {
+        let current = windowState.spaceID.flatMap { tabs.space($0) }
+        let others = windowState.isIncognito ? [] : tabs.orderedSpaces.filter { $0.id != current?.id }
+        if others.isEmpty {
+            circleButton(fallback: "arrow.up.left.and.arrow.down.right", help: "Open as a tab") { peek.moveToNewTab() }
+        } else {
+            Menu {
+                Button("Open in \(current?.name ?? "This Space")") { peek.moveToNewTab() }
+                Divider()
+                Section("Open in Space") {
+                    ForEach(others, id: \.id) { space in
+                        Button(space.name) { peek.moveToNewTab(space: space.id) }
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            // A menu's label loses glass drawn inside it, so the circle sits behind the menu.
+            .background { Color.clear.nookGlassSurface(in: Circle()) }
+            .environment(\.colorScheme, .dark)
+            .help("Open as a tab in a space")
+            .accessibilityLabel("Open as a tab in a space")
+        }
+    }
+
+    private func circleLabel(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 36, height: 36)
+            .nookGlassSurface(in: Circle())
+    }
+
     private func circleButton(fallback: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             // A plain symbol: an animated icon is an AppKit view, and over Peek the page's web view draws on top of it.
-            Image(systemName: fallback)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .nookGlassSurface(in: Circle())
+            circleLabel(fallback)
         }
         .buttonStyle(.plain)
         .environment(\.colorScheme, .dark)
