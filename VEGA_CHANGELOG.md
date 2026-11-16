@@ -2,11 +2,12 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
-## Vega 1.7.5 (unreleased)
+## Vega 1.7.5 (2026-11-16)
 
 ### Fixes
 - The AI chat asks for permission once. **Allow for This Chat** now covers every browser action for the rest of the chat, new sites included, and the on-device model's prompt offers it too. Running a script on a page still asks every time, and so does opening an address with a long query that could carry page text out.
 - The send button turns into **Stop** while the AI works, and stops the reply.
+- Clearing data when Vega quits no longer answers a restart or log out with a refusal: the quit is held until the clearing is done, then goes through.
 
 ## Vega 1.7.4 (2026-11-16)
 
