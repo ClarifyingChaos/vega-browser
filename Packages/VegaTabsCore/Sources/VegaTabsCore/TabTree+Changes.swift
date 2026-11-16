@@ -281,13 +281,12 @@ extension TabTree {
     private mutating func remove(_ change: inout Change, itemID: UUID, now: Date) {
         guard var target = items[itemID] else { return }
         if change.items[itemID] == nil { change.items[itemID] = .some(target) }
-        if scope(of: itemID) == .synced {
-            target.deletedAt = now
-            target.modifiedAt = now
-            items[itemID] = target
-        } else {
-            items[itemID] = nil
-        }
+        // Every closed item leaves a tombstone, open tabs included: with tabs kept the same on every Mac, closing one
+        // has to reach the others. Tombstones are pruned after `tombstoneLifetime`, and sync forgets a closed tab's
+        // after a week.
+        target.deletedAt = now
+        target.modifiedAt = now
+        items[itemID] = target
     }
 
     /// Moves a tab's children up into its place, right after it, in their order.
