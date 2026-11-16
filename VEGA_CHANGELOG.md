@@ -7,6 +7,9 @@ What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's
 ### Privacy and security
 - Filling a saved password asks for Touch ID or your Mac password first, as Apple's Passwords does. One approval covers the same site for a minute, so a sign-in that fills a username and then a password asks once.
 
+- Updates no longer make the Keychain ask about your saved passwords again. Releases are signed with a certificate (an ad-hoc signature is a new identity every build, so every approval was lost). You approve each item once more after this update, then not again.
+- Password sync never shows a dialog and no longer reads every saved password at launch. It reads them only when one changed, and a password the Keychain would ask about waits until you have used it.
+
 ### Changes
 - Saved passwords are offered under a login field, including a username-only first step. The prompts use Apple's wording: Save Password, Update Password, Not Now, Never for This Website.
 

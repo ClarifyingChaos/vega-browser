@@ -30,9 +30,13 @@ public protocol PasswordVault: AnyObject {
     func delete(host: String, username: String, at: Date)
     /// Deletions the vault remembers, so sync can pass them on.
     func tombstones() -> [PasswordRecord]
+    /// Runs `body` so that nothing is ever asked of the person: an item the system would ask about is skipped.
+    /// Sync works in the background and must never put a dialog in front of someone browsing.
+    func quietly<T>(_ body: () -> T) -> T
 }
 
 public extension PasswordVault {
+    func quietly<T>(_ body: () -> T) -> T { body() }
     func save(host: String, username: String, password: String) { save(host: host, username: username, password: password, modified: Date()) }
     func delete(host: String, username: String) { delete(host: host, username: username, at: Date()) }
 
