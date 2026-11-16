@@ -119,16 +119,18 @@ struct PeekOverlayView: View {
     /// Close, open as a tab and split: round dark-glass buttons beside the card, like the site name.
     private var actionButtons: some View {
         VStack(spacing: VegaDesign.Spacing.sm) {
-            circleButton("error", fallback: "xmark", help: "Close", action: peek.dismissPeek)
-            circleButton("maximize-2", fallback: "arrow.up.left.and.arrow.down.right", help: "Open as a tab", action: peek.moveToNewTab)
-            circleButton("columns", fallback: "square.split.2x1", help: "Open in split view", action: peek.moveToSplitView)
+            circleButton(fallback: "xmark", help: "Close", action: peek.dismissPeek)
+            circleButton(fallback: "arrow.up.left.and.arrow.down.right", help: "Open as a tab", action: peek.moveToNewTab)
+            circleButton(fallback: "square.split.2x1", help: "Open in split view", action: peek.moveToSplitView)
                 .disabled(!peek.canEnterSplitView)
         }
     }
 
-    private func circleButton(_ animation: String, fallback: String, help: String, action: @escaping () -> Void) -> some View {
+    private func circleButton(fallback: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            AnimatedIcon(animation, fallback: fallback, size: 20, ink: .white)
+            // A plain symbol: an animated icon is an AppKit view, and over Peek the page's web view draws on top of it.
+            Image(systemName: fallback)
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 36, height: 36)
                 .vegaGlassSurface(in: Circle())
