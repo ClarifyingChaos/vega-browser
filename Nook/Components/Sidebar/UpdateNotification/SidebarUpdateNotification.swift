@@ -86,6 +86,14 @@ struct SidebarUpdateNotification: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        // The shimmer runs only while the button shows: a forever animation started with the card
+                        // redrew the window every frame for as long as an update waited.
+                        .onAppear {
+                            withAnimation(.linear(duration: gradientAnimationDuration).repeatForever(autoreverses: false)) {
+                                gradientPhase = 1.0
+                            }
+                        }
+                        .onDisappear { gradientPhase = 0 }
 
                         // What changed, before restarting.
                         Button("What's New") { browserManager.openSettings(tab: .updates) }
@@ -111,12 +119,7 @@ struct SidebarUpdateNotification: View {
             .animation(NookDesign.Motion.standard, value: isVisible)
             .animation(NookDesign.Motion.standard, value: notificationOffset)
             .animation(NookDesign.Motion.standard, value: isExpanded)
-            .onAppear {
-                showNotification()
-                withAnimation(.linear(duration: gradientAnimationDuration).repeatForever(autoreverses: false)) {
-                    gradientPhase = 1.0
-                }
-            }
+            .onAppear { showNotification() }
             .onChange(of: shouldShowNotification) { _, newValue in
                 if newValue {
                     showNotification()
