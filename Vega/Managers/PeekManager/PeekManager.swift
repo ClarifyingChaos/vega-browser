@@ -91,12 +91,16 @@ final class PeekManager {
         }
     }
 
-    func moveToNewTab() {
+    /// Moves the page to a tab, in the window's space or in `spaceID` (the window switches to that space).
+    func moveToNewTab(space spaceID: UUID? = nil) {
         guard let page, let browserManager, let window = page.detachedWindow else { return }
         self.page = nil
         windowId = nil
         finish()
-        browserManager.tabs.adopt(page, in: window, from: openerID)
+        let elsewhere = spaceID != nil && spaceID != window.spaceID
+        if let spaceID, elsewhere { browserManager.tabs.setSpace(spaceID, in: window) }
+        // It nests under the tab it came from only when it stays in that tab's space.
+        browserManager.tabs.adopt(page, in: window, from: elsewhere ? nil : openerID)
     }
 
     var canEnterSplitView: Bool {

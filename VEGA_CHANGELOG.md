@@ -14,6 +14,7 @@ What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's
 ### Changes
 - Every floating page has one look: links from other apps and sign-in pop-ups open in the same card as Peek, over the window you're in. The small separate window is kept for when no Vega window is open.
 - Peek's Close, Open as Tab and Split buttons show their icons again.
+- Peek's Open as Tab button asks which space to open the page in: the window's own space first, then your other spaces.
 - Filling a saved login now fills the username too on sites that keep it outside the password's form.
 - Saved passwords are offered under a login field, including a username-only first step. The prompts use Apple's wording: Save Password, Update Password, Not Now, Never for This Website.
 
