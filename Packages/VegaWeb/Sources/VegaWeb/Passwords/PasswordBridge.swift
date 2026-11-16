@@ -29,6 +29,8 @@ public final class PasswordPrompter {
     @ObservationIgnored private var expiry: Task<Void, Never>?
 
     public var vault: PasswordVault = KeychainVault.shared
+    /// Opens the Passwords settings; the app sets it.
+    public var openManager: (() -> Void)?
 
     func offer(host: String, username: String, password: String, itemID: UUID) {
         let settings = PasswordSettings.shared
@@ -102,6 +104,9 @@ public final class PasswordBridge: NSObject, WKScriptMessageHandlerWithReply {
                 guard await PasswordGate.shared.allows(host: login.host) else { return replyHandler(nil, nil) }
                 replyHandler(prompter.vault.password(host: login.host, username: login.username), nil)
             }
+        case "manage":
+            prompter.openManager?()
+            replyHandler(nil, nil)
         case "submit":
             if let user = body["u"] as? String, let secret = body["p"] as? String {
                 prompter.offer(host: host, username: user, password: secret, itemID: session.itemID)
