@@ -271,14 +271,20 @@ struct SidebarAIChat: View {
 
                 Spacer()
 
-                Button(action: { sendMessage() }) {
-                    AnimatedIcon("send", fallback: "paperplane", size: 18, ink: canSend ? .white : .secondary)
-                        .frame(width: 28, height: 28)
-                        .background(canSend ? Color.accentColor : Color.primary.opacity(0.16), in: Circle())
+                Button(action: { aiService.isLoading ? aiService.stop() : sendMessage() }) {
+                    Group {
+                        if aiService.isLoading {
+                            Image(systemName: "stop.fill").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                        } else {
+                            AnimatedIcon("send", fallback: "paperplane", size: 18, ink: canSend ? .white : .secondary)
+                        }
+                    }
+                    .frame(width: 28, height: 28)
+                    .background(aiService.isLoading || canSend ? Color.accentColor : Color.primary.opacity(0.16), in: Circle())
                 }
                 .buttonStyle(.plain)
-                .disabled(!canSend)
-                .help("Send")
+                .disabled(!aiService.isLoading && !canSend)
+                .help(aiService.isLoading ? "Stop" : "Send")
             }
         }
         .padding(14)
@@ -598,9 +604,7 @@ struct SidebarAIChat: View {
         let kind = task ?? aiService.pendingTask
         messageText = ""
         aiService.pendingTask = .chat
-        Task {
-            await aiService.sendMessage(text, windowState: windowState, task: kind)
-        }
+        aiService.startMessage(text, windowState: windowState, task: kind)
     }
 
     private func takeAgentDraft() {
