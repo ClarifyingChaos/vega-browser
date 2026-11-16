@@ -51,6 +51,7 @@ public final class SyncCoordinator {
     private var backendKey: String { "fork.sync.backend" + suffix }
     private var enabledKey: String { "fork.sync.enabled" + suffix }
     private var openTabsKey: String { "fork.sync.openTabs" + suffix }
+    private var mirrorKey: String { "fork.sync.mirrorTabs" + suffix }
     private var fingerprintKey: String { "fork.sync.passwordsFingerprint" + suffix }
     private var keyService: String { "com.vega.browser.syncKey" + suffix }
     /// The profile whose spaces and tabs go to this account: nil syncs every space (a first profile with no others).
@@ -63,6 +64,7 @@ public final class SyncCoordinator {
         isEnabled = UserDefaults.standard.bool(forKey: "fork.sync.enabled" + suffix)
         backend = Backend(rawValue: UserDefaults.standard.string(forKey: "fork.sync.backend" + suffix) ?? "") ?? .iCloud
         sharesOpenTabs = UserDefaults.standard.bool(forKey: "fork.sync.openTabs" + suffix)
+        mirrorsTabs = UserDefaults.standard.object(forKey: "fork.sync.mirrorTabs" + suffix) as? Bool ?? true
         passwordsEnabled = UserDefaults.standard.bool(forKey: "fork.sync.passwords" + suffix)
     }
 
@@ -110,6 +112,14 @@ public final class SyncCoordinator {
         didSet {
             UserDefaults.standard.set(sharesOpenTabs, forKey: openTabsKey)
             lastOpenTabs = nil
+            if isEnabled { syncNow() }
+        }
+    }
+    /// Whether the open tabs themselves are kept the same on every Mac, not just listed. On unless switched off.
+    public var mirrorsTabs: Bool {
+        didSet {
+            UserDefaults.standard.set(mirrorsTabs, forKey: mirrorKey)
+            lastWritten = nil
             if isEnabled { syncNow() }
         }
     }
@@ -432,7 +442,7 @@ public final class SyncCoordinator {
     /// Writes only when something other than the timestamp changed.
     private func writeOwn(store: any SyncBlobStore) async throws {
         guard let tabs else { return }
-        var snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName, profile: scopeProfile)
+        var snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName, profile: scopeProfile, includeTabs: mirrorsTabs)
         if let placeholder = placeholderID {
             snapshot.spaces.removeAll { $0.id == placeholder }
             snapshot.items.removeAll { tabs.tree.spaceID(of: $0.id) == placeholder }

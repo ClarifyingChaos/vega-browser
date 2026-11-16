@@ -70,7 +70,7 @@ struct TabTreeTests {
         checkInvariants(f.tree)
     }
 
-    @Test func closeTombstonesSyncedAndRemovesDevice() {
+    @Test func closeLeavesATombstoneForEveryItemOpenTabsToo() {
         var f = Fixture()
         let folder = f.folder("F", in: .pinned(spaceID: f.spaceA))
         let child = f.tab("c", in: .folder(itemID: folder))
@@ -82,8 +82,10 @@ struct TabTreeTests {
         #expect(f.tree.items[child]?.deletedAt == fixedNow)
         #expect(f.tree.item(child) == nil)
 
+        // An open tab leaves one as well, so closing it can reach the other Macs; it is just not a live item.
         _ = try! f.tree.close(regular, now: fixedNow)
-        #expect(f.tree.items[regular] == nil)
+        #expect(f.tree.items[regular]?.deletedAt == fixedNow)
+        #expect(f.tree.item(regular) == nil)
         checkInvariants(f.tree)
     }
 

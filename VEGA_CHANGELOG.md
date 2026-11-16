@@ -6,7 +6,8 @@ What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's
 
 ### New
 - **Settings sync.** Your settings (search engine, tab behaviour, appearance, keyboard shortcuts, privacy and password switches) travel with your first profile's account. A new Mac takes them when it first signs in, after that the newest change wins, and they apply the next time Vega opens (Settings › General offers Restart Vega). Window sizes, extensions and sync's own state stay on each Mac.
-- Signing in on first launch also turns on sharing your open tabs, so your other Macs list them under Spaces › Tabs from Other Macs.
+- **Open tabs are kept the same on all your Macs.** A tab you open or close on one Mac opens or closes on the others (Settings › General › Sync › Keep open tabs the same on my Macs, on by default). Each Mac keeps its own selected tab and its own sidebar layout.
+- Signing in on first launch also turns on the list under Spaces › Tabs from Other Macs, 
 
 ### Fixes
 - Spaces deleted when profiles were merged are deleted on your other Macs too. They used to stay there for good, which is how a Mac could show spaces the first one no longer had.

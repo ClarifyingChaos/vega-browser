@@ -297,7 +297,7 @@ private struct SyncSection: View {
 
     private var detail: String {
         switch sync.status {
-        case .off: return "Keeps spaces, favorites and pinned tabs the same on your Macs. Open tabs stay on each Mac."
+        case .off: return "Keeps spaces, favorites, pinned tabs, open tabs, passwords and settings the same on your Macs."
         case .unavailable(let why): return why
         case .syncing: return "Syncing…"
         case .idle(let last, let others, let waiting):
@@ -318,7 +318,10 @@ private struct SyncSection: View {
                 if sync.backend == .google && !GoogleAccount.forProfile(profileID).isSignedIn {
                     Text("Sign in under Account above to sync with Google.").font(NookDesign.Font.secondary).foregroundStyle(.secondary)
                 }
-                Toggle("Share open tabs", isOn: Binding(get: { sync.sharesOpenTabs }, set: { sync.sharesOpenTabs = $0 }))
+                Toggle("Keep open tabs the same on my Macs", isOn: Binding(get: { sync.mirrorsTabs }, set: { sync.mirrorsTabs = $0 }))
+                Text("Tabs you open or close on one Mac open or close on the others. Each Mac keeps its own selected tab.")
+                    .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                Toggle("Also list open tabs under Spaces \u{203A} Tabs from Other Macs", isOn: Binding(get: { sync.sharesOpenTabs }, set: { sync.sharesOpenTabs = $0 }))
                 Text(sync.passwordsEnabled
                      ? "Lists this Mac's open tabs, sealed with your sync passphrase so neither iCloud nor Google can read them. Your other Macs show them under Spaces › Tabs from Other Macs."
                      : "Lists this Mac's open tabs in your sync folder as plain text, without anything after the page address. Turn on password sync to seal them and keep full addresses. Your other Macs show them under Spaces › Tabs from Other Macs.")
