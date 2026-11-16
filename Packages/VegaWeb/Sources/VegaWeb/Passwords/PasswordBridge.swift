@@ -97,7 +97,11 @@ public final class PasswordBridge: NSObject, WKScriptMessageHandlerWithReply {
         case "fill":
             guard PasswordSettings.shared.autofill, let user = body["u"] as? String,
                   let login = prompter.vault.logins(forPageHost: host).first(where: { $0.username == user }) else { return replyHandler(nil, nil) }
-            replyHandler(prompter.vault.password(host: login.host, username: login.username), nil)
+            // The password leaves the Keychain only after Touch ID or the Mac's password.
+            Task { @MainActor in
+                guard await PasswordGate.shared.allows(host: login.host) else { return replyHandler(nil, nil) }
+                replyHandler(prompter.vault.password(host: login.host, username: login.username), nil)
+            }
         case "submit":
             if let user = body["u"] as? String, let secret = body["p"] as? String {
                 prompter.offer(host: host, username: user, password: secret, itemID: session.itemID)

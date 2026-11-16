@@ -86,13 +86,13 @@ private struct PasswordsContent: View {
 
     var body: some View {
         Form {
-            SettingsHero(symbol: "key", title: "Passwords", detail: "Saved logins, kept in your Mac's Keychain and filled only when you choose.")
+            SettingsHero(symbol: "key", title: "Passwords", detail: "Your saved passwords, kept in your Mac's Keychain.")
 
             Section {
                 Toggle("Offer to save passwords", isOn: $settings.offerToSave)
-                Toggle("Suggest saved passwords", isOn: $settings.autofill)
+                Toggle("AutoFill passwords", isOn: $settings.autofill)
             } footer: {
-                Text("Nothing is filled until you pick a login from the list under a login field. Private windows never save or fill.")
+                Text("Vega asks for Touch ID or your Mac password before it fills a saved password. Private windows never save or fill.")
             }
 
             Section {
