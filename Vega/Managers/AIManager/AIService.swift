@@ -48,9 +48,7 @@ class AIService {
 
     // Per-conversation flag: if the user chose "Allow All This Chat", skip further approval prompts
     private var autoApprovedThisChat: Bool = false
-    // FORK: Allow for This Chat covers sites already in play. A site the model has not opened yet is asked about again,
-    // so a page cannot steer it to a stranger's address that carries what it read.
-    private var approvedHosts: Set<String> = []
+    // FORK: Allow for This Chat covers every browser action for the chat, new sites included, so it asks once.
     // Allow All on an MCP prompt covers that server only, and the browser-tool flag never covers MCP
     private var autoApprovedMCPServers: Set<String> = []
 
@@ -300,7 +298,6 @@ class AIService {
     func clearMessages() {
         messages.removeAll()
         autoApprovedThisChat = false
-        approvedHosts = []
         autoApprovedMCPServers = []
     }
 
@@ -364,17 +361,14 @@ class AIService {
             }
 
             // executeJavaScript is left to the confirmation handler below, which prompts on every call
-            let target = Self.targetHost(of: toolCall)
-            let knownSite = target == nil || approvedHosts.contains(target!) || target == currentHost()
             if executionMode == .askBeforeExecuting && Self.mutatingTools.contains(toolCall.name)
-                && toolCall.name != "executeJavaScript" && !approved && (!autoApprovedThisChat || !knownSite) {
+                && toolCall.name != "executeJavaScript" && !approved && !autoApprovedThisChat {
                 let approval = await requestToolApproval(toolName: toolCall.name, args: toolCall.arguments)
                 switch approval {
                 case .allow:
-                    if let target { approvedHosts.insert(target) }
+                    break
                 case .allowAll:
                     autoApprovedThisChat = true
-                    if let target { approvedHosts.insert(target) }
                 case .deny:
                     Self.log.info("User denied tool execution: \(toolCall.name)")
                     return AIToolResult(toolCallId: toolCall.id, toolName: toolCall.name, content: "User denied execution of \(toolCall.name).", isError: true)
@@ -452,8 +446,12 @@ class AIService {
            configService.browserToolsConfig.executionMode != .disabled,
            configService.browserToolsConfig.enabledTools.contains(name),
            browserToolExecutor?.windowState?.isIncognito != true {
-            guard await requestToolApproval(toolName: name, args: arguments, offerAllowAll: false) != .deny else {
-                return wrapUntrusted("The person declined \(name).", tag: tag)
+            if !autoApprovedThisChat || name == "executeJavaScript" {
+                let answer = await requestToolApproval(toolName: name, args: arguments, offerAllowAll: name != "executeJavaScript")
+                guard answer != .deny else {
+                    return wrapUntrusted("The person declined \(name).", tag: tag)
+                }
+                if answer == .allowAll { autoApprovedThisChat = true }
             }
             approved = true
         }
@@ -468,19 +466,6 @@ class AIService {
     // MARK: - Tool Approval Dialog
 
     /// Shows an NSAlert asking the user to approve a mutating browser tool or MCP tool call.
-    /// The site an opening tool is aimed at, without "www.".
-    private static func targetHost(of call: AIToolCall) -> String? {
-        guard ["navigateToURL", "createTab"].contains(call.name), let text = call.arguments["url"] as? String, !text.isEmpty else { return nil }
-        guard let host = URL(string: text.contains("://") ? text : "https://" + text)?.host()?.lowercased() else { return nil }
-        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-    }
-
-    private func currentHost() -> String? {
-        guard let state = browserToolExecutor?.windowState,
-              let host = browserManager?.tabs.selectedSession(in: state)?.url.host()?.lowercased() else { return nil }
-        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-    }
-
     private func requestToolApproval(toolName: String, args: [String: Any], mcpServerId: String? = nil, offerAllowAll: Bool = true) async -> ToolApprovalResult {
         let alert = NSAlert()
         // FORK: one plain sentence, no code or parameters: what it wants to do, and where.
