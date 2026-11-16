@@ -2,7 +2,9 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
-## Vega 1.7.7 (unreleased)
+## Vega 1.7.7 (2026-11-16)
+
+> **Password sync: set up your passphrase again if a Mac asks for one.** Each sync place (iCloud Drive or Google) has its own passphrase. If you switched places, the new one has none yet: on your first Mac turn on **Sync Passwords**, press **Suggest**, copy it, and enter the same passphrase on your other Macs. Forgot it? **Change Passphrase…** sets a new one from any Mac that's already syncing.
 
 ### Fixes
 - Password sync: turning it off and on again on the same Mac no longer asks for the passphrase. Vega keeps this Mac's key and only asks when the passphrase was changed on another Mac or the sync folder has none yet.
