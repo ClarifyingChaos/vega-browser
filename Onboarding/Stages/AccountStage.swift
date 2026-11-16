@@ -19,6 +19,7 @@ struct AccountStage: View {
         Toggle(isOn: isOn) { Text(title).frame(maxWidth: .infinity, alignment: .leading) }
     }
 
+    @EnvironmentObject private var browserManager: BrowserManager
     @State private var google = GoogleAccount.shared
     @State private var sync = SyncCoordinator.shared
     @State private var error: String?
@@ -73,6 +74,8 @@ struct AccountStage: View {
                         Task {
                             do {
                                 try await google.signIn()
+                                // A new Mac signing in as its first profile takes the account's profile, not a second one.
+                                await ProfileAdoption.reconcileFirstProfile(tabs: browserManager.tabs)
                                 sync.backend = .google
                                 sync.isEnabled = true
                             } catch { self.error = error.localizedDescription }

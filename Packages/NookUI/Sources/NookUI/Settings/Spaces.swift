@@ -26,6 +26,7 @@ public struct SpacesSettingsView: View {
     /// Data size per profile, filled in as each store answers.
     @State private var stats: [UUID: String] = [:]
     @State private var addingProfile = false
+    @State private var addProfileError: String?
     @State private var newProfileName = ""
     /// The profile whose details sheet is open.
     @State private var detailsFor: UUID?
@@ -106,9 +107,26 @@ public struct SpacesSettingsView: View {
                     actions?.openWindow(forProfile: storeID)
                 }
             }
+            // A profile that lives in a Google account: this Mac makes the account's own, or a new one for it.
+            Button("Sign in with Google\u{2026}") {
+                let name = newProfileName.trimmingCharacters(in: .whitespaces)
+                Task {
+                    do {
+                        let outcome = try await ProfileAdoption.addFromGoogle(tabs: tabs, name: name.isEmpty ? "New Profile" : name)
+                        switch outcome {
+                        case .brought(let id, _), .created(let id), .alreadyHere(let id): actions?.openWindow(forProfile: id)
+                        }
+                    } catch { addProfileError = error.localizedDescription }
+                }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("A new profile starts with one space of its own, signed out of every website.")
+            Text("A new profile starts with one space of its own, signed out of every website. Or sign in with a Google account to bring the profile it holds from another Mac.")
+        }
+        .alert("Couldn\u{2019}t Add the Profile", isPresented: Binding(get: { addProfileError != nil }, set: { if !$0 { addProfileError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(addProfileError ?? "")
         }
         .alert("Rename Space", isPresented: Binding(get: { renamingSpace != nil }, set: { if !$0 { renamingSpace = nil } })) {
             TextField("Name", text: Binding(get: { renamingSpace?.name ?? "" }, set: { renamingSpace?.name = $0 }))
