@@ -18,6 +18,13 @@ public struct SettingsGeneralTab: View {
     @State private var showingAddEngine = false
     /// The Site Search row picked for the − button.
     @State private var selectedSite: UUID?
+    /// The profile whose account and sync are shown; nil follows the window in front.
+    @State private var accountProfile: UUID?
+
+    /// The profile of the window in front, else the first one.
+    private var currentProfileID: UUID? {
+        tabs.windowRegistry.activeWindow.flatMap { tabs.profileID(of: $0) } ?? tabs.profiles.first?.id
+    }
 
     public init() {}
 
@@ -82,16 +89,29 @@ public struct SettingsGeneralTab: View {
             }
 
             #if os(macOS)
+            // Each profile has its own Google account and sync, so these sections follow the profile picked here
+            // (the window in front to begin with).
+            if tabs.profiles.count > 1 {
+                Section {
+                    Picker("Profile", selection: Binding(get: { accountProfile ?? currentProfileID }, set: { accountProfile = $0 })) {
+                        ForEach(tabs.profiles) { Text($0.name).tag(UUID?.some($0.id)) }
+                    }
+                } footer: {
+                    Text("Each profile signs in to its own account and syncs on its own.")
+                }
+            }
             Section {
-                GoogleAccountRow()
+                GoogleAccountRow(profileID: accountProfile ?? currentProfileID)
+                    .id(accountProfile ?? currentProfileID)
             } header: {
                 Text("Account")
             } footer: {
-                if !GoogleAccount.shared.isSignedIn {
+                if !GoogleAccount.forProfile(accountProfile ?? currentProfileID).isSignedIn {
                     Text("Sign in to sync your spaces, favorites, open tabs and passwords between your Macs.")
                 }
             }
-            SyncSection()
+            SyncSection(profileID: accountProfile ?? currentProfileID)
+                .id(accountProfile ?? currentProfileID)
             #endif
 
             // FORK: grouped by what they are about, most-used first: search, tabs, startup, performance.
@@ -264,7 +284,14 @@ private extension SyncCoordinator.Status {
 
 /// FORK: spaces, favorites and pinned tabs shared between your Macs, through iCloud Drive or a Google account.
 private struct SyncSection: View {
-    @State private var sync = SyncCoordinator.shared
+    let profileID: UUID?
+    @State private var sync: SyncCoordinator
+
+    init(profileID: UUID?) {
+        self.profileID = profileID
+        _sync = State(initialValue: SyncCoordinator.forProfile(profileID))
+    }
+
     @State private var askingPassphrase = false
     @State private var changingPassphrase = false
 
@@ -288,7 +315,7 @@ private struct SyncSection: View {
                 Picker("Sync with", selection: Binding(get: { sync.backend }, set: { sync.backend = $0 })) {
                     ForEach(SyncCoordinator.Backend.allCases) { Text($0.title).tag($0) }
                 }
-                if sync.backend == .google && !GoogleAccount.shared.isSignedIn {
+                if sync.backend == .google && !GoogleAccount.forProfile(profileID).isSignedIn {
                     Text("Sign in under Account above to sync with Google.").font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
                 }
                 Toggle("Share open tabs", isOn: Binding(get: { sync.sharesOpenTabs }, set: { sync.sharesOpenTabs = $0 }))
@@ -337,10 +364,14 @@ private struct SyncSection: View {
 /// Sign in or out of the Google account that holds the sync files.
 /// Sign in or out of the Google account Vega syncs with. Signing in turns sync on through it, so one step is enough.
 public struct GoogleAccountRow: View {
-    @State private var google = GoogleAccount.shared
+    let profileID: UUID?
+    @State private var google: GoogleAccount
     @State private var error: String?
 
-    public init() {}
+    public init(profileID: UUID? = nil) {
+        self.profileID = profileID
+        _google = State(initialValue: GoogleAccount.forProfile(profileID))
+    }
 
     public var body: some View {
         HStack {
@@ -368,7 +399,7 @@ public struct GoogleAccountRow: View {
                     Task {
                         do {
                             try await google.signIn()
-                            let sync = SyncCoordinator.shared
+                            let sync = SyncCoordinator.forProfile(profileID)
                             sync.backend = .google
                             if sync.isEnabled { sync.syncNow() } else { sync.isEnabled = true }
                         }

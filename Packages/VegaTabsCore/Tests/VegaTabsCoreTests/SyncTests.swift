@@ -23,6 +23,24 @@ struct SyncTests {
         #expect(other.favorites(of: f.spaceA).map(\.displayTitle) == ["one"])
     }
 
+    @Test func aProfilesSnapshotHoldsOnlyItsOwnSpacesAndTabs() throws {
+        var f = Fixture()
+        let store = UUID(), otherStore = UUID()
+        let mine = UUID(), theirs = UUID()
+        f.tree.createSpace(id: mine, name: "Mine", icon: "m", accentHex: "#111", after: f.spaceB, dataStoreID: store, now: later)
+        f.tree.createSpace(id: theirs, name: "Theirs", icon: "t", accentHex: "#222", after: mine, dataStoreID: otherStore, now: later)
+        let myTab = f.tab("mine", in: .pinned(spaceID: mine))
+        let theirTab = f.tab("theirs", in: .pinned(spaceID: theirs))
+
+        let snapshot = SyncMerge.snapshot(of: f.tree, deviceID: macA, deviceName: "A", profile: store, now: later)
+        #expect(snapshot.spaces.map(\.id) == [mine], "only the profile's own space travels to its account")
+        #expect(snapshot.items.map(\.id) == [myTab], "and only what is in it")
+        #expect(!snapshot.items.contains { $0.id == theirTab })
+
+        let everything = SyncMerge.snapshot(of: f.tree, deviceID: macA, deviceName: "A", now: later)
+        #expect(everything.spaces.count == f.tree.spaces.count - (f.tree.spaces.values.filter(\.isAgent).count), "no profile asked for: every space, as before")
+    }
+
     @Test func aNewSpaceReachesTheOther() throws {
         var f = Fixture()
         var other = f.tree
