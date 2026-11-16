@@ -2,6 +2,15 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.7.9 (unreleased)
+
+### New
+- **Settings sync.** Your settings (search engine, tab behaviour, appearance, keyboard shortcuts, privacy and password switches) travel with your first profile's account. A new Mac takes them when it first signs in, after that the newest change wins, and they apply the next time Vega opens (Settings › General offers Restart Vega). Window sizes, extensions and sync's own state stay on each Mac.
+- Signing in on first launch also turns on sharing your open tabs, so your other Macs list them under Spaces › Tabs from Other Macs.
+
+### Fixes
+- Spaces deleted when profiles were merged are deleted on your other Macs too. They used to stay there for good, which is how a Mac could show spaces the first one no longer had.
+
 ## Vega 1.7.8 (2026-11-16)
 
 > **Passwords and sync now belong to a profile.** Your current profile keeps everything it had: its saved passwords, Google account, sync passphrase and sync switches. A profile you add gets its own, and its spaces and open tabs go only to its own account. Nothing of one profile reaches another's account.
