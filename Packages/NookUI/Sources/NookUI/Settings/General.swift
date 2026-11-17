@@ -368,7 +368,7 @@ private struct SyncSection: View {
                             Button("Remove\u{2026}") { removing = device }
                         }
                     }
-                    Text("Removing a Mac stops syncing with it, and it turns sync off the next time it connects. To also lock it out of your passwords, change the passphrase.")
+                    Text("Removing a Mac stops syncing with it. It deletes its synced data the next time it connects; to also lock it out of your passwords right away, change the passphrase.")
                         .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
                 }
                 // Settings from the other Mac arrive in the background and apply at the next launch.
@@ -396,7 +396,7 @@ private struct SyncSection: View {
             Button("Remove", role: .destructive) { if let device = removing { sync.removeDevice(device.id) }; removing = nil }
             Button("Cancel", role: .cancel) { removing = nil }
         } message: {
-            Text("It keeps what it already has, but stops syncing and turns sync off the next time it connects. It can join again by turning sync on.")
+            Text("The next time it connects it turns sync off and deletes the spaces, favorites, tabs, passwords and settings it got through sync. Your other Macs keep theirs. It can join again by turning sync on.")
         }
         .sheet(isPresented: $askingPassphrase) { SyncPassphraseSheet(sync: sync, changing: false) }
         .sheet(isPresented: $changingPassphrase) { SyncPassphraseSheet(sync: sync, changing: true) }

@@ -14,9 +14,16 @@ import Foundation
 import NookTabsCore
 
 extension SyncCoordinator {
-    private static var settingsAppliedKey: String { "fork.sync.settingsAppliedAt" }
-    private static var settingsDigestKey: String { "fork.sync.settingsDigest" }
-    private static var settingsChangedKey: String { "fork.sync.settingsChangedAt" }
+    static var settingsAppliedKey: String { "fork.sync.settingsAppliedAt" }
+    static var settingsDigestKey: String { "fork.sync.settingsDigest" }
+    static var settingsChangedKey: String { "fork.sync.settingsChangedAt" }
+
+    /// A Mac taken out of the chain forgets the settings it took, and what it remembered about syncing them.
+    func forgetSettings() {
+        guard profileID == nil || ProfileScope.isPrimary(profileID) else { return }
+        SettingsSnapshot.reset()
+        for key in [Self.settingsAppliedKey, Self.settingsDigestKey, Self.settingsChangedKey] { UserDefaults.standard.removeObject(forKey: key) }
+    }
 
     /// Called every tick for the first profile's account only.
     func syncSettings(store: any SyncBlobStore, own: UUID, deviceName: String) async {
