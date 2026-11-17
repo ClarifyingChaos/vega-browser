@@ -379,6 +379,34 @@ public final class SyncCoordinator {
         if !keepStatus { status = .off }
     }
 
+    /// Removes everything this chain brought to this Mac: its spaces with their favorites, pinned tabs and open tabs, its
+    /// passwords, and (for the first profile) the synced settings. The other Macs keep theirs. A profile always keeps a
+    /// space, so a chain that held every space leaves one empty space in a fresh profile, as on a new install.
+    private func eraseSyncedData() {
+        guard let tabs else { return }
+        let profile = scopeProfile
+        let vault = KeychainVault.forProfile(profile)
+        let doomed = tabs.spaces(ofProfile: profile).filter { !$0.isAgent }
+        let everything = tabs.spaces(ofProfile: nil).filter { !$0.isAgent }
+        var fresh: UUID?
+        if doomed.count == everything.count {
+            guard let space = tabs.createSpace(name: "Personal", icon: "", accentHex: "#0A84FF", after: nil, profileName: "Personal") else { return }
+            fresh = tabs.tree.dataStoreID(for: space)
+        }
+        for space in doomed { tabs.deleteSpace(space.id) }
+        vault.deleteAll()
+        forgetSettings()
+        deleteKey()
+        for key in [passwordsKey, openTabsKey, fingerprintKey] { UserDefaults.standard.removeObject(forKey: key) }
+        passwordsEnabled = false
+        passwordStatus = nil
+        otherMacsTabs = []
+        devices = []
+        lastWritten = nil
+        lastOpenTabs = nil
+        if let fresh, ProfileScope.isPrimary(profile) { ProfileScope.setPrimary(fresh) }
+    }
+
     /// Takes another Mac out of the chain: the Macs stop reading it and it turns its own sync off at its next sync.
     public func removeDevice(_ id: UUID) {
         guard let place = currentStore() else { return }
@@ -397,7 +425,8 @@ public final class SyncCoordinator {
             if rejoining { try await store.setRemoved(own, false); rejoining = false }
             removedIDs = await store.removedDevices()
             if removedIDs.contains(own) {
-                removedMessage = "Another Mac removed this Mac from the sync chain. Turn on Sync my Macs to join again."
+                eraseSyncedData()
+                removedMessage = "Another Mac removed this Mac from the sync chain, and its synced spaces, favorites, tabs, passwords and settings were removed from this Mac. Turn on Sync my Macs to join again."
                 isEnabled = false
                 return
             }

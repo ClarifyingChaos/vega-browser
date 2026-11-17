@@ -149,6 +149,19 @@ public final class KeychainVault: PasswordVault {
         storeTombstones(all)
     }
 
+    /// Removes every saved login of this vault and the remembered deletions. Old items from before `.v2` cannot be
+    /// deleted without a dialog, so they are hidden instead.
+    public func deleteAll() {
+        let old = readsLegacy ? items(in: Self.legacyDomain).map(\.id) : []
+        SecItemDelete(base(domain: domain) as CFDictionary)
+        if !old.isEmpty {
+            var hidden = Set(UserDefaults.standard.stringArray(forKey: Self.hiddenKey) ?? [])
+            hidden.formUnion(old)
+            UserDefaults.standard.set(Array(hidden), forKey: Self.hiddenKey)
+        }
+        UserDefaults.standard.removeObject(forKey: tombstoneKey)
+    }
+
     // MARK: - Remembered deletions (no secrets in them)
 
     /// Each vault remembers its own deletions; the first profile keeps the original key.
