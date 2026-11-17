@@ -418,9 +418,9 @@ public struct GoogleAccountRow: View {
                         do {
                             try await google.signIn()
                             // The first profile on a fresh Mac takes the account's profile instead of making a second.
-                            if ProfileScope.isPrimary(profileID) { await ProfileAdoption.reconcileFirstProfile(tabs: tabs) }
                             let sync = SyncCoordinator.forProfile(profileID)
                             sync.backend = .google
+                            if ProfileScope.isPrimary(profileID) { await ProfileAdoption.reconcileFirstProfile(tabs: tabs) }
                             if sync.isEnabled { sync.syncNow() } else { sync.isEnabled = true }
                         }
                         catch { self.error = error.localizedDescription }
