@@ -18,8 +18,11 @@ public final class KeychainVault: PasswordVault {
     /// wrote it, and builds before signing was stable each had their own identity, so their items ask before every
     /// read. New items go under `.v2`, written by the stable identity, and never ask; an old item is copied over the
     /// first time it is read (or when the same login is saved or imported again) and is not read again.
-    private static let domain = "com.vega.browser.passwords.v2"
-    private static let legacyDomain = "com.vega.browser.passwords"
+    private static let domain = "\(keychainPrefix).passwords.v2"
+    private static let legacyDomain = "\(keychainPrefix).passwords"
+    /// `fork.keychain.testPrefix` gives a test copy of Vega Keychain items of its own, so a test never reads or
+    /// deletes the real passwords (the Keychain is shared by every app of this person).
+    static let keychainPrefix = UserDefaults.standard.string(forKey: "fork.keychain.testPrefix") ?? "com.vega.browser"
     /// Old items the person deleted. An old item cannot be removed without a dialog, so it is hidden instead.
     private static let hiddenKey = "fork.passwords.hiddenLegacy"
 
