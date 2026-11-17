@@ -295,6 +295,7 @@ private struct SyncSection: View {
     @State private var askingPassphrase = false
     @State private var changingPassphrase = false
     @State private var removing: SyncDevice?
+    @State private var lockingOut: String?
 
     private var detail: String {
         switch sync.status {
@@ -368,7 +369,7 @@ private struct SyncSection: View {
                             Button("Remove\u{2026}") { removing = device }
                         }
                     }
-                    Text("Removing a Mac stops syncing with it. It deletes its synced data the next time it connects; to also lock it out of your passwords right away, change the passphrase.")
+                    Text("Removing a Mac stops syncing with it right away. It deletes its synced data the next time Vega opens on it and can reach the sync folder. If you sync passwords, Vega then asks for a new passphrase, which locks it out of them at once.")
                         .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
                 }
                 // Settings from the other Mac arrive in the background and apply at the next launch.
@@ -393,13 +394,23 @@ private struct SyncSection: View {
             else if !sync.passwordsEnabled { Text("Passwords sync end to end encrypted with a passphrase only you know. iCloud never sees them.") }
         }
         .confirmationDialog("Remove \(removing?.name ?? "this Mac") from sync?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
-            Button("Remove", role: .destructive) { if let device = removing { sync.removeDevice(device.id) }; removing = nil }
+            Button("Remove", role: .destructive) {
+                if let device = removing {
+                    sync.removeDevice(device.id)
+                    // A new passphrase means a new key: the removed Mac can't open what is saved from now on.
+                    if sync.passwordsEnabled { lockingOut = device.name }
+                }
+                removing = nil
+            }
             Button("Cancel", role: .cancel) { removing = nil }
         } message: {
-            Text("The next time it connects it turns sync off and deletes the spaces, favorites, tabs, passwords and settings it got through sync. Your other Macs keep theirs. It can join again by turning sync on.")
+            Text("The next time Vega opens on it, it turns sync off and deletes the spaces, favorites, tabs, passwords, settings, history and website sign-ins it got through sync. Your other Macs keep theirs. It can join again by turning sync on.")
         }
         .sheet(isPresented: $askingPassphrase) { SyncPassphraseSheet(sync: sync, changing: false) }
         .sheet(isPresented: $changingPassphrase) { SyncPassphraseSheet(sync: sync, changing: true) }
+        .sheet(isPresented: Binding(get: { lockingOut != nil }, set: { if !$0 { lockingOut = nil } })) {
+            SyncPassphraseSheet(sync: sync, changing: true, reason: "Set a new passphrase so \(lockingOut ?? "the removed Mac") can't read passwords from your sync folder, even before it deletes its own copy.")
+        }
     }
 }
 
@@ -462,10 +473,13 @@ public struct SyncPassphraseSheet: View {
     let sync: SyncCoordinator
     /// Changing the passphrase of a sync that is already on, rather than turning it on.
     let changing: Bool
+    /// Why it is asked, said before the usual words (a Mac was just removed).
+    let reason: String?
 
-    public init(sync: SyncCoordinator, changing: Bool) {
+    public init(sync: SyncCoordinator, changing: Bool, reason: String? = nil) {
         self.sync = sync
         self.changing = changing
+        self.reason = reason
     }
     @Environment(\.dismiss) private var dismiss
     @State private var passphrase = ""
@@ -484,7 +498,7 @@ public struct SyncPassphraseSheet: View {
     }
 
     private var footer: String {
-        if changing { return "Your other Macs will ask for the new passphrase. Vega can't show it again, so keep it somewhere safe, like your Passwords app." }
+        if changing { return (reason.map { $0 + " " } ?? "") + "Your other Macs will ask for the new passphrase. Vega can't show it again, so keep it somewhere safe, like your Passwords app." }
         if entering { return "Enter the passphrase you chose on your other Mac. On that Mac, Change Passphrase\u{2026} sets a new one if you don't have it." }
         if checked && exists == nil { return "Vega couldn't reach your sync folder to see whether another Mac has a passphrase. If one does, enter the same one here." }
         return "Enter this passphrase on your other Macs to sync passwords with them. Vega can't show it again, so keep it somewhere safe, like your Passwords app."
