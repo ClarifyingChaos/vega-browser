@@ -53,7 +53,7 @@ public final class SyncCoordinator {
     private var openTabsKey: String { "fork.sync.openTabs" + suffix }
     private var mirrorKey: String { "fork.sync.mirrorTabs" + suffix }
     private var fingerprintKey: String { "fork.sync.passwordsFingerprint" + suffix }
-    private var keyService: String { "com.vega.browser.syncKey" + suffix }
+    private var keyService: String { "\(KeychainVault.keychainPrefix).syncKey" + suffix }
     /// The profile whose spaces and tabs go to this account: nil syncs every space (a first profile with no others).
     private var scopeProfile: UUID? { profileID ?? ProfileScope.primaryID }
 
@@ -393,7 +393,9 @@ public final class SyncCoordinator {
             guard let space = tabs.createSpace(name: "Personal", icon: "", accentHex: "#0A84FF", after: nil, profileName: "Personal") else { return }
             fresh = tabs.tree.dataStoreID(for: space)
         }
+        // Deleting a profile's last space also clears its cookies and website sign-ins.
         for space in doomed { tabs.deleteSpace(space.id) }
+        tabs.history?.clearHistory(profileId: profile)
         vault.deleteAll()
         forgetSettings()
         deleteKey()
@@ -426,7 +428,7 @@ public final class SyncCoordinator {
             removedIDs = await store.removedDevices()
             if removedIDs.contains(own) {
                 eraseSyncedData()
-                removedMessage = "Another Mac removed this Mac from the sync chain, and its synced spaces, favorites, tabs, passwords and settings were removed from this Mac. Turn on Sync my Macs to join again."
+                removedMessage = "Another Mac removed this Mac from the sync chain, and its synced spaces, favorites, tabs, passwords, settings, history and website sign-ins were removed from this Mac. Restart Vega to finish resetting settings. Turn on Sync my Macs to join again."
                 isEnabled = false
                 return
             }
