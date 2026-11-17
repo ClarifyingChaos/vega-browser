@@ -53,6 +53,11 @@ public enum SettingsSnapshot {
         return File(writtenAt: at, device: plist["device"] as? String ?? "another Mac", values: values.filter { isSynced($0.key) })
     }
 
+    /// Forgets every synced setting, so the Mac falls back to Vega's defaults.
+    public static func reset(_ defaults: UserDefaults = .standard) {
+        for key in current(defaults).keys { defaults.removeObject(forKey: key) }
+    }
+
     /// Writes `values` into `defaults`, and returns how many differed from what was there.
     @discardableResult
     public static func apply(_ values: [String: Any], to defaults: UserDefaults = .standard) -> Int {

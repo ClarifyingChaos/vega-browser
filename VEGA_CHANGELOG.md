@@ -5,7 +5,7 @@ What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's
 ## Vega 1.7.9 (unreleased)
 
 ### New
-- **Remove a Mac from sync.** Settings › General › Sync lists your other Macs; Remove stops syncing with one, and it turns its own sync off the next time it connects (it can join again by turning sync on). To also lock it out of passwords, change the sync passphrase.
+- **Remove a Mac from sync.** Settings › General › Sync lists your other Macs; Remove stops syncing with one. The next time it connects it turns its sync off and deletes the spaces, favorites, pinned and open tabs, passwords and settings it got through sync (a fresh empty space is left if that was all of them). It can join again by turning sync on. To lock it out of passwords right away, change the sync passphrase.
 - **Settings sync.** Your settings (search engine, tab behaviour, appearance, keyboard shortcuts, privacy and password switches) travel with your first profile's account. A new Mac takes them when it first signs in, after that the newest change wins, and they apply the next time Vega opens (Settings › General offers Restart Vega). Window sizes, extensions and sync's own state stay on each Mac.
 - **Open tabs are kept the same on all your Macs.** A tab you open or close on one Mac opens or closes on the others (Settings › General › Sync › Keep open tabs the same on my Macs, on by default). Each Mac keeps its own selected tab and its own sidebar layout.
 - Signing in on first launch also turns on the list under Spaces › Tabs from Other Macs, 
