@@ -10,6 +10,10 @@ What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's
 - Signing in on first launch also turns on the list under Spaces › Tabs from Other Macs, 
 
 ### Fixes
+- A new Mac that signs in on first launch takes your first profile even though a new install already opens a tab (it used to end up with two profiles). It still never replaces a profile that has favorites or pinned tabs.
+- Sync keeps running while Vega is hidden or minimised, instead of waiting until you bring it forward.
+- Settings sync no longer writes a file with a broken name. (One file named \(own.uuidString).plist may be left in your sync folder; it is harmless.)
+- `defaults write com.vega.browser skipLegacyMigration -bool true` before the first launch starts Vega empty, without importing an older Vega or Vega install's data.
 - Spaces deleted when profiles were merged are deleted on your other Macs too. They used to stay there for good, which is how a Mac could show spaces the first one no longer had.
 
 ## Vega 1.7.8 (2026-11-16)

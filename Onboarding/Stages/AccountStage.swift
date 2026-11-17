@@ -75,8 +75,8 @@ struct AccountStage: View {
                             do {
                                 try await google.signIn()
                                 // A new Mac signing in as its first profile takes the account's profile, not a second one.
-                                await ProfileAdoption.reconcileFirstProfile(tabs: browserManager.tabs)
                                 sync.backend = .google
+                                await ProfileAdoption.reconcileFirstProfile(tabs: browserManager.tabs)
                                 // Everything is shared by default: other Macs list this one's open tabs too.
                                 sync.sharesOpenTabs = true
                                 sync.isEnabled = true
@@ -94,7 +94,11 @@ struct AccountStage: View {
                     .disabled(!google.isAvailable)
                     Button("Use iCloud Drive instead") {
                         sync.backend = .iCloud
-                        sync.isEnabled = true
+                        // Before sync starts, or its first round brings the account's spaces in under a second profile.
+                        Task {
+                            await ProfileAdoption.reconcileFirstProfile(tabs: browserManager.tabs)
+                            sync.isEnabled = true
+                        }
                     }
                     .buttonStyle(.plain)
                     .font(.system(size: 13, weight: .medium))

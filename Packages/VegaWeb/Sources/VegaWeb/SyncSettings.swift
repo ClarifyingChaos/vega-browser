@@ -37,7 +37,7 @@ extension SyncCoordinator {
             let names = try await store.list("settings").names.filter { $0.hasSuffix(".plist") && !$0.hasPrefix(own.uuidString) }
             var newest: SettingsSnapshot.File?
             for name in names {
-                if let file = SettingsSnapshot.decode(try await store.get("settings/\\(name)")), file.writtenAt > (newest?.writtenAt ?? .distantPast) { newest = file }
+                if let file = SettingsSnapshot.decode(try await store.get("settings/\(name)")), file.writtenAt > (newest?.writtenAt ?? .distantPast) { newest = file }
             }
             let appliedAt = defaults.object(forKey: Self.settingsAppliedKey) as? Date ?? .distantPast
             // Take the other Mac's when this Mac never synced settings, or theirs is newer than both the last one taken
@@ -46,12 +46,12 @@ extension SyncCoordinator {
                 let count = SettingsSnapshot.apply(newest.values, to: defaults)
                 defaults.set(newest.writtenAt, forKey: Self.settingsAppliedKey)
                 defaults.set(SettingsSnapshot.digest(SettingsSnapshot.current(defaults)), forKey: Self.settingsDigestKey)
-                if count > 0 { settingsStatus = "Settings from \\(newest.device) were applied. Restart Vega to use them." }
+                if count > 0 { settingsStatus = "Settings from \(newest.device) were applied. Restart Vega to use them." }
                 return
             }
             // Ours: written when it changed, or the first time (so the other Macs have something to take).
             if neverSynced || changedAt > appliedAt, let data = SettingsSnapshot.encode(values: values, writtenAt: changedAt, device: deviceName) {
-                try await store.put("settings/\\(own.uuidString).plist", data)
+                try await store.put("settings/\(own.uuidString).plist", data)
                 defaults.set(changedAt, forKey: Self.settingsAppliedKey)
             }
         } catch {

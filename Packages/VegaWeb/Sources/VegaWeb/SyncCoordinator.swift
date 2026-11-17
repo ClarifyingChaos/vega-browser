@@ -126,6 +126,9 @@ public final class SyncCoordinator {
     @ObservationIgnored private var lastOpenTabs: [OpenTabsSnapshot.Entry]?
     @ObservationIgnored private weak var tabs: TabsController?
     @ObservationIgnored private var loop: Task<Void, Never>?
+    /// Keeps macOS from slowing the sync loop (App Nap) while Vega sits hidden or minimised: a Mac whose Vega is in
+    /// the background must still send and take changes within a round or two.
+    @ObservationIgnored private var activity: NSObjectProtocol?
     @ObservationIgnored private var lastWritten: SyncSnapshot?
     @ObservationIgnored private var observers: [Any] = []
 
@@ -144,7 +147,9 @@ public final class SyncCoordinator {
     func currentStore() -> (store: any SyncBlobStore, missing: String?)? {
         switch backend {
         case .iCloud:
-            guard var url = FolderBlobStore.iCloudDrive() else { return nil }
+            // A scripted run points two copies of Vega at one folder, standing in for two Macs.
+            let override = UserDefaults.standard.string(forKey: "fork.sync.testFolder").map { URL(fileURLWithPath: $0, isDirectory: true) }
+            guard var url = override ?? FolderBlobStore.iCloudDrive() else { return nil }
             // One iCloud account holds every profile's files: each other profile gets its own folder.
             if !suffix.isEmpty, let profileID { url.appendPathComponent("Profiles/\(profileID.uuidString)", isDirectory: true) }
             return (FolderBlobStore(url: url), nil)
@@ -337,6 +342,9 @@ public final class SyncCoordinator {
         stop(keepStatus: true)
         guard currentStore() != nil else { status = .unavailable(missingMessage); return }
         status = .syncing
+        if activity == nil {
+            activity = ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason: "Vega sync")
+        }
         loop = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.tick()
@@ -358,6 +366,7 @@ public final class SyncCoordinator {
     private func stop(keepStatus: Bool = false) {
         loop?.cancel()
         loop = nil
+        if !keepStatus, let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
         if !keepStatus { status = .off }
@@ -425,6 +434,12 @@ public final class SyncCoordinator {
     }
 
     @ObservationIgnored private var lastIdentity: ProfileIdentity?
+
+    /// The profile the sync place holds (its `profile.json`), if any: used by a fresh Mac to take it as its first.
+    func remoteProfile() async -> ProfileIdentity? {
+        guard let place = currentStore() else { return nil }
+        return ProfileIdentity.decode(try? await place.store.get(ProfileIdentity.path))
+    }
 
     /// Says in the account's folder which profile this is, so another Mac can bring the same one.
     private func writeProfileFile(store: any SyncBlobStore) async {
