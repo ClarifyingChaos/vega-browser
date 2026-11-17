@@ -294,6 +294,7 @@ private struct SyncSection: View {
 
     @State private var askingPassphrase = false
     @State private var changingPassphrase = false
+    @State private var removing: SyncDevice?
 
     private var detail: String {
         switch sync.status {
@@ -311,6 +312,9 @@ private struct SyncSection: View {
     var body: some View {
         Section {
             Toggle("Sync my Macs", isOn: Binding(get: { sync.isEnabled }, set: { sync.isEnabled = $0 }))
+            if let line = sync.removedMessage {
+                Text(line).font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+            }
             if sync.isEnabled {
                 Picker("Sync with", selection: Binding(get: { sync.backend }, set: { sync.backend = $0 })) {
                     ForEach(SyncCoordinator.Backend.allCases) { Text($0.title).tag($0) }
@@ -352,6 +356,21 @@ private struct SyncSection: View {
                     Button("Sync Now") { sync.syncNow() }
                         .disabled(sync.status == .syncing || sync.status.isUnavailable)
                 }
+                if !sync.devices.isEmpty {
+                    ForEach(sync.devices) { device in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(device.name)
+                                Text("Last synced \(device.lastSeen.formatted(.relative(presentation: .named)))")
+                                    .font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Remove\u{2026}") { removing = device }
+                        }
+                    }
+                    Text("Removing a Mac stops syncing with it, and it turns sync off the next time it connects. To also lock it out of your passwords, change the passphrase.")
+                        .font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+                }
                 // Settings from the other Mac arrive in the background and apply at the next launch.
                 if let line = sync.settingsStatus {
                     HStack {
@@ -372,6 +391,12 @@ private struct SyncSection: View {
         } footer: {
             if !sync.isEnabled { Text(detail) }
             else if !sync.passwordsEnabled { Text("Passwords sync end to end encrypted with a passphrase only you know. iCloud never sees them.") }
+        }
+        .confirmationDialog("Remove \(removing?.name ?? "this Mac") from sync?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
+            Button("Remove", role: .destructive) { if let device = removing { sync.removeDevice(device.id) }; removing = nil }
+            Button("Cancel", role: .cancel) { removing = nil }
+        } message: {
+            Text("It keeps what it already has, but stops syncing and turns sync off the next time it connects. It can join again by turning sync on.")
         }
         .sheet(isPresented: $askingPassphrase) { SyncPassphraseSheet(sync: sync, changing: false) }
         .sheet(isPresented: $changingPassphrase) { SyncPassphraseSheet(sync: sync, changing: true) }

@@ -104,6 +104,12 @@ public final class SyncCoordinator {
     public private(set) var passwordStatus: String?
     /// Set when settings from another Mac were applied and need a restart.
     public internal(set) var settingsStatus: String?
+    /// The other Macs in this chain, as of the last sync (removed ones left out).
+    public private(set) var devices: [SyncDevice] = []
+    /// Set when another Mac took this one out of the chain.
+    public internal(set) var removedMessage: String?
+    @ObservationIgnored var removedIDs: Set<UUID> = []
+    @ObservationIgnored private var rejoining = false
     /// The tabs open on the other Macs, as of the last sync.
     public private(set) var otherMacsTabs: [OpenTabsSnapshot] = []
     /// Whether this Mac lists its open tabs (titles and addresses) in the sync folder for the others.
@@ -168,6 +174,7 @@ public final class SyncCoordinator {
         didSet {
             guard isEnabled != oldValue else { return }
             UserDefaults.standard.set(isEnabled, forKey: enabledKey)
+            if isEnabled { rejoining = true; removedMessage = nil }
             isEnabled ? begin() : stop()
         }
     }
@@ -372,6 +379,13 @@ public final class SyncCoordinator {
         if !keepStatus { status = .off }
     }
 
+    /// Takes another Mac out of the chain: the Macs stop reading it and it turns its own sync off at its next sync.
+    public func removeDevice(_ id: UUID) {
+        guard let place = currentStore() else { return }
+        devices.removeAll { $0.id == id }
+        Task { try? await place.store.setRemoved(id, true); await tick() }
+    }
+
     var deviceName: String { Host.current().localizedName ?? "Mac" }
 
     private func tick() async {
@@ -380,7 +394,16 @@ public final class SyncCoordinator {
         let store = place.store
         let own = deviceID
         do {
-            let (snapshots, pending) = try await store.readOtherSnapshots(excluding: own)
+            if rejoining { try await store.setRemoved(own, false); rejoining = false }
+            removedIDs = await store.removedDevices()
+            if removedIDs.contains(own) {
+                removedMessage = "Another Mac removed this Mac from the sync chain. Turn on Sync my Macs to join again."
+                isEnabled = false
+                return
+            }
+            let (all, pending) = try await store.readOtherSnapshots(excluding: own)
+            let snapshots = all.filter { !removedIDs.contains($0.deviceID) }
+            devices = snapshots.map { SyncDevice(id: $0.deviceID, name: $0.deviceName, lastSeen: $0.writtenAt) }.sorted { $0.name < $1.name }
             for snapshot in snapshots {
                 let change = SyncMerge.change(applying: snapshot, to: tabs.tree)
                 if !change.isEmpty { tabs.apply(change) }
@@ -410,7 +433,7 @@ public final class SyncCoordinator {
                 try await store.writeOpenTabs(OpenTabsSnapshot(deviceID: own, deviceName: deviceName, writtenAt: Date(), tabs: entries), key: key)
                 lastOpenTabs = entries
             }
-            otherMacsTabs = try await store.readOtherOpenTabs(excluding: own, key: key)
+            otherMacsTabs = try await store.readOtherOpenTabs(excluding: own, key: key).filter { !removedIDs.contains($0.deviceID) }
         } catch {
             Self.logger.error("open tabs sync failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -466,4 +489,11 @@ public final class SyncCoordinator {
         try await store.writeSnapshot(snapshot)
         lastWritten = snapshot
     }
+}
+
+/// A Mac in the sync chain, as listed in Settings.
+public struct SyncDevice: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let name: String
+    public let lastSeen: Date
 }

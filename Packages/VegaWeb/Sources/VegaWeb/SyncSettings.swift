@@ -34,7 +34,7 @@ extension SyncCoordinator {
         let neverSynced = defaults.object(forKey: Self.settingsAppliedKey) == nil
 
         do {
-            let names = try await store.list("settings").names.filter { $0.hasSuffix(".plist") && !$0.hasPrefix(own.uuidString) }
+            let names = try await store.list("settings").names.filter { name in name.hasSuffix(".plist") && !name.hasPrefix(own.uuidString) && !removedIDs.contains { name.hasPrefix($0.uuidString) } }
             var newest: SettingsSnapshot.File?
             for name in names {
                 if let file = SettingsSnapshot.decode(try await store.get("settings/\(name)")), file.writtenAt > (newest?.writtenAt ?? .distantPast) { newest = file }
