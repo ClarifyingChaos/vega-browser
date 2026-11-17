@@ -149,3 +149,17 @@ struct SyncTests {
         #expect(own.snapshots.isEmpty, "never reads its own file")
     }
 }
+
+@Suite struct RemovedDeviceTests {
+    @Test func removalMarkerRoundTripsAndCanBeUndone() async throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = FolderBlobStore(url: dir)
+        let a = UUID(), b = UUID()
+        #expect(await store.removedDevices().isEmpty)
+        try await store.setRemoved(a, true)
+        try await store.setRemoved(b, true)
+        try await store.setRemoved(b, false)
+        #expect(await store.removedDevices() == [a])
+    }
+}
