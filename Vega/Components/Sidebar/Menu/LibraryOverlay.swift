@@ -200,8 +200,8 @@ struct LibraryPanel: View {
 /// fingers. It tracks as the space pager does, in its own event loop, so it sees every event of the
 /// swipe through to the end; it also ends when the window or app loses focus, or goes quiet. Only scroll events reach it (clicks
 /// pass straight through), and only a sideways swipe is kept: the rest go to the view beneath.
-/// shortcut: a sideways swipe over Spaces columns that overflow closes rather than scrolls them;
-/// give the columns their own surface if many spaces become common.
+/// A sideways swipe over content that scrolls sideways (the Spaces columns) scrolls it while it has room that way;
+/// at its edge the swipe moves the library.
 struct LibrarySwipeSurface: NSViewRepresentable {
     let width: CGFloat
     let onRight: Bool
@@ -239,7 +239,18 @@ final class LibrarySwipeSurfaceView: NSView {
     }
 
     override func scrollWheel(with event: NSEvent) {
-        guard event.hasPreciseScrollingDeltas else { return forward(event) }
+        guard event.hasPreciseScrollingDeltas else {
+            // A mouse wheel only turns up and down: over the Spaces columns it moves them sideways.
+            if event.scrollingDeltaX == 0, let scroll = sidewaysScrollView(under: viewBeneath(event), wheel: true) {
+                let clip = scroll.contentView
+                let room = (scroll.documentView?.frame.width ?? 0) - clip.bounds.width
+                let x = min(max(clip.bounds.minX - event.scrollingDeltaY * 10, 0), room)
+                clip.scroll(to: NSPoint(x: x, y: clip.bounds.minY))
+                scroll.reflectScrolledClipView(clip)
+                return
+            }
+            return forward(event)
+        }
         if event.momentumPhase != [] {
             if !keptLast { forward(event) }
             return
@@ -255,7 +266,12 @@ final class LibrarySwipeSurfaceView: NSView {
             travel.width += event.scrollingDeltaX
             travel.height += event.scrollingDeltaY
             // A little hysteresis, then commit to an axis, as Apple's gestures do.
-            if abs(travel.width) > VegaDesign.Motion.swipeAxisLock, abs(travel.width) > abs(travel.height) {
+            if abs(travel.width) > VegaDesign.Motion.swipeAxisLock, abs(travel.width) > abs(travel.height),
+               canScrollBeneath(by: travel.width) {
+                // Columns that still have room that way (Spaces) scroll; the library closes from their edge.
+                claimed = false
+                forward(event)
+            } else if abs(travel.width) > VegaDesign.Motion.swipeAxisLock, abs(travel.width) > abs(travel.height) {
                 claimed = true
                 keptLast = true
                 track(from: event)
@@ -325,6 +341,28 @@ final class LibrarySwipeSurfaceView: NSView {
         if !interrupted, let a = samples.first, let b = samples.last, b.time > a.time { velocity = (b.distance - a.distance) / CGFloat(b.time - a.time) }
         claimed = nil
         onEnd(distance, velocity)
+    }
+
+    /// Whether a sideways scroll view under the swipe can still move by `deltaX` (positive shows what is to the left).
+    private func canScrollBeneath(by deltaX: CGFloat) -> Bool {
+        guard let scroll = sidewaysScrollView(under: beneath, wheel: false), let width = scroll.documentView?.frame.width else { return false }
+        let clip = scroll.contentView.bounds
+        return deltaX > 0 ? clip.minX > 0.5 : clip.maxX < width - 0.5
+    }
+
+    /// The nearest scroll view holding `view` whose content is wider than it. For a `wheel`, none when one nearer
+    /// scrolls up and down: a column's own long list keeps the wheel.
+    private func sidewaysScrollView(under view: NSView?, wheel: Bool) -> NSScrollView? {
+        var view = view
+        while let current = view {
+            if let scroll = current as? NSScrollView, let document = scroll.documentView {
+                let clip = scroll.contentView.bounds
+                if document.frame.width > clip.width + 1 { return scroll }
+                if wheel, document.frame.height > clip.height + 1 { return nil }
+            }
+            view = current.superview
+        }
+        return nil
     }
 
     private func forward(_ event: NSEvent) {
