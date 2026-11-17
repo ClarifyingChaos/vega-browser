@@ -5,13 +5,14 @@ import Foundation
 
 @main
 struct TidyTitlesCheck {
+    nonisolated(unsafe) static var failures = 0
     static func tidy(_ title: String, _ url: String) -> String {
         TidyTitles.tidy(title: title, url: URL(string: url)!)
     }
 
     static func expect(_ title: String, _ url: String, _ want: String, line: UInt = #line) {
         let got = tidy(title, url)
-        precondition(got == want, "line \(line): \(title) on \(url) gave \(got), wanted \(want)")
+        if got != want { FileHandle.standardError.write(Data(("" + "line \(line): gave [\(got)] wanted [\(want)]\n").utf8)); failures += 1 }
     }
 
     static func main() {
@@ -26,6 +27,17 @@ struct TidyTitlesCheck {
         expect("Invoice (2)", "https://mail.google.com/mail/u/0/#inbox/FMfcgzGx", "Invoice (2)")
         expect("Invoice (2) - me@example.com - Gmail", "https://mail.google.com/mail/u/0/#inbox/FMfcgzGx", "Invoice (2)")
 
+        // Any other site: its own name goes from either end, and a long title is cut at a word.
+        expect("Best laptops of 2026 | The Verge", "https://www.theverge.com/laptops", "Best laptops of 2026")
+        expect("iPhone 17 Pro - Apple", "https://www.apple.com/iphone/", "iPhone 17 Pro")
+        expect("Apple Watch - Apple", "https://www.apple.com/watch/", "Apple Watch")
+        expect("BBC News - Home", "https://www.bbc.co.uk/news", "Home")
+        expect("Swift Concurrency – Apple Developer", "https://developer.apple.com/swift/", "Swift Concurrency")
+        expect("Q&A - How to cook rice", "https://cooking.example.org/rice", "Q&A - How to cook rice")
+        expect("Reuters", "https://www.reuters.com/", "Reuters")
+        expect("Markets plunge as rates rise again worldwide today in Asia - Reuters", "https://www.reuters.com/x", "Markets plunge as rates rise again\u{2026}")
+        expect("Hello", "https://example.com/", "Hello")
+
         // X and Twitter.
         expect("Home / X", "https://x.com/home", "Home")
         expect("(2) Notifications / X", "https://x.com/notifications", "Notifications")
@@ -38,7 +50,7 @@ struct TidyTitlesCheck {
         expect("Cool video - YouTube", "https://www.youtube.com/watch?v=abc", "Cool video")
         expect("(5) Cool video - YouTube", "https://www.youtube.com/watch?v=abc", "Cool video")
         expect("GitHub - nook-browser/Nook: A fast browser", "https://github.com/nook-browser/Nook", "nook-browser/Nook: A fast browser")
-        expect("Fix the sidebar by someone · Pull Request #12 · nook-browser/Nook · GitHub", "https://github.com/nook-browser/Nook/pull/12", "Fix the sidebar by someone · Pull Request #12 · nook-browser/Nook")
+        expect("Fix the sidebar by someone · Pull Request #12 · nook-browser/Nook · GitHub", "https://github.com/nook-browser/Nook/pull/12", "Fix the sidebar by someone")
         expect("Feed | LinkedIn", "https://www.linkedin.com/feed/", "Feed")
         expect("(4) Messaging | LinkedIn", "https://www.linkedin.com/messaging/", "Messaging")
         expect("Reddit - The heart of the internet", "https://www.reddit.com/", "Reddit")
@@ -68,7 +80,7 @@ struct TidyTitlesCheck {
 
         // Left alone.
         expect("Maps", "https://www.google.com/maps?q=paris", "Maps")
-        expect("arc - Google Search", "https://www.google.com/search", "arc - Google Search")
+        expect("arc - Google Search", "https://www.google.com/search", "arc")
         expect("Hello - Gmail", "https://google.evil.com/search?q=x", "Hello - Gmail")
         expect("Inbox - Gmail", "https://mail.google.com.evil.com/#inbox", "Inbox - Gmail")
         expect("Home / X", "https://notx.com/home", "Home / X")
@@ -81,6 +93,7 @@ struct TidyTitlesCheck {
         expect("- YouTube", "https://www.youtube.com/", "- YouTube")
         expect("", "https://example.com/", "")
         expect("Swift - Wikipedia", "https://wikipedia.org.evil.com/", "Swift - Wikipedia")
+        precondition(failures == 0, "\(failures) TidyTitles case(s) failed")
         print("TidyTitlesCheck passed")
     }
 }
