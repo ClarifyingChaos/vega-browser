@@ -29,7 +29,8 @@ public enum TidyTitles {
     public static func result(title: String, url: URL?) -> Result {
         let key = (title + "\u{0}" + (url?.absoluteString ?? "")) as NSString
         if let hit = cache.object(forKey: key) { return hit.value }
-        let value = compute(title: title, url: url)
+        let raw = compute(title: title, url: url)
+        let value = Result(title: shortened(raw.title), siteName: raw.siteName, showsSite: raw.showsSite)
         cache.setObject(Box(value), forKey: key)
         return value
     }
@@ -60,7 +61,63 @@ public enum TidyTitles {
                   let changed = rule.title.apply(to: stripped, url: components) else { continue }
             return Result(title: changed.isEmpty ? base : changed, siteName: site.siteName, showsSite: rule.title.isQuery)
         }
-        return Result(title: base, siteName: nil, showsSite: false)
+        return Result(title: droppingSiteName(base, host: host), siteName: nil, showsSite: false)
+    }
+
+    // MARK: - Any site
+
+    /// Longest row title, in characters; a longer one is cut at a word and ends in "…".
+    static let maxLength = 40
+
+    static func shortened(_ title: String) -> String {
+        let title = title.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        guard title.count > maxLength else { return title }
+        var cut = String(title.prefix(maxLength))
+        // A break between parts ("Title · Section") is the cleanest place to stop, with no "…".
+        let ns = cut as NSString
+        if let last = separator.matches(in: cut, range: NSRange(location: 0, length: ns.length)).last, last.range.location >= maxLength / 3 {
+            return ns.substring(to: last.range.location)
+        }
+        if let space = cut.lastIndex(of: " "), cut.distance(from: cut.startIndex, to: space) >= maxLength / 2 { cut = String(cut[..<space]) }
+        return cut.trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.whitespaces).subtracting(CharacterSet(charactersIn: ")?!\"'"))) + "\u{2026}"
+    }
+
+    /// " | ", " - ", " – ", " — ", " · ", " : ", " • " between a page's title and its site's name.
+    private static let separator = re(#"\s+[|\-\x{2013}\x{2014}\x{00B7}:\x{2022}]\s+"#)
+
+    /// Drops the site's own name from the end ("Best laptops | The Verge"), or else from the start ("Apple - iPhone"):
+    /// a short part (four words at most) that holds the host's name. The rest is kept as the page wrote it.
+    static func droppingSiteName(_ title: String, host: String) -> String {
+        let brand = brandName(of: host)
+        guard brand.count >= 3 else { return title }
+        let ns = title as NSString
+        let cuts = separator.matches(in: title, range: NSRange(location: 0, length: ns.length)).map(\.range)
+        guard !cuts.isEmpty else { return title }
+        var parts: [String] = [], start = 0
+        for cut in cuts { parts.append(ns.substring(with: NSRange(location: start, length: cut.location - start))); start = cut.location + cut.length }
+        parts.append(ns.substring(from: start))
+        func isSiteName(_ part: String) -> Bool {
+            let words = part.split(separator: " ").count
+            let squashed = part.lowercased().filter { $0.isLetter || $0.isNumber }
+            return words <= 4 && squashed.count >= 3 && (squashed.contains(brand) || brand.contains(squashed))
+        }
+        var kept = parts
+        while kept.count > 1, let last = kept.last, isSiteName(last) { kept.removeLast() }
+        if kept.count == parts.count, kept.count > 1, isSiteName(kept[0]) { kept.removeFirst() }
+        guard kept.count < parts.count else { return title }
+        // Joined back with the page's own separators.
+        let firstKept = parts.firstIndex(of: kept[0]) ?? 0
+        var out = kept[0]
+        for i in 1..<kept.count { out += ns.substring(with: cuts[firstKept + i - 1]) + kept[i] }
+        return out.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// "theverge" for www.theverge.com, "bbc" for news.bbc.co.uk.
+    private static func brandName(of host: String) -> String {
+        var labels = host.split(separator: ".").map(String.init)
+        if labels.count > 1 { labels.removeLast() }
+        if labels.count > 1, ["co", "com", "org", "net", "ac", "gov", "edu", "ne", "or"].contains(labels.last!) { labels.removeLast() }
+        return (labels.last ?? "").filter { $0.isLetter || $0.isNumber }
     }
 
     // MARK: - Schema
