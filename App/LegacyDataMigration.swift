@@ -23,6 +23,9 @@ enum LegacyDataMigration {
         library: URL = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0],
         defaults: UserDefaults = .standard
     ) {
+        // FORK: `defaults write com.vega.browser skipLegacyMigration -bool true` before the first launch starts Vega
+        // empty, without importing an older Vega or Nook install's spaces, history and settings.
+        if defaults.bool(forKey: "skipLegacyMigration") { return }
         let fm = FileManager.default
         let appSupport = library.appendingPathComponent("Application Support", isDirectory: true)
         let webKit = library.appendingPathComponent("WebKit", isDirectory: true)

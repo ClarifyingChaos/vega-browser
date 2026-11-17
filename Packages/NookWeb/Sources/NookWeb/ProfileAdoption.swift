@@ -61,15 +61,21 @@ public enum ProfileAdoption {
         return outcome
     }
 
-    /// A fresh Mac that signs in as its first profile: when the account holds a profile and this Mac has nothing yet
-    /// of its own, take the account's profile as the first one, so the Mac doesn't end up with two.
-    /// Returns true when it did.
+    /// A profile nobody has set up yet: nothing favorited or pinned, and only the tab or two a new install opens. A
+    /// profile with a person's own favorites or pinned tabs is never swapped for another.
+    static func isFresh(_ profile: ProfileSummary, in tabs: TabsController) -> Bool {
+        profile.spaceIDs.allSatisfy { space in
+            tabs.favorites(of: space).isEmpty && tabs.children(of: .pinned(spaceID: space)).isEmpty && tabs.tabCount(inSpace: space) <= 3
+        }
+    }
+
+    /// A fresh Mac that signs in as its first profile (Google or iCloud Drive, whichever sync is set to): when the place
+    /// holds a profile and this Mac has nothing yet of its own, take that profile as the first one, so the Mac doesn't
+    /// end up with two. Returns true when it did.
     @discardableResult
     public static func reconcileFirstProfile(tabs: TabsController) async -> Bool {
-        guard tabs.profiles.count == 1, let local = tabs.profiles.first,
-              local.spaceIDs.allSatisfy({ tabs.tabCount(inSpace: $0) == 0 }),
-              let store = GoogleAccount.shared.store(),
-              let remote = ProfileIdentity.decode(try? await store.get(ProfileIdentity.path)),
+        guard tabs.profiles.count == 1, let local = tabs.profiles.first, isFresh(local, in: tabs),
+              let remote = await SyncCoordinator.shared.remoteProfile(),
               remote.id != local.id else { return false }
         guard let space = tabs.createSpace(name: remote.name, icon: "", accentHex: tabs.orderedSpaces.last?.accentHex ?? "#0A84FF",
                                            after: tabs.orderedSpaces.last?.id, profileName: remote.name, dataStoreID: remote.id) else { return false }
