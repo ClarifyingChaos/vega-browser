@@ -33,10 +33,13 @@ public protocol PasswordVault: AnyObject {
     /// Runs `body` so that nothing is ever asked of the person: an item the system would ask about is skipped.
     /// Sync works in the background and must never put a dialog in front of someone browsing.
     func quietly<T>(_ body: () -> T) -> T
+    /// Logins sync can't read without asking (an older Vega's Keychain items).
+    func legacyCount() -> Int
 }
 
 public extension PasswordVault {
     func quietly<T>(_ body: () -> T) -> T { body() }
+    func legacyCount() -> Int { 0 }
     func save(host: String, username: String, password: String) { save(host: host, username: username, password: password, modified: Date()) }
     func delete(host: String, username: String) { delete(host: host, username: username, at: Date()) }
 

@@ -356,13 +356,25 @@ private struct SyncSection: View {
                         Button("Change Passphrase\u{2026}") { changingPassphrase = true }
                     }
                 }
+                if let step = sync.progress {
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
+                        ProgressView(value: Double(step.step), total: Double(SyncProgress.steps))
+                        Text("\(step.label)\u{2026} (\(step.step) of \(SyncProgress.steps))")
+                            .font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+                    }
+                    .animation(VegaDesign.Motion.standard, value: step)
+                    .accessibilityElement(children: .combine)
+                }
                 HStack {
-                    Text(detail)
-                        .font(VegaDesign.Font.secondary)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(detail)
+                        if sync.progress == nil, let summary = sync.summary { Text(summary) }
+                    }
+                    .font(VegaDesign.Font.secondary)
+                    .foregroundStyle(.secondary)
                     Spacer()
                     Button("Sync Now") { sync.syncNow() }
-                        .disabled(sync.status == .syncing || sync.status.isUnavailable)
+                        .disabled(sync.progress != nil || sync.status == .syncing || sync.status.isUnavailable)
                 }
                 if !sync.devices.isEmpty {
                     ForEach(sync.devices) { device in
