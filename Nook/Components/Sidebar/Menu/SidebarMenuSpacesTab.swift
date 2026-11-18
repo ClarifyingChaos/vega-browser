@@ -62,16 +62,16 @@ struct SidebarMenuSpacesTab: View {
         .onDisappear { stopWheel() }
     }
 
-    /// A mouse wheel only turns up and down: over the columns it moves them sideways. A trackpad
-    /// (precise deltas) and Shift-scroll already scroll sideways on their own.
+    /// Over the columns an up-and-down scroll moves them sideways, never the list inside a space. A mouse
+    /// (smooth or notched) only turns up and down; a sideways swipe on a trackpad already scrolls sideways.
     private func startWheel() {
         guard wheelMonitor == nil else { return }
         wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
-            guard isHovering, !event.hasPreciseScrollingDeltas, event.scrollingDeltaX == 0, event.scrollingDeltaY != 0,
-                  let scroll else { return event }
+            guard isHovering, abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX), let scroll else { return event }
             let room = scroll.contentSize.width - scroll.containerSize.width
             guard room > 0 else { return event }
-            let x = min(max(scroll.contentOffset.x - event.scrollingDeltaY * 50, 0), room)
+            let step: CGFloat = event.hasPreciseScrollingDeltas ? 1 : 50
+            let x = min(max(scroll.contentOffset.x - event.scrollingDeltaY * step, 0), room)
             position.scrollTo(x: x)
             return nil
         }
