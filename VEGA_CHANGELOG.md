@@ -4,12 +4,22 @@ What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's
 
 ## Vega 1.7.12 (2026-11-18)
 
+### New
+- **Passwords… in a text field's right-click menu.** It shows that field's saved logins, or opens Settings › Passwords when it has none.
+
 ### Fixes
-- Site icons are saved in Vega's own cache folder, and every icon is fetched again once. A favorite that had saved another site's icon (Cosmos showed the wrong one on some Macs) shows its own again right away, instead of after a day. The old shared folder, ~/Library/Caches/FaviconCache, is no longer used.
+- Favorites you haven't opened get their icons again without a click. Vega asked sites for them under its own name, which some (Cosmos among them) refuse; it now asks as Safari. A few sites that block anything but a real browser (Behance, Crunchyroll) still show their icon once opened.
+- Site icons are saved in Vega's own cache folder, and every icon is fetched again once, so a favorite that had saved another site's icon shows its own right away. The old shared folder, ~/Library/Caches/FaviconCache, is no longer used.
+- A text field's right-click menu keeps Cut, Copy, Paste and spelling. It used to show the page's menu instead.
+
+### Known issue
+- macOS's own Passwords AutoFill can appear over Vega's password suggestions. It is drawn by macOS and apps can't turn it off; System Settings › General › AutoFill & Passwords can.
 
 ### Privacy and security
 Reviewed before release.
-- Icons are fetched once more from each favorite's own site, public https only, as before. Private tabs never fetch or save icons.
+- Icon requests now say they come from Safari, as Vega's pages already do, so sites can't tell icon fetches from Vega apart from Safari's. They still go only to each favorite's own site over https, carry no website cookies or sign-ins, and private tabs never make them.
+- The page's HTML is read only to find its icon links and is not kept. SwiftSoup, the HTML parser already inside Vega, is now listed as a direct dependency.
+- Passwords… from the right-click menu fills nothing by itself: as before, a login is filled only after you pick it and approve with Touch ID or your Mac password.
 - No new network connections, permissions or entitlements.
 
 ## Vega 1.7.11 (2026-11-18)
