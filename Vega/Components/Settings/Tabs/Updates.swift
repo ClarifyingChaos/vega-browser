@@ -58,6 +58,8 @@ struct UpdatesSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
     @State private var automatic = true
     @State private var checking = false
+    @State private var beta = UserDefaults.standard.bool(forKey: AppDelegate.betaKey)
+    @State private var crashReports = UserDefaults.standard.bool(forKey: CrashReporter.optInKey)
     private let releases = ChangelogRelease.parse(vegaChangelogMarkdown)
 
     private var version: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?" }
@@ -110,6 +112,34 @@ struct UpdatesSettingsView: View {
                 ))
             } footer: {
                 Text("Vega checks every hour, downloads a new version in the background and tells you in the sidebar. It installs when you restart.")
+            }
+
+            Section {
+                Toggle(isOn: Binding(
+                    get: { beta },
+                    set: { on in
+                        beta = on
+                        UserDefaults.standard.set(on, forKey: AppDelegate.betaKey)
+                        // Next check looks at the beta channel too.
+                        updater?.resetUpdateCycle()
+                    }
+                )) {
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        Text("Get beta updates")
+                        Text("Try new features a little early. A beta can have rough edges; turn this off to go back to the next regular release.")
+                            .font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+                    }
+                }
+                Toggle(isOn: Binding(
+                    get: { crashReports },
+                    set: { on in crashReports = on; UserDefaults.standard.set(on, forKey: CrashReporter.optInKey) }
+                )) {
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        Text("Offer to send crash reports")
+                        Text("After a crash, Vega offers a short report (version, macOS, where it crashed: no pages, passwords or history) that you read and send yourself.")
+                            .font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+                    }
+                }
             }
 
             ForEach(Array(releases.enumerated()), id: \.element.id) { index, release in

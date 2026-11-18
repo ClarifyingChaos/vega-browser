@@ -52,6 +52,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // MARK: - Sparkle Updates
 
     /// Sparkle updater controller for automatic app updates
+    /// FORK: Settings › Updates › Get beta updates: beta builds are marked with the "beta" channel in the feed.
+    func allowedChannels(for updater: SPUUpdater) -> Set<String> {
+        UserDefaults.standard.bool(forKey: Self.betaKey) ? ["beta"] : []
+    }
+    static let betaKey = "fork.updates.beta"
+
     lazy var updaterController: SPUStandardUpdaterController = {
         return SPUStandardUpdaterController(
             // FORK: on, with Vega's own feed (GitHub Pages) and EdDSA key; releases come from
@@ -64,6 +70,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // FORK: create the updater now so its scheduled checks run; it was only made on demand.
         _ = updaterController
+        CrashReporter.launch()
         setupURLEventHandling()
         setupMouseButtonHandling()
         setupSleepWakeHandling()
@@ -274,6 +281,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        CrashReporter.cleanExit()
         // Saving happens in applicationShouldTerminate; this only stops child processes.
         AppDelegate.log.info("applicationWillTerminate called")
 
