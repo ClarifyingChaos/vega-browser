@@ -239,18 +239,8 @@ final class LibrarySwipeSurfaceView: NSView {
     }
 
     override func scrollWheel(with event: NSEvent) {
-        guard event.hasPreciseScrollingDeltas else {
-            // A mouse wheel only turns up and down: over the Spaces columns it moves them sideways.
-            if event.scrollingDeltaX == 0, let scroll = sidewaysScrollView(under: viewBeneath(event), wheel: true) {
-                let clip = scroll.contentView
-                let room = (scroll.documentView?.frame.width ?? 0) - clip.bounds.width
-                let x = min(max(clip.bounds.minX - event.scrollingDeltaY * 10, 0), room)
-                clip.scroll(to: NSPoint(x: x, y: clip.bounds.minY))
-                scroll.reflectScrolledClipView(clip)
-                return
-            }
-            return forward(event)
-        }
+        // A mouse wheel goes to the view beneath (the Spaces page turns it sideways itself).
+        guard event.hasPreciseScrollingDeltas else { return forward(event) }
         if event.momentumPhase != [] {
             if !keptLast { forward(event) }
             return
@@ -345,21 +335,17 @@ final class LibrarySwipeSurfaceView: NSView {
 
     /// Whether a sideways scroll view under the swipe can still move by `deltaX` (positive shows what is to the left).
     private func canScrollBeneath(by deltaX: CGFloat) -> Bool {
-        guard let scroll = sidewaysScrollView(under: beneath, wheel: false), let width = scroll.documentView?.frame.width else { return false }
+        guard let scroll = sidewaysScrollView(under: beneath), let width = scroll.documentView?.frame.width else { return false }
         let clip = scroll.contentView.bounds
         return deltaX > 0 ? clip.minX > 0.5 : clip.maxX < width - 0.5
     }
 
-    /// The nearest scroll view holding `view` whose content is wider than it. For a `wheel`, none when one nearer
-    /// scrolls up and down: a column's own long list keeps the wheel.
-    private func sidewaysScrollView(under view: NSView?, wheel: Bool) -> NSScrollView? {
+    /// The nearest scroll view holding `view` whose content is wider than it.
+    private func sidewaysScrollView(under view: NSView?) -> NSScrollView? {
         var view = view
         while let current = view {
-            if let scroll = current as? NSScrollView, let document = scroll.documentView {
-                let clip = scroll.contentView.bounds
-                if document.frame.width > clip.width + 1 { return scroll }
-                if wheel, document.frame.height > clip.height + 1 { return nil }
-            }
+            if let scroll = current as? NSScrollView, let document = scroll.documentView,
+               document.frame.width > scroll.contentView.bounds.width + 1 { return scroll }
             view = current.superview
         }
         return nil
