@@ -6,7 +6,30 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
-## Vega 1.7.9 (2026-11-18)
+## Vega 1.7.10 (2026-11-18)
+
+> **Replaces 1.7.9, which was withdrawn.** 1.7.9 started sending space deletions to your other Macs, and a deletion one Mac had held back for days could remove spaces you were still using on another. 1.7.10 fixes that and brings everything 1.7.9 added (listed under 1.7.9 below).
+
+### New
+- **Sync progress.** Settings › General › Sync shows a progress bar for each sync round (your other Macs, spaces, passwords, settings, open tabs) and afterwards what is synced: spaces, favorites and pinned tabs, and passwords.
+- **Move or copy favorites to another space.** Right-click a favorite: Move to Space, Copy to Space, or Copy All Favorites to Space (it skips addresses the space already has), so a new space can start with your favorites.
+- **Reorder spaces in Settings › Spaces.** Drag a space by its row; the others slide out of the way. Move Up and Move Down are in the row's … menu too.
+- **Choose where downloads go.** Settings › General › Downloads: Save Downloads To a folder you pick, or Ask where to save each download.
+
+### Fixes
+- Sync no longer applies a space deletion that another Mac made before this Mac last heard from it. A new deletion still reaches your other Macs.
+- Password sync says how many logins it can't send yet: logins saved by an older Vega stay on their Mac, because macOS asks before Vega may read them. Importing them again (Settings › Passwords › Import from CSV) moves them so they sync.
+
+### Privacy and security
+Reviewed before release.
+- Counting the logins that can't sync reads only each login's site and user name, never a password, and never shows a Keychain dialog.
+- The download folder is a path saved on this Mac. Downloads keep the quarantine flag macOS uses for files from the web, wherever they are saved.
+- Copying a favorite copies its address and name inside Vega; nothing leaves the Mac except through sync, as before.
+- The 1.7.9 review below still applies. No new network connections, permissions or entitlements.
+
+## Vega 1.7.9 (2026-11-18, withdrawn)
+
+> Withdrawn the same day: it could delete spaces that another Mac had deleted days before. Everything below ships in 1.7.10, with that fixed.
 
 ### New
 - **Remove a Mac from sync.** Settings › General › Sync lists your other Macs; Remove stops syncing with one at once. The next time Vega opens on it, it turns its sync off and deletes the spaces, favorites, pinned and open tabs, passwords, settings, history and website sign-ins it got through sync (a fresh empty space is left if that was all of them). It can join again by turning sync on. With password sync on, removing a Mac asks for a new passphrase, which locks it out of passwords right away.
