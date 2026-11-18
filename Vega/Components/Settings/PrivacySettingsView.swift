@@ -51,22 +51,25 @@ struct PrivacySettingsView: View {
             }
 
             Section {
-                HStack {
-                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
-                        Text("Site Permissions")
-                        Text("Camera, microphone, JavaScript, ad blocking and more, for each site")
-                            .font(VegaDesign.Font.secondary)
-                            .foregroundStyle(.secondary)
+                // A real button, so VoiceOver and keyboard users can open it too.
+                Button { showSettingsSubPane(.sitePermissions) } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text("Site Permissions")
+                            Text("Camera, microphone, JavaScript, ad blocking and more, for each site")
+                                .font(VegaDesign.Font.secondary)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        VegaSymbol("chevron.right", size: 16)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    VegaSymbol("chevron.right", size: 16)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                        .accessibilityHidden(true)
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { showSettingsSubPane(.sitePermissions) }
-                .accessibilityAddTraits(.isButton)
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
                 HStack {
                     Text("Privacy Report")
                     Spacer()

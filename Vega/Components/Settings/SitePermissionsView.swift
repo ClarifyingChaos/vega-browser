@@ -16,6 +16,7 @@ struct SitePermissionsView: View {
     @Environment(\.vegaSettings) private var settings
     @State private var prefs = SitePreferences.shared
     @State private var query = ""
+    @State private var expanded: Set<String> = []
 
     private var hosts: [String] {
         let all = Set(settings.sitePermissions.keys)
@@ -33,7 +34,29 @@ struct SitePermissionsView: View {
                         .foregroundStyle(.secondary)
                 }
                 ForEach(hosts, id: \.self) { host in
-                    DisclosureGroup {
+                    // A button row rather than a DisclosureGroup: the system one doesn't open from VoiceOver or the keyboard.
+                    Button {
+                        if expanded.contains(host) { expanded.remove(host) } else { expanded.insert(host) }
+                    } label: {
+                        HStack(spacing: VegaDesign.Spacing.md) {
+                            Image(systemName: "chevron.right")
+                                .font(VegaDesign.Font.caption)
+                                .rotationEffect(.degrees(expanded.contains(host) ? 90 : 0))
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                                Text(host)
+                                Text(summary(host)).font(VegaDesign.Font.caption).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityValue(expanded.contains(host) ? "Expanded" : "Collapsed")
+                    if expanded.contains(host) {
+
                         permissionPicker("Camera", .camera, host)
                         permissionPicker("Microphone", .microphone, host)
                         triPicker("JavaScript", value: prefs.prefs(for: host).javaScript, on: "On", off: "Off") { v in prefs.update(host) { $0.javaScript = v } }
@@ -46,15 +69,10 @@ struct SitePermissionsView: View {
                                 if !block { settings.adBlockerWhitelist.append(host) }
                             }))
                         Button("Reset \(host)", role: .destructive) { reset(host) }
-                    } label: {
-                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
-                            Text(host)
-                            Text(summary(host)).font(VegaDesign.Font.caption).foregroundStyle(.secondary).lineLimit(1)
-                        }
                     }
                 }
             } header: {
-                TextField("Search sites", text: $query).textFieldStyle(.roundedBorder)
+                TextField("", text: $query, prompt: Text("Search sites")).textFieldStyle(.roundedBorder).labelsHidden()
             } footer: {
                 Text("A site not listed uses Vega's defaults, and asks before using your camera or microphone.")
             }
