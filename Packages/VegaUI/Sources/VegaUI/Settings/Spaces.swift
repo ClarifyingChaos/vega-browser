@@ -62,11 +62,13 @@ public struct SpacesSettingsView: View {
                 // The Agent space keeps its look and borrows another space's data, so it has no row.
                 ForEach(spaces) { space in
                     row(space)
+                        // A grouped Form has no drag to reorder of its own, so each row takes the dragged space.
+                        .dropDestination(for: String.self) { ids, _ in dropSpace(ids.first, on: space.id) }
                 }
             } header: {
                 Text("Spaces")
             } footer: {
-                Text("Each space belongs to a profile. Moving a space to another profile signs it in as that profile.")
+                Text("Drag a space by its handle, or use its … menu, to change its place in the sidebar. Each space belongs to a profile; moving a space to another profile signs it in as that profile.")
             }
 
             Section {
@@ -205,9 +207,39 @@ public struct SpacesSettingsView: View {
         }
     }
 
+    /// Puts the dragged space after the one now above it, so the sidebar and the space switcher follow.
+    private func reorder(from source: IndexSet, to destination: Int) {
+        var ids = spaces.map(\.id)
+        let moved = source.map { ids[$0] }
+        ids.move(fromOffsets: source, toOffset: destination)
+        for id in moved {
+            guard let index = ids.firstIndex(of: id) else { continue }
+            tabs.moveSpace(id, after: index > 0 ? ids[index - 1] : nil)
+        }
+    }
+
+    /// A space dropped on a row takes that row's place: above it when dragged up, below it when dragged down.
+    private func dropSpace(_ dragged: String?, on target: UUID) -> Bool {
+        guard let dragged, let id = UUID(uuidString: dragged), id != target,
+              let from = spaces.firstIndex(where: { $0.id == id }),
+              let to = spaces.firstIndex(where: { $0.id == target }) else { return false }
+        reorder(from: [from], to: to > from ? to + 1 : to)
+        return true
+    }
+
     @ViewBuilder
     private func row(_ space: SpaceRecord) -> some View {
         HStack(spacing: VegaDesign.Spacing.md) {
+            // Dia's handle: the row drags by it (the whole row drags too).
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.tertiary)
+                .frame(width: VegaDesign.Size.iconButton, height: VegaDesign.Size.iconButton)
+                .contentShape(Rectangle())
+                .help("Drag to Reorder")
+                .accessibilityHidden(true)
+                .draggable(space.id.uuidString) {
+                    Text(space.name).padding(VegaDesign.Spacing.sm)
+                }
             Button {
                 showAccentPickerFor = space.id
             } label: {
@@ -254,6 +286,12 @@ public struct SpacesSettingsView: View {
             Menu {
                 Button("Rename…", vegaIcon: "pencil") {
                     renamingSpace = (space.id, space.name)
+                }
+                if let index = spaces.firstIndex(where: { $0.id == space.id }) {
+                    Button("Move Up", systemImage: "arrow.up") { reorder(from: [index], to: index - 1) }
+                        .disabled(index == 0)
+                    Button("Move Down", systemImage: "arrow.down") { reorder(from: [index], to: index + 2) }
+                        .disabled(index == spaces.count - 1)
                 }
                 if spaces.count > 1 {
                     Divider()

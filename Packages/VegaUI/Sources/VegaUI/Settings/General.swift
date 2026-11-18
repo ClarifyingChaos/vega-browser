@@ -7,6 +7,9 @@
 //
 
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 import VegaDesign
 import VegaSettings
 import VegaWeb
@@ -151,6 +154,10 @@ public struct SettingsGeneralTab: View {
             } footer: {
                 Text(vegaSettings.startupLoadMode.description)
             }
+
+            #if os(macOS)
+            DownloadsSection()
+            #endif
 
             Section {
                 Picker("Tab Management", selection: Binding(
@@ -555,6 +562,48 @@ public struct SyncPassphraseSheet: View {
             exists = await sync.passphraseExists()
             checked = true
         }
+    }
+}
+#endif
+
+#if os(macOS)
+/// Where downloads go: a folder you choose, or a Save panel for every file (Safari's and Chrome's two settings).
+private struct DownloadsSection: View {
+    @AppStorage(DownloadLocation.folderKey) private var folderPath = ""
+    @AppStorage(DownloadLocation.askKey) private var asksEachTime = false
+
+    var body: some View {
+        Section {
+            LabeledContent("Save Downloads To") {
+                HStack(spacing: VegaDesign.Spacing.sm) {
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: folder.path))
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                    Text(FileManager.default.displayName(atPath: folder.path))
+                    Button("Choose…", action: choose)
+                }
+            }
+            .disabled(asksEachTime)
+            Toggle("Ask where to save each download", isOn: $asksEachTime)
+        } header: {
+            Text("Downloads")
+        } footer: {
+            Text(asksEachTime ? "Vega asks for a place and a name before each file is saved." : "Files are saved straight to this folder.")
+        }
+    }
+
+    private var folder: URL { _ = folderPath; return DownloadLocation.folder }
+
+    private func choose() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = folder
+        panel.prompt = "Choose"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        folderPath = url.path
     }
 }
 #endif

@@ -710,7 +710,7 @@ extension TabsController {
         perform(owner, "setTheme", undoable: false) { try $0.setTheme(spaceID, theme: theme) }
     }
 
-    func moveSpace(_ spaceID: UUID, after: UUID?) {
+    public func moveSpace(_ spaceID: UUID, after: UUID?) {
         guard let owner = owner(ofSpace: spaceID) else { return }
         perform(owner, "moveSpace") { try $0.moveSpace(spaceID, after: after) }
     }

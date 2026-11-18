@@ -532,8 +532,7 @@ public class DownloadManager: NSObject {
         origin: DownloadOrigin
     ) -> Download? {
         let name = Self.sanitizedFilename(suggestedFilename)
-        guard let downloadsDirectory = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first else { return nil }
-        let destination = Self.uniqueDestination(for: name, in: downloadsDirectory)
+        let destination = Self.uniqueDestination(for: name, in: DownloadLocation.folder)
         do {
             try data.write(to: destination, options: .withoutOverwriting)
         } catch {
@@ -696,7 +695,7 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
             }
         }
 
-        switch download.destinationPreference {
+        switch DownloadLocation.asksEachTime ? .askUser : download.destinationPreference {
         case .automaticDownloadsFolder:
             resolveAutomaticDestination(response: response, cleanName: cleanName, completion: completion)
         case .askUser:
@@ -705,10 +704,7 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
     }
 
     private func resolveAutomaticDestination(response: URLResponse, cleanName: String, completion: @escaping (DestinationDecision) -> Void) {
-        guard let downloadsDirectory = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first else {
-            presentSavePanel(response: response, cleanName: cleanName, completion: completion)
-            return
-        }
+        let downloadsDirectory = DownloadLocation.folder
 
         // Named before the first byte is written, so the file never exists under the old name.
         // Holds self: WebKit's completion must be called even if the row is removed meanwhile.
@@ -736,9 +732,7 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
         savePanel.allowedContentTypes = download.allowedContentTypes ?? [.data]
         savePanel.canCreateDirectories = true
         savePanel.isExtensionHidden = false
-        if let downloadsDirectory = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first {
-            savePanel.directoryURL = downloadsDirectory
-        }
+        savePanel.directoryURL = DownloadLocation.folder
 
         DispatchQueue.main.async {
             // FORK: a sheet on the window, as in Arc, rather than a floating panel.
