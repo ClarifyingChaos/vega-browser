@@ -90,9 +90,23 @@ public final class SyncCoordinator {
     }
 
     public enum Backend: String, CaseIterable, Identifiable, Sendable {
-        case iCloud, google
+        case iCloud, google, server
         public var id: String { rawValue }
-        public var title: String { self == .iCloud ? "iCloud Drive" : "Google account" }
+        public var title: String {
+            switch self {
+            case .iCloud: "iCloud Drive"
+            case .google: "Google account"
+            case .server: "Vega Sync server"
+            }
+        }
+        /// The places to choose from: the server only once its address is set (`defaults write com.vega.browser
+        /// fork.sync.serverURL https://…`), since nobody runs one by default.
+        public static var available: [Backend] { serverURL == nil ? [.iCloud, .google] : allCases }
+        public static var serverURL: URL? {
+            guard let raw = UserDefaults.standard.string(forKey: "fork.sync.serverURL"), let url = URL(string: raw) else { return nil }
+            let local = url.host == "127.0.0.1" || url.host == "localhost"
+            return url.scheme == "https" || (url.scheme == "http" && local) ? url : nil
+        }
     }
 
     private static let logger = Logger(subsystem: "com.vega.browser", category: "sync")
@@ -103,6 +117,8 @@ public final class SyncCoordinator {
     /// The longest wait between checks. Google Drive has no way to tell us about a change, so it is asked, and a quiet
     /// check is one small request; iCloud Drive's folder is watched, so its timed check only backs the watcher up.
     private var slowestInterval: Duration { backend == .google ? .seconds(30) : .seconds(120) }
+    /// The server's live connection: another Mac's write starts a round here within a second or two.
+    @ObservationIgnored private var liveConnection: ServerLive?
     /// A change here is sent after it stops for this long, and never more often than `minGap`.
     private static let settleDelay: Duration = .seconds(4)
     private static let minGap: TimeInterval = 15
@@ -193,12 +209,19 @@ public final class SyncCoordinator {
         case .google:
             guard let store = GoogleAccount.forProfile(profileID).store() else { return nil }
             return (store, nil)
+        case .server:
+            // Signed in with the same Google account; the server keeps one set of files per account.
+            guard let url = Backend.serverURL, let store = GoogleAccount.forProfile(profileID).serverStore(url: url) else { return nil }
+            return (store, nil)
         }
     }
 
     private var missingMessage: String {
-        backend == .iCloud ? "Turn on iCloud Drive in System Settings › Apple Account › iCloud, then try again."
-                           : "Sign in with Google to sync."
+        switch backend {
+        case .iCloud: "Turn on iCloud Drive in System Settings › Apple Account › iCloud, then try again."
+        case .google: "Sign in with Google to sync."
+        case .server: Backend.serverURL == nil ? "Set the Vega Sync server's address first." : "Sign in with Google to use Vega Sync."
+        }
     }
 
     public var isEnabled: Bool {
@@ -444,6 +467,11 @@ public final class SyncCoordinator {
 
     /// Watches the iCloud Drive folder, so a file another Mac's change brings down starts a round within seconds.
     private func watchFolder() {
+        liveConnection?.stop()
+        liveConnection = nil
+        if backend == .server, let server = currentStore()?.store as? ServerBlobStore {
+            liveConnection = server.live { [weak self] in Task { @MainActor in self?.folderChanged() } }
+        }
         watcher = nil
         guard backend == .iCloud, let folder = currentStore()?.store as? FolderBlobStore else { return }
         watcher = FolderWatcher(url: folder.url) { [weak self] in
@@ -515,6 +543,8 @@ public final class SyncCoordinator {
         watchTask = nil
         watcher?.stop()
         watcher = nil
+        liveConnection?.stop()
+        liveConnection = nil
         if !keepStatus, let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
