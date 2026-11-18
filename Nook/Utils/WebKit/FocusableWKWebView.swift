@@ -258,9 +258,7 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
         savePanel.nameFieldStringValue = suggestedFilename
 
         // Set the default directory to Downloads
-        if let downloads = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first {
-            savePanel.directoryURL = downloads
-        }
+        savePanel.directoryURL = DownloadLocation.folder
 
         // Set allowed file types for images
         savePanel.allowedContentTypes = allowedContentTypes
@@ -490,7 +488,7 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
             DownloadManager.setQuarantineAttribute(on: tempURL)
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                switch destinationPreference {
+                switch DownloadLocation.asksEachTime ? .askUser : destinationPreference {
                 case .askUser:
                     self.showSaveDialog(
                         for: tempURL,
@@ -505,9 +503,7 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
     }
 
     private func saveTempFileToDownloads(_ tempURL: URL, suggestedName: String) {
-        guard let downloads = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first else {
-            return
-        }
+        let downloads = DownloadLocation.folder
 
         var destination = downloads.appendingPathComponent(suggestedName)
         var counter = 1
