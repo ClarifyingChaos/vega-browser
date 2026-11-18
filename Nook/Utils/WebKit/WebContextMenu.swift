@@ -55,7 +55,7 @@ enum WebContextMenuItem {
         switch payload {
         case .page:
             return [.pageBack, .pageForward, .pageReload, .separator, .pageCopyAddress, .pagePrint, .pageTranslate, .separator, .pageViewSource, .systemInspect]
-        case .ignored:
+        case .ignored, .editable:
             return []
         default:
             // Link first, then image, then the selection; Share and Inspect once at the end,

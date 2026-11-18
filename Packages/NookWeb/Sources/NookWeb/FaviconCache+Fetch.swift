@@ -9,6 +9,7 @@
 
 #if os(macOS)
 import Foundation
+import SwiftSoup
 import FaviconFinder
 import AppKit
 
@@ -37,24 +38,41 @@ extension FaviconCache {
 
     /// The best roughly square icon among the page's `<link>` tags, its web manifest and /favicon.ico.
     static func bestIcon(for url: URL) async -> PlatformImage? {
-        var candidates: [FaviconURL] = []
-        for source in [FaviconSourceType.html, .webApplicationManifestFile, .ico] {
-            let finder = FaviconFinder(url: url, configuration: .init(preferredSource: source))
-            candidates += (try? await finder.fetchFaviconURLs()) ?? []
+        // FaviconFinder ignores its httpHeaders setting and fetches as the app, which sites like Cosmos and Behance
+        // refuse with 403. So the page is fetched here as Safari and handed over already parsed.
+        let page = await pageDocument(url)
+        var candidates: [(source: URL, edge: Double, touch: Bool)] = []
+        for source in [FaviconSourceType.html, .webApplicationManifestFile] {
+            let finder = FaviconFinder(url: url, configuration: .init(preferredSource: source, prefetchedHTML: page))
+            for found in (try? await finder.fetchFaviconURLs()) ?? [] {
+                candidates.append((found.source, Double(found.size?.dimension ?? 0),
+                                   found.format == .appleTouchIcon || found.format == .appleTouchIconPrecomposed))
+            }
         }
+        if let ico = URL(string: "/favicon.ico", relativeTo: url)?.absoluteURL { candidates.append((ico, 0, false)) }
         // Declared size first; icons with no size attribute come last but still get a chance.
         var seen = Set<URL>()
         let ordered = candidates
             .filter { !$0.source.path.lowercased().hasSuffix(".svg") && seen.insert($0.source).inserted }
-            .sorted { ($0.size?.dimension ?? 0) > ($1.size?.dimension ?? 0) }
+            .sorted { $0.edge > $1.edge }
             .prefix(4)
         var best: (image: PlatformImage, rank: IconRank)?
         for candidate in ordered {
-            guard let image = try? await candidate.download().image?.image else { continue }
-            let rank = IconRank(image, touchIcon: candidate.format == .appleTouchIcon || candidate.format == .appleTouchIconPrecomposed)
+            guard let image = await PageSession.downloadImage(from: candidate.source, isPrivate: false) else { continue }
+            let rank = IconRank(image, touchIcon: candidate.touch)
             if rank.usable, !image.isBlank, best == nil || rank > best!.rank { best = (image, rank) }
         }
         return best.map { $0.image.trimmedToContent().downscaled(toEdge: maxStoredEdge) }
+    }
+
+    /// The page's HTML, fetched with Safari's user agent. Nil when it can't be read; FaviconFinder then tries itself.
+    private static func pageDocument(_ url: URL) async -> Document? {
+        var request = URLRequest(url: url, timeoutInterval: 15)
+        if let agent = PlatformUserAgent.custom { request.setValue(agent, forHTTPHeaderField: "User-Agent") }
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let html = String(data: data.prefix(2_000_000), encoding: .utf8) ?? String(data: data.prefix(2_000_000), encoding: .isoLatin1) else { return nil }
+        return try? SwiftSoup.parse(html, response.url?.absoluteString ?? url.absoluteString)
     }
 }
 
