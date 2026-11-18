@@ -74,6 +74,9 @@ private struct PasswordsContent: View {
     @State private var adding = false
     @State private var deleting: SavedLogin?
     @State private var importResult: String?
+    /// Logins only an older Vega's Keychain items hold: they can't sync until imported again.
+    @State private var waiting: [SavedLogin] = []
+    @State private var showsWaiting = false
 
     @EnvironmentObject private var browserManager: BrowserManager
     /// Whose passwords are shown: the profile of the window in front, or the one picked.
@@ -90,6 +93,47 @@ private struct PasswordsContent: View {
     var body: some View {
         Form {
             SettingsHero(symbol: "key", title: "Passwords", detail: "Your saved passwords, kept in your Mac's Keychain. Click one to see, copy or change it.")
+
+            if !waiting.isEmpty {
+                Section {
+                    Label {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
+                            Text("\(waiting.count) of \(logins.count) passwords stay on this Mac").font(VegaDesign.Font.label)
+                            Text("They were saved by an older Vega, and macOS asks before Vega may read each one, so sync leaves them out. Bring them in once from a passwords file and they sync to your other Macs.")
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    }
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
+                        Text("1. Export your passwords from where you saved them:")
+                        Text("    Chrome: Settings › Passwords and autofill › Google Password Manager › Settings › Export")
+                        Text("    Safari or the Passwords app: File › Export All Passwords…")
+                        Text("2. Choose Import from CSV… below and pick the file.")
+                        Text("3. Delete the file: it holds your passwords as plain text.")
+                    }
+                    .font(VegaDesign.Font.secondary)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    HStack {
+                        Button(showsWaiting ? "Hide List" : "Show Which Ones") { showsWaiting.toggle() }
+                        Spacer()
+                        Button("Import from CSV…") { importCSV() }.buttonStyle(.borderedProminent)
+                    }
+                    if showsWaiting {
+                        ForEach(waiting) { login in
+                            HStack {
+                                Text(login.host).lineLimit(1)
+                                Spacer()
+                                Text(login.username).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            .font(VegaDesign.Font.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Not Synced")
+                }
+            }
 
             Section {
                 HStack(spacing: VegaDesign.Spacing.md) {
@@ -195,7 +239,10 @@ private struct PasswordsContent: View {
         }
     }
 
-    private func reload() { logins = vault.all() }
+    private func reload() {
+        logins = vault.all()
+        waiting = vault.legacyOnly().sorted { $0.host < $1.host }
+    }
 
     private func save(_ host: String, _ user: String, _ password: String) {
         let h = PasswordHosts.normalized(host.contains("://") ? (URL(string: host)?.host ?? host) : host)

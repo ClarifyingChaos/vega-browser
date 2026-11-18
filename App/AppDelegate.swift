@@ -68,6 +68,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         setupMouseButtonHandling()
         setupSleepWakeHandling()
         let didFinishOnboarding = userDefaults.bool(forKey: "settings.didFinishOnboarding")
+        // FORK: people who used Vega before the tour existed see it once, after the window is up.
+        if didFinishOnboarding, !userDefaults.bool(forKey: FeatureTourView.seenKey) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in self?.browserManager?.showFeatureTour() }
+        }
 
         if let window = NSApplication.shared.windows.first {
             // Always hide titlebar text immediately to prevent flash during transitions

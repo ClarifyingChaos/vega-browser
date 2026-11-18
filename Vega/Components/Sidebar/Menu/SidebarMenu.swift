@@ -37,6 +37,8 @@ struct SidebarMenu: View {
                     SidebarMenuArchiveTab(onRestore: close)
                 case .media:
                     SidebarMenuMediaTab()
+                case .easels:
+                    SidebarMenuEaselsTab()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -111,6 +113,16 @@ struct SidebarMenu: View {
                     isActive: windowState.sidebarMenuSelectedTab == .media,
                     action: {
                         windowState.sidebarMenuSelectedTab = .media
+                    }
+                )
+                SidebarMenuTab(
+                    image: "scribble",
+                    activeImage: "scribble.variable",
+                    title: "Easels",
+                    animation: "edit-2",
+                    isActive: windowState.sidebarMenuSelectedTab == .easels,
+                    action: {
+                        windowState.sidebarMenuSelectedTab = .easels
                     }
                 )
                 SidebarMenuTab(

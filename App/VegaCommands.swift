@@ -116,6 +116,10 @@ struct VegaCommands: Commands {
         }
 
         // App Menu Section (under Vega)
+        CommandGroup(after: .help) {
+            Button("Feature Tour") { browserManager.showFeatureTour() }
+        }
+
         CommandGroup(after: .appInfo) {
             Divider()
             Button("Make Vega Default Browser") {
@@ -501,8 +505,12 @@ struct VegaCommands: Commands {
             Divider()
             Button("Open Library…") { browserManager.openLibrary(.history) }
             Button("View Media…") { browserManager.openLibrary(.media) }
+            Button("View Easels…") { browserManager.openLibrary(.easels) }
             Button("View Downloads…") { shortcutManager.executeAction(.viewDownloads) }
                 .modifier(dynamicShortcut(.viewDownloads))
+            Divider()
+            Button("Task Manager") { browserManager.showTaskManager() }
+                .keyboardShortcut(.escape, modifiers: [.option, .command])
             Divider()
         }
 
@@ -621,6 +629,8 @@ struct VegaCommands: Commands {
             }
 
             CommandMenu("Privacy") {
+                Button("Privacy Report") { browserManager.showPrivacyReport() }
+                Divider()
                 Menu("Clear Cookies") {
                     Button("Clear Cookies for Current Site") {
                         browserManager.clearCurrentPageCookies()
