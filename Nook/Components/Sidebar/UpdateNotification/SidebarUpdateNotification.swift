@@ -43,12 +43,9 @@ struct SidebarUpdateNotification: View {
         availability != nil
     }
 
-    private var notificationOffset: CGFloat {
-        downloadsMenuVisible ? -80 : 0
-    }
-
     var body: some View {
-        if let availability, shouldShowNotification {
+        // Gives way to the downloads list, which opens in its place: moved up, it sat on top of the list.
+        if let availability, shouldShowNotification, !downloadsMenuVisible {
             VStack(spacing: 0) {
                 // FORK: one stack with even spacing. The title used to slide 25 pt up and out of the
                 // card to make room, which left it hidden once a second link was added.
@@ -115,9 +112,8 @@ struct SidebarUpdateNotification: View {
                 }
             }
             .opacity(isVisible ? 1 : 0)
-            .offset(y: isVisible ? notificationOffset : 50)
+            .offset(y: isVisible ? 0 : 50)
             .animation(NookDesign.Motion.standard, value: isVisible)
-            .animation(NookDesign.Motion.standard, value: notificationOffset)
             .animation(NookDesign.Motion.standard, value: isExpanded)
             .onAppear { showNotification() }
             .onChange(of: shouldShowNotification) { _, newValue in
