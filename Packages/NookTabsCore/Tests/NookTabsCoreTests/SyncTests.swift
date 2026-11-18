@@ -23,6 +23,23 @@ struct SyncTests {
         #expect(other.favorites(of: f.spaceA).map(\.displayTitle) == ["one"])
     }
 
+    @Test func anOldSpaceDeletionHeldBackByAnotherMacDoesNotRemoveTheSpace() throws {
+        var f = Fixture()
+        var other = f.tree
+        _ = try other.deleteSpace(f.spaceB, now: later)
+        let snapshot = SyncMerge.snapshot(of: other, deviceID: macB, deviceName: "B", now: later.addingTimeInterval(60))
+        #expect(snapshot.spaces.contains { $0.id == f.spaceB && $0.deletedAt != nil })
+
+        // This Mac had already read B after the deletion was made: it is old news, the space stays.
+        var kept = f.tree
+        kept.apply(SyncMerge.change(applying: snapshot, to: kept, seenUntil: later.addingTimeInterval(30)))
+        #expect(kept.spaces[f.spaceB]?.deletedAt == nil, "a held-back deletion is skipped")
+
+        // Deleted after this Mac last read B: a real deletion, it lands.
+        f.tree.apply(SyncMerge.change(applying: snapshot, to: f.tree, seenUntil: later.addingTimeInterval(-30)))
+        #expect(f.tree.spaces[f.spaceB]?.deletedAt != nil, "a new deletion still reaches this Mac")
+    }
+
     @Test func openTabsTravelWhenAskedAndAClosedOneIsClosedOnTheOtherMac() throws {
         var f = Fixture()
         let tab = f.tab("open", in: .tabs(spaceID: f.spaceA))
