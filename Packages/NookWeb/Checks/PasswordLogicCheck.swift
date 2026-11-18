@@ -6,7 +6,7 @@
 //  Host matching, the in-memory vault and CSV import of the password manager. NookWeb has no
 //  test target, so this compiles the shipped source directly:
 //
-//    swiftc Packages/NookWeb/Sources/NookWeb/Passwords/PasswordLogic.swift \
+//    swiftc Packages/NookWeb/Sources/NookWeb/Passwords/PasswordLogic.swift Packages/NookWeb/Sources/NookWeb/Passwords/TOTP.swift \
 //           Packages/NookWeb/Sources/NookWeb/Passwords/PasswordSync.swift \
 //           Packages/NookWeb/Checks/PasswordLogicCheck.swift -o /tmp/password-check && /tmp/password-check
 //

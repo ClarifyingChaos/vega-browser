@@ -7,7 +7,7 @@
 //  covers the same site for a minute and never another site, and two fills at once ask once.
 //
 //    swiftc -parse-as-library Packages/NookTabsCore/Sources/NookTabsCore/*.swift Packages/NookWeb/Sources/NookWeb/Passwords/PasswordGate.swift \
-//           Packages/NookWeb/Sources/NookWeb/Passwords/PasswordLogic.swift Packages/NookWeb/Sources/NookWeb/Passwords/PasswordSync.swift \
+//           Packages/NookWeb/Sources/NookWeb/Passwords/PasswordLogic.swift Packages/NookWeb/Sources/NookWeb/Passwords/TOTP.swift Packages/NookWeb/Sources/NookWeb/Passwords/PasswordSync.swift \
 //           Packages/NookWeb/Checks/PasswordGateCheck.swift -o /tmp/password-gate-check && /tmp/password-gate-check
 
 import Foundation
