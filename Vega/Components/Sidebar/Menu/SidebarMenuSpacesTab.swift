@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import AppKit
 import VegaDesign
 import VegaTabsCore
 import VegaWeb
@@ -22,6 +23,11 @@ struct SidebarMenuSpacesTab: View {
 
     private let columnWidth: CGFloat = 300
     private let addSize: CGFloat = 32
+
+    @State private var position = ScrollPosition(edge: .leading)
+    @State private var scroll: ScrollGeometry?
+    @State private var isHovering = false
+    @State private var wheelMonitor: Any?
 
     var body: some View {
         // Arc's layout: each space as a full-height column of its own sidebar, side by side,
@@ -49,6 +55,31 @@ struct SidebarMenuSpacesTab: View {
             }
             .padding(VegaDesign.Spacing.lg)
         }
+        .scrollPosition($position)
+        .onScrollGeometryChange(for: ScrollGeometry.self, of: { $0 }) { _, new in scroll = new }
+        .onHoverTracking { isHovering = $0 }
+        .onAppear { startWheel() }
+        .onDisappear { stopWheel() }
+    }
+
+    /// A mouse wheel only turns up and down: over the columns it moves them sideways. A trackpad
+    /// (precise deltas) and Shift-scroll already scroll sideways on their own.
+    private func startWheel() {
+        guard wheelMonitor == nil else { return }
+        wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+            guard isHovering, !event.hasPreciseScrollingDeltas, event.scrollingDeltaX == 0, event.scrollingDeltaY != 0,
+                  let scroll else { return event }
+            let room = scroll.contentSize.width - scroll.containerSize.width
+            guard room > 0 else { return event }
+            let x = min(max(scroll.contentOffset.x - event.scrollingDeltaY * 10, 0), room)
+            position.scrollTo(x: x)
+            return nil
+        }
+    }
+
+    private func stopWheel() {
+        if let wheelMonitor { NSEvent.removeMonitor(wheelMonitor) }
+        wheelMonitor = nil
     }
 }
 

@@ -151,8 +151,6 @@ public struct SpaceTab: View {
                         .vegaTrailingFade(reserving: isHovering ? VegaDesign.Size.row + (showsReset ? VegaDesign.Size.rowButton : 0) : 0)
                         .textSelection(.disabled)
                         .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
-                        // The row shows a short title; hovering shows the page's full one.
-                        .help(title)
                 }
             }
             .overlay(alignment: .trailing) {
@@ -216,6 +214,9 @@ public struct SpaceTab: View {
             }
         }
         .buttonStyle(VegaTabButtonStyle(onPress: selectOnPress))
+        // The row shows a short title; hovering shows the page's full one. On the button, since
+        // macOS shows no tooltip set inside a button's label.
+        .help(isRenaming ? "" : title)
         .padding(.vertical, VegaDesign.Tab.verticalInset)
         .onHoverTracking { hovering in
             withAnimation(VegaDesign.Motion.hover(hovering)) {

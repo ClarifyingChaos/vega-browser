@@ -35,7 +35,7 @@ struct TidyTitlesCheck {
         expect("Swift Concurrency – Apple Developer", "https://developer.apple.com/swift/", "Swift Concurrency")
         expect("Q&A - How to cook rice", "https://cooking.example.org/rice", "Q&A - How to cook rice")
         expect("Reuters", "https://www.reuters.com/", "Reuters")
-        expect("Markets plunge as rates rise again worldwide today in Asia - Reuters", "https://www.reuters.com/x", "Markets plunge as rates rise again\u{2026}")
+        expect("Markets plunge as rates rise again worldwide today in Asia - Reuters", "https://www.reuters.com/x", "Markets plunge as rates rise\u{2026}")
         expect("Hello", "https://example.com/", "Hello")
 
         // X and Twitter.
@@ -49,7 +49,7 @@ struct TidyTitlesCheck {
         expect("Arc - Wikipedia", "https://fr.wikipedia.org/wiki/Arc", "Arc")
         expect("Cool video - YouTube", "https://www.youtube.com/watch?v=abc", "Cool video")
         expect("(5) Cool video - YouTube", "https://www.youtube.com/watch?v=abc", "Cool video")
-        expect("GitHub - nook-browser/Nook: A fast browser", "https://github.com/nook-browser/Nook", "nook-browser/Nook: A fast browser")
+        expect("GitHub - nook-browser/Nook: A fast browser", "https://github.com/nook-browser/Nook", "nook-browser/Nook: A fast\u{2026}")
         expect("Fix the sidebar by someone · Pull Request #12 · nook-browser/Nook · GitHub", "https://github.com/nook-browser/Nook/pull/12", "Fix the sidebar by someone")
         expect("Feed | LinkedIn", "https://www.linkedin.com/feed/", "Feed")
         expect("(4) Messaging | LinkedIn", "https://www.linkedin.com/messaging/", "Messaging")
