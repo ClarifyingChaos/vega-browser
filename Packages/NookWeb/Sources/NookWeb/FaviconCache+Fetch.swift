@@ -68,6 +68,7 @@ extension FaviconCache {
     /// The page's HTML, fetched with Safari's user agent. Nil when it can't be read; FaviconFinder then tries itself.
     private static func pageDocument(_ url: URL) async -> Document? {
         var request = URLRequest(url: url, timeoutInterval: 15)
+        request.httpShouldHandleCookies = false
         if let agent = PlatformUserAgent.custom { request.setValue(agent, forHTTPHeaderField: "User-Agent") }
         guard let (data, response) = try? await URLSession.shared.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200,

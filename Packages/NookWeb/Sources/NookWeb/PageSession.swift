@@ -892,6 +892,7 @@ public final class PageSession: NSObject, Identifiable {
             let session = isPrivate ? privateFaviconSession : URLSession.shared
             // Safari's user agent, as the page itself: sites like Cosmos refuse the app's own name with 403.
             var request = URLRequest(url: url)
+            request.httpShouldHandleCookies = false
             if let agent = PlatformUserAgent.custom { request.setValue(agent, forHTTPHeaderField: "User-Agent") }
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { return nil }
