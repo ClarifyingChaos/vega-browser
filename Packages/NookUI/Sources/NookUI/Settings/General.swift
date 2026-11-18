@@ -325,9 +325,9 @@ private struct SyncSection: View {
             }
             if sync.isEnabled {
                 Picker("Sync with", selection: Binding(get: { sync.backend }, set: { sync.backend = $0 })) {
-                    ForEach(SyncCoordinator.Backend.allCases) { Text($0.title).tag($0) }
+                    ForEach(SyncCoordinator.Backend.available) { Text($0.title).tag($0) }
                 }
-                if sync.backend == .google && !GoogleAccount.forProfile(profileID).isSignedIn {
+                if (sync.backend == .google || sync.backend == .server) && !GoogleAccount.forProfile(profileID).isSignedIn {
                     Text("Sign in under Account above to sync with Google.").font(NookDesign.Font.secondary).foregroundStyle(.secondary)
                 }
                 Toggle("Keep open tabs the same on my Macs", isOn: Binding(get: { sync.mirrorsTabs }, set: { sync.mirrorsTabs = $0 }))
