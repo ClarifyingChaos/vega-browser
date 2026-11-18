@@ -3,7 +3,7 @@
 //  Passwords.swift
 //  Vega
 //
-//  FORK: Settings > Passwords: the switches, the saved logins (copy, edit and delete need the
+//  FORK: Settings > Passwords: the saved logins with their icons, a page per login (show, copy and change need the
 //  Mac's password or Touch ID), manual add, and import of a Chrome or Safari CSV.
 //
 
@@ -70,11 +70,10 @@ private struct PasswordsContent: View {
     @State private var settings = PasswordSettings.shared
     @State private var logins: [SavedLogin] = []
     @State private var query = ""
-    @State private var editing: SavedLogin?
+    @State private var opened: SavedLogin?
     @State private var adding = false
     @State private var deleting: SavedLogin?
     @State private var importResult: String?
-    @State private var breachResult: String?
 
     @EnvironmentObject private var browserManager: BrowserManager
     /// Whose passwords are shown: the profile of the window in front, or the one picked.
@@ -90,13 +89,38 @@ private struct PasswordsContent: View {
 
     var body: some View {
         Form {
-            SettingsHero(symbol: "key", title: "Passwords", detail: "Your saved passwords, kept in your Mac's Keychain.")
+            SettingsHero(symbol: "key", title: "Passwords", detail: "Your saved passwords, kept in your Mac's Keychain. Click one to see, copy or change it.")
 
             Section {
-                Toggle("Offer to save passwords", isOn: $settings.offerToSave)
-                Toggle("AutoFill passwords", isOn: $settings.autofill)
-            } footer: {
-                Text("Vega asks for Touch ID or your Mac password before it fills a saved password. Private windows never save or fill.")
+                HStack(spacing: VegaDesign.Spacing.md) {
+                    SidebarMenuSearchField(prompt: "Search passwords...", text: $query)
+                    Button("Add Password", systemImage: "plus") { adding = true }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.bordered)
+                        .help("Add Password")
+                }
+                if shown.isEmpty {
+                    Text(logins.isEmpty ? "No saved passwords yet. Vega offers to save one when you sign in, or add one with +." : "No passwords match \u{201C}\(query)\u{201D}.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(shown) { login in
+                    Button { opened = login } label: { LoginRow(login: login) }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button("Copy Username", vegaIcon: "doc.on.doc") { Clipboard.copy(login.username, secret: false) }
+                            Button("Copy Password", vegaIcon: "key") {
+                                PasswordReveal.ask(login) { if let secret = vault.password(host: login.host, username: login.username) { Clipboard.copy(secret, secret: true) } }
+                            }
+                            Divider()
+                            Button("Delete…", vegaIcon: "trash", role: .destructive) { deleting = login }
+                        }
+                }
+            } header: {
+                HStack {
+                    Text("Saved Passwords")
+                    Spacer()
+                    if !logins.isEmpty { Text(logins.count.formatted()).foregroundStyle(.secondary).monospacedDigit() }
+                }
             }
 
             Section {
@@ -108,54 +132,22 @@ private struct PasswordsContent: View {
                         }
                     }
                 }
-                if !logins.isEmpty {
-                    SidebarMenuSearchField(prompt: "Search passwords...", text: $query)
-                }
-                if shown.isEmpty {
-                    Text(logins.isEmpty ? "No saved passwords yet." : "No matches.")
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(shown) { login in
-                    HStack(spacing: VegaDesign.Spacing.lg) {
-                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
-                            Text(login.host)
-                            Text(login.username)
-                                .font(VegaDesign.Font.secondary)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Menu {
-                            Button("Copy Username", vegaIcon: "doc.on.doc") { copy(login.username) }
-                            Button("Copy Password", vegaIcon: "key") { reveal(login) { copy($0) } }
-                            Button("Check if Leaked", vegaIcon: "shield") { reveal(login) { checkLeaked($0, for: login) } }
-                            Divider()
-                            Button("Edit…", vegaIcon: "pencil") { reveal(login) { _ in editing = login } }
-                            Button("Delete…", vegaIcon: "trash", role: .destructive) { deleting = login }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                        }
-                        .menuStyle(.button)
-                        .buttonStyle(.bordered)
-                        .buttonBorderShape(.circle)
-                        .menuIndicator(.hidden)
-                        .fixedSize()
-                        .accessibilityLabel("More for \(login.host)")
-                    }
-                    .padding(.vertical, VegaDesign.Spacing.xxs)
-                }
-                if let breachResult {
-                    Text(breachResult).font(VegaDesign.Font.caption).foregroundStyle(breachResult.hasPrefix("Found") ? .red : .secondary)
-                }
+                Toggle("Offer to save passwords", isOn: $settings.offerToSave)
+                Toggle("AutoFill passwords", isOn: $settings.autofill)
                 HStack {
-                    Button("Add Password…", vegaIcon: "plus") { adding = true }
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        Text("Import Passwords")
+                        Text(importResult ?? "From a file exported from Chrome or Safari.")
+                            .font(VegaDesign.Font.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                     Button("Import from CSV…") { importCSV() }
                 }
-                .buttonStyle(.bordered)
             } header: {
-                Text("Saved Passwords")
+                Text("Options")
             } footer: {
-                Text(importResult ?? "Import works with a file exported from Chrome or Safari.")
+                Text("Vega asks for Touch ID or your Mac password before it fills or shows a saved password. Private windows never save or fill.")
             }
 
             if !settings.neverSaveHosts.isEmpty {
@@ -183,9 +175,14 @@ private struct PasswordsContent: View {
             reload()
         }
         .onChange(of: profileID) { reload() }
-        .sheet(isPresented: $adding) { LoginEditor(host: "", username: "", password: "", isNew: true) { save($0, $1, $2) } }
-        .sheet(item: $editing) { login in
-            LoginEditor(host: login.host, username: login.username, password: vault.password(host: login.host, username: login.username) ?? "", isNew: false) { save($0, $1, $2) }
+        .sheet(isPresented: $adding) { LoginEditor { save($0, $1, $2) } }
+        .sheet(item: $opened) { login in
+            LoginDetail(login: login, vault: vault,
+                        onChange: { reload() },
+                        onOpen: { url in
+                            if let window = browserManager.openBrowserWindow() { browserManager.tabs.open(url: url, in: window, placement: .newTab) }
+                        },
+                        onDelete: { opened = nil; deleting = login })
         }
         .confirmationDialog("Delete the password for \u{201C}\(deleting?.username ?? "")\u{201D} on \(deleting?.host ?? "")?",
                             isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
@@ -207,40 +204,6 @@ private struct PasswordsContent: View {
         reload()
     }
 
-    private func copy(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        // A copied password does not stay on the clipboard.
-        let count = NSPasteboard.general.changeCount
-        DispatchQueue.main.asyncAfter(deadline: .now() + 60) {
-            if NSPasteboard.general.changeCount == count { NSPasteboard.general.clearContents() }
-        }
-    }
-
-    /// Asks for Touch ID or the Mac's password, then hands over the password.
-    private func reveal(_ login: SavedLogin, _ use: @escaping (String) -> Void) {
-        let context = LAContext()
-        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "show your saved password for \u{201C}\(login.host)\u{201D}") { ok, _ in
-            guard ok else { return }
-            Task { @MainActor in
-                if let secret = vault.password(host: login.host, username: login.username) { use(secret) }
-            }
-        }
-    }
-
-    /// Asks Have I Been Pwned with only the first 5 characters of the password's hash.
-    private func checkLeaked(_ password: String, for login: SavedLogin) {
-        breachResult = "Checking \(login.host)\u{2026}"
-        Task {
-            let seen = await PasswordBreach.timesSeen(password)
-            breachResult = switch seen {
-            case nil: "Could not reach the breach service. Nothing was sent that identifies you."
-            case 0: "Not found in known leaks: \(login.host)."
-            case let n?: "Found in known leaks \(n.formatted()) times: change the password for \(login.host)."
-            }
-        }
-    }
-
     private func importCSV() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.commaSeparatedText, .plainText]
@@ -255,11 +218,246 @@ private struct PasswordsContent: View {
     }
 }
 
+/// One saved login in the list: the site's icon, the site and the username.
+private struct LoginRow: View {
+    let login: SavedLogin
+
+    var body: some View {
+        HStack(spacing: VegaDesign.Spacing.lg) {
+            SiteIcon(host: login.host, size: 28)
+            VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                Text(login.host).lineLimit(1)
+                Text(login.username)
+                    .font(VegaDesign.Font.secondary)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(VegaDesign.Font.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, VegaDesign.Spacing.xxs)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Shows the password and its options")
+    }
+}
+
+/// The site's icon from Vega's icon cache, or its first letter. Never fetches: opening this page
+/// should not tell every site you have an account with that you looked.
+private struct SiteIcon: View {
+    let host: String
+    let size: CGFloat
+    @State private var image: NSImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(nsImage: image).resizable().interpolation(.high).scaledToFit()
+                    .padding(size * 0.14)
+                    .background(.background, in: RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
+            } else {
+                Text(host.first.map { String($0).uppercased() } ?? "?")
+                    .font(.system(size: size * 0.45, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.accentColor.gradient, in: RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
+            }
+        }
+        .frame(width: size, height: size)
+        .overlay(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous).strokeBorder(.separator, lineWidth: 0.5))
+        .accessibilityHidden(true)
+        .task(id: host) {
+            image = FaviconCache.shared.image(for: host)
+            if image == nil { image = await FaviconCache.shared.cachedImage(for: host) }
+            if image == nil, !host.hasPrefix("www.") { image = await FaviconCache.shared.cachedImage(for: "www." + host) }
+        }
+    }
+}
+
+/// A saved login's own page, as in Apple's Passwords: username and password with copy buttons,
+/// show and hide, change the password, open the site, check it against leaks, delete.
+private struct LoginDetail: View {
+    let login: SavedLogin
+    let vault: PasswordVault
+    let onChange: () -> Void
+    let onOpen: (URL) -> Void
+    let onDelete: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    /// The password, once Touch ID allowed it. Nil means it is still hidden.
+    @State private var secret: String?
+    @State private var shown = false
+    @State private var editing = false
+    @State private var draft = ""
+    @State private var breach: String?
+    @State private var copied: String?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: VegaDesign.Spacing.lg) {
+                SiteIcon(host: login.host, size: 44)
+                VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                    Text(login.host).font(VegaDesign.Font.titleLarge).lineLimit(1)
+                    Text("Changed \(login.modified.formatted(date: .abbreviated, time: .omitted))")
+                        .font(VegaDesign.Font.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            .padding([.horizontal, .top], VegaDesign.Spacing.xxxl)
+
+            Form {
+                Section {
+                    LabeledContent("Username") {
+                        HStack(spacing: VegaDesign.Spacing.md) {
+                            Text(login.username).textSelection(.enabled).lineLimit(1)
+                            copyButton("Username") { copy(login.username, secret: false, what: "Username") }
+                        }
+                    }
+                    LabeledContent("Password") {
+                        HStack(spacing: VegaDesign.Spacing.md) {
+                            if editing {
+                                TextField("Password", text: $draft)
+                                    .labelsHidden()
+                                    .font(VegaDesign.Font.mono)
+                                    .frame(minWidth: 180)
+                            } else if shown, let secret {
+                                Text(secret).font(VegaDesign.Font.mono).textSelection(.enabled).lineLimit(1)
+                            } else {
+                                Text(String(repeating: "\u{2022}", count: 10)).foregroundStyle(.secondary)
+                                    .accessibilityLabel("Hidden")
+                            }
+                            if !editing {
+                                Button(shown ? "Hide Password" : "Show Password", systemImage: shown ? "eye.slash" : "eye") {
+                                    if shown { shown = false } else { unlock { _ in shown = true } }
+                                }
+                                .labelStyle(.iconOnly).buttonStyle(.borderless)
+                                .help(shown ? "Hide Password" : "Show Password")
+                                copyButton("Password") { unlock { copy($0, secret: true, what: "Password") } }
+                            }
+                        }
+                    }
+                    LabeledContent("Website") {
+                        Button(login.host) { openSite() }
+                            .buttonStyle(.link)
+                            .help("Open \(login.host) in a new tab")
+                    }
+                } footer: {
+                    if let copied { Text("\(copied) copied. A copied password leaves the clipboard after 60 seconds.") }
+                }
+
+                Section {
+                    HStack {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text("Check if Leaked")
+                            Text(breach ?? "Only the first 5 characters of the password's hash leave your Mac.")
+                                .font(VegaDesign.Font.caption)
+                                .foregroundStyle(breach?.hasPrefix("Found") == true ? .red : .secondary)
+                        }
+                        Spacer()
+                        Button("Check") { unlock { check($0) } }
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .scrollDisabled(true)
+
+            HStack {
+                Button("Delete…", role: .destructive) { onDelete() }
+                Spacer()
+                if editing {
+                    Button("Cancel", role: .cancel) { editing = false }
+                    Button("Save") { saveDraft() }
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(draft.isEmpty)
+                } else {
+                    Button("Change Password…") { unlock { draft = $0; editing = true } }
+                    Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(.horizontal, VegaDesign.Spacing.xxxl)
+            .padding(.bottom, VegaDesign.Spacing.xxl)
+        }
+        .frame(width: 480)
+    }
+
+    private func copyButton(_ what: String, action: @escaping () -> Void) -> some View {
+        Button("Copy \(what)", systemImage: "doc.on.doc", action: action)
+            .labelStyle(.iconOnly).buttonStyle(.borderless)
+            .help("Copy \(what)")
+    }
+
+    /// Touch ID once per sheet: the password is kept only while the sheet is open.
+    private func unlock(_ use: @escaping (String) -> Void) {
+        if let secret { use(secret); return }
+        PasswordReveal.ask(login) {
+            guard let value = vault.password(host: login.host, username: login.username) else { return }
+            secret = value
+            use(value)
+        }
+    }
+
+    private func copy(_ text: String, secret: Bool, what: String) {
+        Clipboard.copy(text, secret: secret)
+        copied = what
+    }
+
+    private func saveDraft() {
+        vault.save(host: login.host, username: login.username, password: draft)
+        secret = draft
+        editing = false
+        onChange()
+    }
+
+    private func check(_ password: String) {
+        breach = "Checking\u{2026}"
+        Task {
+            breach = switch await PasswordBreach.timesSeen(password) {
+            case nil: "Could not reach the breach service. Nothing was sent that identifies you."
+            case 0: "Not found in known leaks."
+            case let n?: "Found in known leaks \(n.formatted()) times. Change this password."
+            }
+        }
+    }
+
+    private func openSite() {
+        guard let url = URL(string: "https://\(login.host)") else { return }
+        onOpen(url)
+        dismiss()
+    }
+}
+
+/// Touch ID or the Mac's password before a saved password is shown or copied.
+private enum PasswordReveal {
+    @MainActor static func ask(_ login: SavedLogin, then use: @escaping @MainActor () -> Void) {
+        let context = LAContext()
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "show your saved password for \u{201C}\(login.host)\u{201D}") { ok, _ in
+            guard ok else { return }
+            Task { @MainActor in use() }
+        }
+    }
+}
+
+private enum Clipboard {
+    @MainActor static func copy(_ text: String, secret: Bool) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        guard secret else { return }
+        // A copied password does not stay on the clipboard.
+        let count = NSPasteboard.general.changeCount
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60) {
+            if NSPasteboard.general.changeCount == count { NSPasteboard.general.clearContents() }
+        }
+    }
+}
+
+/// A new login: site, username and password.
 private struct LoginEditor: View {
-    @State var host: String
-    @State var username: String
-    @State var password: String
-    let isNew: Bool
+    @State private var host = ""
+    @State private var username = ""
+    @State private var password = ""
     let save: (String, String, String) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -267,9 +465,7 @@ private struct LoginEditor: View {
         VStack(spacing: 0) {
             Form {
                 TextField("Website", text: $host, prompt: Text("example.com"))
-                    .disabled(!isNew)
                 TextField("Username", text: $username)
-                    .disabled(!isNew)
                 SecureField("Password", text: $password)
             }
             .formStyle(.grouped)
@@ -277,7 +473,7 @@ private struct LoginEditor: View {
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
-                Button(isNew ? "Add" : "Save") { save(host, username, password); dismiss() }
+                Button("Add") { save(host, username, password); dismiss() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(host.isEmpty || username.isEmpty || password.isEmpty)
             }
