@@ -84,6 +84,13 @@ public final class TabStore: @unchecked Sendable {
         let hasStructure = fm.fileExists(atPath: structureURL.path)
         let hasDevice = fm.fileExists(atPath: deviceURL.path)
 
+        if let restored = pendingRestore(now: now) {
+            let result = finish(restored, now: now, backup: false)
+            save(result.tree, result.device)
+            flush()
+            return result
+        }
+
         if !hasStructure && !hasDevice && backupFolders().isEmpty {
             return finish(LoadedState(tree: TabTree(), device: DeviceState(), outcome: .firstLaunch), now: now, backup: false)
         }
@@ -254,6 +261,53 @@ public final class TabStore: @unchecked Sendable {
             try encoder.encode(structure).write(to: structureURL, options: .atomic)
         }
         return syncedIDs
+    }
+
+    // MARK: - Restore
+
+    /// One daily backup, as Settings lists it.
+    public struct BackupSummary: Identifiable, Sendable {
+        public let id: String
+        public let spaceNames: [String]
+        public let tabCount: Int
+        public let savedAt: Date?
+    }
+
+    private var restoreMarkerURL: URL { directory.appendingPathComponent("restore-pending") }
+
+    /// Every backup that can be read, newest first.
+    public func backupSummaries() -> [BackupSummary] {
+        backupFolders().compactMap { folder in
+            guard let state = Self.decode(structure: folder.appendingPathComponent("structure.json"),
+                                          device: folder.appendingPathComponent("device.json")) else { return nil }
+            let spaces = state.tree.spaces.values.filter { $0.deletedAt == nil }.sorted { $0.order < $1.order }.map(\.name)
+            let tabs = state.tree.items.values.filter { $0.deletedAt == nil && !$0.isFolder }.count
+            let saved = (try? folder.appendingPathComponent("structure.json").resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+            return BackupSummary(id: folder.lastPathComponent, spaceNames: spaces, tabCount: tabs, savedAt: saved)
+        }
+    }
+
+    /// Makes `name` the state the next launch loads. The current files are kept as a backup first.
+    public func scheduleRestore(_ name: String) throws {
+        guard backupFolders().contains(where: { $0.lastPathComponent == name }) else { throw CocoaError(.fileNoSuchFile) }
+        try Data(name.utf8).write(to: restoreMarkerURL, options: .atomic)
+    }
+
+    /// A restore asked for in the last session: the backup's spaces and tabs, stamped now so sync carries them to the
+    /// other Macs instead of undoing them with their newer copies.
+    private func pendingRestore(now: Date) -> LoadedState? {
+        guard let name = try? String(contentsOf: restoreMarkerURL, encoding: .utf8) else { return nil }
+        try? FileManager.default.removeItem(at: restoreMarkerURL)
+        let folder = backupsURL.appendingPathComponent(name.trimmingCharacters(in: .whitespacesAndNewlines), isDirectory: true)
+        guard let state = Self.decode(structure: folder.appendingPathComponent("structure.json"),
+                                      device: folder.appendingPathComponent("device.json")) else { return nil }
+        copyFiles(into: "\(Self.dayStamp(now))-before-restore")
+        var tree = state.tree
+        for id in Array(tree.spaces.keys) where tree.spaces[id]?.deletedAt == nil { tree.spaces[id]?.modifiedAt = now }
+        for id in Array(tree.items.keys) where tree.items[id]?.deletedAt == nil { tree.items[id]?.modifiedAt = now }
+        var loaded = LoadedState(tree: tree, device: state.device, outcome: .restoredFromBackup(folder.lastPathComponent))
+        loaded.migratedSpaceIDs = state.migrated
+        return loaded
     }
 
     // MARK: - Backups

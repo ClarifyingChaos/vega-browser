@@ -36,6 +36,10 @@ public struct SpacesSettingsView: View {
     @State private var showIconPickerFor: UUID?
     /// A move that would leave its profile empty, waiting on confirmation.
     @State private var pendingMove: (space: UUID, to: UUID?, profile: String)?
+    /// FORK: the daily backups, and the one waiting on "Restore?".
+    @State private var backups: [TabStore.BackupSummary] = []
+    @State private var restoring: TabStore.BackupSummary?
+    @State private var restoreError: String?
 
     public init() {}
 
@@ -83,8 +87,47 @@ public struct SpacesSettingsView: View {
             Section {
                 Button("New Space…", vegaIcon: "plus", action: showCreateDialog)
             }
+
+            Section {
+                if backups.isEmpty {
+                    Text("No backups yet. Vega saves one each day you use it.").foregroundStyle(.secondary)
+                }
+                ForEach(backups) { backup in
+                    HStack {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text(Self.title(for: backup))
+                            Text("\(backup.spaceNames.count) \(backup.spaceNames.count == 1 ? "space" : "spaces") · \(backup.tabCount) tabs · \(backup.spaceNames.prefix(4).joined(separator: ", "))\(backup.spaceNames.count > 4 ? "…" : "")")
+                                .font(VegaDesign.Font.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                        Button("Restore…") { restoring = backup }
+                    }
+                }
+            } header: {
+                Text("Backups")
+            } footer: {
+                Text(restoreError ?? "Vega keeps a copy of your spaces, favorites, pinned tabs and folders from each of the last 7 days. Restoring one restarts Vega; what you have now is kept as a backup first.")
+            }
         }
         .formStyle(.grouped)
+        .task { backups = tabs.backupSummaries() }
+        .confirmationDialog(restoring.map { "Restore your spaces and tabs from \(Self.title(for: $0))?" } ?? "",
+                            isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } })) {
+            Button("Restore and Restart Vega") {
+                guard let backup = restoring else { return }
+                do {
+                    try tabs.scheduleRestore(backup.id)
+                    Self.relaunch()
+                } catch {
+                    restoreError = "Couldn't restore that backup: \(error.localizedDescription)"
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Vega quits and opens again with those spaces and tabs. With Sync on, your other Macs get them too. What you have now is saved as a backup, so you can go back.")
+        }
         .task(id: tabs.profiles.map(\.id)) { await refreshStats() }
         // System Settings' pattern: the ⓘ button opens a sheet with the profile's details and actions.
         .sheet(isPresented: Binding(get: { detailsFor != nil }, set: { if !$0 { detailsFor = nil } })) {
@@ -217,6 +260,21 @@ public struct SpacesSettingsView: View {
     }
 
     /// Puts the dragged space after the one now above it, so the sidebar and the space switcher follow.
+    static func title(for backup: TabStore.BackupSummary) -> String {
+        if backup.id.hasSuffix("-before-restore") { return "Before the restore on \(backup.id.prefix(10))" }
+        if let date = backup.savedAt { return date.formatted(date: .abbreviated, time: .shortened) }
+        return backup.id
+    }
+
+    /// Quits and opens this copy of Vega again once it has fully quit.
+    static func relaunch() {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "while kill -0 \(ProcessInfo.processInfo.processIdentifier) 2>/dev/null; do sleep 0.3; done; /usr/bin/open \"$0\"", Bundle.main.bundlePath]
+        try? task.run()
+        NSApp.terminate(nil)
+    }
+
     private func reorder(from source: IndexSet, to destination: Int) {
         var ids = spaces.map(\.id)
         let moved = source.map { ids[$0] }

@@ -29,8 +29,12 @@ extension SyncCoordinator {
     func syncSettings(store: any SyncBlobStore, own: UUID, deviceName: String) async {
         guard profileID == nil || ProfileScope.isPrimary(profileID) else { return }
         let defaults = UserDefaults.standard
-        let values = SettingsSnapshot.current(defaults)
-        let digest = SettingsSnapshot.digest(values)
+        // Reading every setting and fingerprinting it is the slow part of a round; UserDefaults is safe off the main thread.
+        let read = await Task.detached(priority: .utility) { () -> SettingsRead in
+            let values = SettingsSnapshot.current(.standard)
+            return SettingsRead(values: values, digest: SettingsSnapshot.digest(values))
+        }.value
+        let values = read.values, digest = read.digest
         let now = Date()
         // When this Mac's settings last changed: noticed here, at the next tick after the change.
         if defaults.string(forKey: Self.settingsDigestKey) != digest {
@@ -67,4 +71,10 @@ extension SyncCoordinator {
             // Settings are not worth a failed-sync banner: the next tick tries again.
         }
     }
+}
+
+/// Settings as read off the main thread. Property-list values only, read once and not shared after.
+private struct SettingsRead: @unchecked Sendable {
+    let values: [String: Any]
+    let digest: String
 }

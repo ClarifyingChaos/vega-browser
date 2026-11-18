@@ -122,6 +122,42 @@ struct TabStoreTests {
         #expect(restored.tree == tree)
     }
 
+    @Test func scheduledRestoreLoadsTheBackupStampedNowAndKeepsTheCurrentFiles() throws {
+        let dir = tempDirectory()
+        let (tree, device, _) = sample()
+        let store = TabStore(directory: dir)
+        _ = store.load(now: fixedNow)
+        store.save(tree, device)
+        store.flush()
+        _ = TabStore(directory: dir).load(now: fixedNow)          // makes today's backup of `tree`
+        let backupName = try #require(TabStore(directory: dir).backupSummaries().first?.id)
+        #expect(TabStore(directory: dir).backupSummaries().first?.spaceNames.isEmpty == false)
+
+        // Something changes after the backup: every space is renamed.
+        var changed = tree
+        for id in changed.spaces.keys { changed.spaces[id]?.name = "Changed" }
+        let changing = TabStore(directory: dir)
+        _ = changing.load(now: fixedNow)
+        changing.save(changed, device)
+        changing.flush()
+
+        try TabStore(directory: dir).scheduleRestore(backupName)
+        let later = fixedNow.addingTimeInterval(3600)
+        let restored = TabStore(directory: dir).load(now: later)
+        guard case .restoredFromBackup(let name) = restored.outcome else {
+            Issue.record("expected the scheduled restore, got \(restored.outcome)")
+            return
+        }
+        #expect(name == backupName)
+        #expect(restored.tree.spaces.values.allSatisfy { $0.name != "Changed" })
+        #expect(restored.tree.spaces.values.filter { $0.deletedAt == nil }.allSatisfy { $0.modifiedAt == later })
+        // The state it replaced is kept, and a second launch loads the restored state normally.
+        #expect(TabStore(directory: dir).backupSummaries().contains { $0.id.hasSuffix("-before-restore") })
+        let next = TabStore(directory: dir).load(now: later)
+        #expect(next.outcome == .loaded)
+        #expect(next.tree.spaces.values.allSatisfy { $0.name != "Changed" })
+    }
+
     @Test func noSpacesCountsAsCorruption() throws {
         let dir = tempDirectory()
         let empty = TabStore.StructureFile(spaces: [], items: [])
