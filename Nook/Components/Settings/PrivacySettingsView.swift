@@ -50,6 +50,30 @@ struct PrivacySettingsView: View {
                 }
             }
 
+            Section {
+                HStack {
+                    VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
+                        Text("Site Permissions")
+                        Text("Camera, microphone, JavaScript, ad blocking and more, for each site")
+                            .font(NookDesign.Font.secondary)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    NookSymbol("chevron.right", size: 16)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { showSettingsSubPane(.sitePermissions) }
+                .accessibilityAddTraits(.isButton)
+                HStack {
+                    Text("Privacy Report")
+                    Spacer()
+                    Button("Show…") { browserManager.showPrivacyReport() }
+                }
+            }
+
             Section("Security") {
                 settingToggle(
                     "HTTPS-Only Mode",
