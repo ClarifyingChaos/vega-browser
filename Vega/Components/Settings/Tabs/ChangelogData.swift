@@ -6,6 +6,21 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.7.13 (2026-11-18)
+
+### New
+- **A redesigned Settings › Passwords.** Each saved login shows its site's icon, with a search field, an Add button and a count above the list. Right-click a login to copy its username or password.
+- **A page for each login.** Click one to copy its username or password, show or hide the password, change it in place, open the site in a Vega tab, check it against known leaks, or delete it.
+- The switches and Import from CSV now sit together under Options, below your passwords.
+
+### Privacy and security
+Reviewed before release.
+- A password is shown, copied, changed or checked only after Touch ID or your Mac password. One approval covers that login's page while it is open; the password is kept in memory only until the page closes.
+- A copied password still leaves the clipboard after 60 seconds.
+- Site icons on the page come only from Vega's own icon cache, so opening Passwords contacts no website. A site without a cached icon shows its first letter.
+- The leak check works as before: only the first 5 characters of the password's hash leave your Mac.
+- No new network connections, permissions or entitlements.
+
 ## Vega 1.7.12 (2026-11-18)
 
 ### New
