@@ -135,6 +135,14 @@ enum PasswordScript {
         menu = { host, field, index: -1, rows, list, choose, mark };
       };
 
+      // The field's right-click menu › Passwords…: this field's saved logins, or Vega's password settings when it has
+      // none. On this script's own window, which the page can't see.
+      window.__vegaShowPasswords = async () => {
+        const el = document.activeElement;
+        if (el && el.tagName === 'INPUT') await openMenu(el);
+        if (!menu) ask({ op: 'manage' });
+      };
+
       document.addEventListener('focusin', (e) => {
         const el = e.target;
         if (el && el.tagName === 'INPUT' && (el.type === 'password' || isUserField(el))) openMenu(el);

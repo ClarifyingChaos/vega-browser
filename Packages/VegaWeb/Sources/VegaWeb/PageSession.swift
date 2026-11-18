@@ -890,7 +890,10 @@ public final class PageSession: NSObject, Identifiable {
     static func downloadImage(from url: URL, isPrivate: Bool) async -> PlatformImage? {
         do {
             let session = isPrivate ? privateFaviconSession : URLSession.shared
-            let (data, response) = try await session.data(from: url)
+            // Safari's user agent, as the page itself: sites like Cosmos refuse the app's own name with 403.
+            var request = URLRequest(url: url)
+            if let agent = PlatformUserAgent.custom { request.setValue(agent, forHTTPHeaderField: "User-Agent") }
+            let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { return nil }
             return PlatformImage(data: data)
         } catch {

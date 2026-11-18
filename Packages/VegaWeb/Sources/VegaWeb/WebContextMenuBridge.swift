@@ -18,6 +18,8 @@ public enum WebContextMenuPayload {
     case image(resource: String)
     case multiple([WebContextMenuPayload])
     case ignored
+    /// A text field: WebKit's own menu stays (Cut, Copy, Paste), with Vega's Passwords… added.
+    case editable
 
     public init?(dictionary: [String: Any]) {
         guard let rawInvocations = dictionary["invocations"] as? Int,
@@ -31,6 +33,10 @@ public enum WebContextMenuPayload {
 
         if invocations.contains(.ignored) {
             self = .ignored
+            return
+        }
+        if invocations.contains(.editable) {
+            self = .editable
             return
         }
 
@@ -117,7 +123,7 @@ public enum WebContextMenuPayload {
 
     public var shouldProvideCustomMenu: Bool {
         switch self {
-        case .ignored:
+        case .ignored, .editable:
             return false
         default:
             return true
@@ -142,6 +148,7 @@ public enum WebContextMenuPayload {
         static let link = Invocation(rawValue: 1 << 2)
         static let image = Invocation(rawValue: 1 << 3)
         static let ignored = Invocation(rawValue: 1 << 4)
+        static let editable = Invocation(rawValue: 1 << 5)
     }
 
     private static func makeURL(from string: String) -> URL? {
@@ -284,7 +291,8 @@ public final class WebContextMenuBridge: NSObject, WKScriptMessageHandler, WKScr
             textSelection: 1 << 1,
             link: 1 << 2,
             image: 1 << 3,
-            ignored: 1 << 4
+            ignored: 1 << 4,
+            editable: 1 << 5
         };
 
         function sanitizeURL(value) {
@@ -299,6 +307,12 @@ public final class WebContextMenuBridge: NSObject, WKScriptMessageHandler, WKScr
             try {
                 var invocations = 0;
                 var params = {};
+
+                var field = event.target && event.target.closest ? event.target.closest('input, textarea, [contenteditable=""], [contenteditable="true"]') : null;
+                if (field && !(field.tagName === 'INPUT' && /^(button|submit|reset|checkbox|radio|file|image|range|color|hidden)$/i.test(field.type))) {
+                    window.webkit.messageHandlers.contextMenuPayload.postMessage({ invocations: INVOCATIONS.editable, parameters: {}, href: sanitizeURL(document.location.href) });
+                    return;
+                }
 
                 var selection = window.getSelection();
                 if (selection && !selection.isCollapsed) {

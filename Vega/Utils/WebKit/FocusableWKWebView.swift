@@ -217,7 +217,7 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
             guard let self, let menu, self.pendingMenu === menu else {
                 return
             }
-            self.sanitizeDefaultMenu(menu)
+            self.sanitizeDefaultMenu(menu, editable: false)
             self.pendingMenu = nil
             self.pendingPayload = nil
             self.contextMenuFallbackWorkItem = nil
@@ -226,6 +226,15 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
         contextMenuFallbackWorkItem = fallback
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: fallback)
 
+        // A text field keeps WebKit's own menu (Cut, Copy, Paste, spelling) with Vega's Passwords… added.
+        if case .editable? = pendingPayload {
+            contextMenuFallbackWorkItem?.cancel()
+            contextMenuFallbackWorkItem = nil
+            pendingMenu = nil
+            pendingPayload = nil
+            sanitizeDefaultMenu(menu, editable: true)
+            return
+        }
         _ = applyPendingContextMenuIfPossible()
     }
 
@@ -542,6 +551,15 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
 
     func contextMenuPayloadDidUpdate(_ payload: WebContextMenuPayload?) {
         pendingPayload = payload
+        // A text field reported after the menu opened: WebKit's menu with Passwords… added.
+        if case .editable? = payload, let menu = pendingMenu {
+            contextMenuFallbackWorkItem?.cancel()
+            contextMenuFallbackWorkItem = nil
+            pendingMenu = nil
+            pendingPayload = nil
+            sanitizeDefaultMenu(menu, editable: true)
+            return
+        }
         _ = applyPendingContextMenuIfPossible()
     }
 
@@ -566,7 +584,7 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
         return true
     }
 
-    private func sanitizeDefaultMenu(_ menu: NSMenu) {
+    private func sanitizeDefaultMenu(_ menu: NSMenu, editable: Bool) {
         let identifiersToRemove: [NSUserInterfaceItemIdentifier] = [
             .webKitCopyImage,
             NSUserInterfaceItemIdentifier("WKMenuItemIdentifierDownloadImage"),
@@ -577,6 +595,14 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
         menu.items = menu.items.filter { item in
             guard let id = item.identifier else { return true }
             return !identifiersToRemove.contains(id)
+        }
+        // A text field's menu: Vega's saved logins for it.
+        if editable {
+            menu.addItem(.separator())
+            menu.addItem(HandlerMenuItem(title: "Passwords\u{2026}") { [weak self] _ in
+                guard let self else { return }
+                PasswordBridge.showPasswords(in: self)
+            })
         }
         owningSession?.pendingContextMenuPayload = nil
     }
