@@ -60,14 +60,21 @@ struct CommandPaletteView: View {
         if activeSiteSearch == nil, userTypedText.trimmingCharacters(in: .whitespaces).isEmpty {
             return searchManager.openTabSuggestions()
         }
+        // FORK: commands, as in Arc's command bar. ">" lists only commands.
+        let typed = userTypedText.trimmingCharacters(in: .whitespaces)
+        let hasPage = browserManager.tabs.activeWindowSession.map { ["http", "https"].contains($0.url.scheme?.lowercased()) } ?? false
+        let commands = activeSiteSearch == nil
+            ? PaletteCommands.matching(typed, in: browserManager, hasPage: hasPage).map { SearchManager.SearchSuggestion(text: $0.title, type: .command($0.id)) }
+            : []
+        if typed.hasPrefix(">") { return Array(commands.prefix(12)) }
         guard let primary = primarySuggestion else { return found }
         let rest = found.filter { row in
             switch row.type {
-            case .tab, .history: return true
+            case .tab, .history, .command: return true
             case .url, .search: return row.text.caseInsensitiveCompare(primary.text) != .orderedSame
             }
         }
-        return [primary] + rest.prefix(4)
+        return [primary] + commands.prefix(3) + rest.prefix(4)
     }
 
     /// What Return does with what was typed: the completed host, the address, or a search.
@@ -390,6 +397,9 @@ struct CommandPaletteView: View {
         @Binding var hoveredIndex: Int?
         let onSelect: (SearchManager.SearchSuggestion) -> Void
         @EnvironmentObject var gradientColorManager: GradientColorManager
+        @EnvironmentObject var browserManager: BrowserManager
+
+        private func commandSymbol(_ id: String) -> String { PaletteCommands.symbol(for: id, in: browserManager) }
 
         var body: some View {
             LazyVStack(spacing: 5) {
@@ -449,6 +459,12 @@ struct CommandPaletteView: View {
                     text: suggestion.text,
                     isSelected: isSelected
                 )
+            case .command(let id):
+                GenericSuggestionItem(
+                    icon: Image(systemName: commandSymbol(id)),
+                    text: suggestion.text,
+                    isSelected: isSelected
+                )
             }
         }
     }
@@ -479,6 +495,11 @@ struct CommandPaletteView: View {
             return
         }
 
+        // ">" lists commands only: Return runs the first one.
+        if selectedSuggestionIndex < 0, userTypedText.trimmingCharacters(in: .whitespaces).hasPrefix(">"), let first = visibleSuggestions.first {
+            selectSuggestion(first)
+            return
+        }
         if selectedSuggestionIndex >= 0
             && selectedSuggestionIndex < visibleSuggestions.count
         {
@@ -496,6 +517,12 @@ struct CommandPaletteView: View {
             browserManager.tabs.select(match.itemID, in: windowState)
         case .history(let historyEntry):
             open(historyEntry.url)
+        case .command(let id):
+            text = ""
+            selectedSuggestionIndex = -1
+            commandPalette.close()
+            PaletteCommands.run(id, in: browserManager, window: windowState)
+            return
         case .url, .search:
             // A page another window holds is not navigated from here; the text opens a new tab.
             if commandPalette.shouldNavigateCurrentTab, let session = browserManager.tabs.controllableSession(in: windowState) {
@@ -570,7 +597,7 @@ struct CommandPaletteView: View {
             return stripScheme(tab.url.absoluteString)
         case .history(let entry):
             return stripScheme(entry.url.absoluteString)
-        case .url, .search:
+        case .url, .search, .command:
             return suggestion.text
         }
     }

@@ -369,6 +369,15 @@ struct SpacesSideBarView: View {
                 }
             }
 
+            // FORK: features that otherwise live only in the menu bar.
+            Divider()
+            Button { EaselManager.shared.newEasel() } label: { Label("New Easel", nookIcon: "scribble.variable") }
+            Button { browserManager.openLibrary(.easels) } label: { Label("Show Easels", nookIcon: "square.grid.2x2") }
+            if !windowState.isIncognito {
+                Button { browserManager.shareSpace() } label: { Label("Share Space…", nookIcon: "square.and.arrow.up") }
+                OtherMacsTabsMenu()
+            }
+
             if themeableSpace != nil {
                 Divider()
 
