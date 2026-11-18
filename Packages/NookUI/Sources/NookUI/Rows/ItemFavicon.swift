@@ -50,7 +50,9 @@ public struct ItemFavicon: View {
             if let crisp = crispSource {
                 CrispIcon(source: crisp)
             } else {
-                ((session?.hasLoadedFavicon == true ? session?.favicon : nil) ?? cached ?? session?.favicon ?? Image(systemName: "globe"))
+                // The live page's icon only while it is on the item's own site: a favorite that has gone on to another
+                // site (a sign-in, a link) keeps its own icon.
+                ((session?.hasLoadedFavicon == true && onOwnSite ? session?.favicon : nil) ?? cached ?? session?.favicon ?? Image(systemName: "globe"))
                     .resizable()
                     .scaledToFit()
             }
@@ -61,24 +63,32 @@ public struct ItemFavicon: View {
                 session?.ensureFaviconLoaded()
                 guard let url = item.url, let host = FaviconCache.key(for: url) else { return }
                 // FORK: a pin whose address redirects (gmail.com to mail.google.com) keeps the icon its page loaded.
-                if let session, !session.isPrivate, session.hasLoadedFavicon, FaviconCache.shared.image(for: host) == nil,
+                // Only the first page it loaded: one it navigated to since is another site, whose icon is not this item's.
+                if let session, !session.isPrivate, session.hasLoadedFavicon, !session.canGoBack, FaviconCache.shared.image(for: host) == nil,
                    let live = FaviconCache.key(for: session.url).flatMap({ FaviconCache.shared.image(for: $0) }) {
                     FaviconCache.shared.store(live, for: host)
                 }
                 if let image = await FaviconCache.shared.cachedImage(for: host) { cached = Image(platformImage: image); cachedPlatform = image }
                 // FORK: an unloaded favorite or pinned tab has no page to fetch its icon, so fetch it here.
                 // Never for a private tab: it would reach the network and the disk cache.
-                guard session?.hasLoadedFavicon != true, session?.isPrivate != true,
+                guard !(session?.hasLoadedFavicon == true && onOwnSite), session?.isPrivate != true,
                       let image = await FaviconCache.shared.loadOrFetch(for: url) else { return }
                 cached = Image(platformImage: image)
                 cachedPlatform = image
             }
     }
 
+    /// Whether the live page is still on the item's own host.
+    private var onOwnSite: Bool {
+        guard let session, let own = item.url.flatMap(FaviconCache.key) else { return false }
+        return FaviconCache.key(for: session.url) == own
+    }
+
     /// FORK: the stored bitmap behind the icon, when there is one to resample for the tile.
     private var crispSource: PlatformImage? {
         #if os(macOS)
-        if let session, session.hasLoadedFavicon, let image = FaviconCache.key(for: session.url).flatMap({ FaviconCache.shared.image(for: $0) }) { return image }
+        if let session, session.hasLoadedFavicon, onOwnSite || cachedPlatform == nil,
+           let image = FaviconCache.key(for: session.url).flatMap({ FaviconCache.shared.image(for: $0) }) { return image }
         return cachedPlatform
         #else
         return nil
