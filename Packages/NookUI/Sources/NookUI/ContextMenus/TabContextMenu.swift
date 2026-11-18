@@ -181,6 +181,49 @@ public struct TabContextMenu: View {
 
         if context != .favorite {
             moveToSpaceMenu
+        } else {
+            favoriteToSpaceMenus
+        }
+    }
+
+    /// Favorites belong to a space: these carry one, or all of them, to another space.
+    @ViewBuilder
+    private var favoriteToSpaceMenus: some View {
+        let current = tabs.spaceID(of: itemID)
+        let others = tabs.spaces(visibleIn: windowState).filter { $0.id != current }
+        if !others.isEmpty, let current {
+            Menu {
+                ForEach(others) { space in
+                    Button(space.name) {
+                        tabs.move(itemID, to: .favorites(spaceID: space.id), after: tabs.favorites(of: space.id).last?.id)
+                    }
+                }
+            } label: {
+                Label("Move to Space", systemImage: "arrow.right.square")
+            }
+            Menu {
+                ForEach(others) { space in
+                    Button(space.name) { tabs.copy(itemID, to: .favorites(spaceID: space.id)) }
+                }
+            } label: {
+                Label("Copy to Space", nookIcon: "plus.square.on.square")
+            }
+            Menu {
+                ForEach(others) { space in
+                    Button(space.name) { copyAllFavorites(from: current, to: space.id) }
+                }
+            } label: {
+                Label("Copy All Favorites to Space", nookIcon: "star")
+            }
+        }
+    }
+
+    /// Copies every favorite of `source` into `target`, skipping addresses `target` already has.
+    private func copyAllFavorites(from source: UUID, to target: UUID) {
+        var have = Set(tabs.favorites(of: target).compactMap { $0.url?.absoluteString })
+        for favorite in tabs.favorites(of: source) {
+            guard let url = favorite.url?.absoluteString, have.insert(url).inserted else { continue }
+            tabs.copy(favorite.id, to: .favorites(spaceID: target))
         }
     }
 

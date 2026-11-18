@@ -603,6 +603,21 @@ extension TabsController {
         return id
     }
 
+    /// A copy of a tab at the end of `parent` (another space's favorites, say), with its address, title and name.
+    /// The original stays where it is.
+    @discardableResult
+    public func copy(_ itemID: UUID, to parent: Parent) -> UUID? {
+        guard let owner = owner(ofItem: itemID), let item = tree(owner).item(itemID),
+              case .tab(let url, let pageTitle) = item.kind else { return nil }
+        let id = UUID()
+        let last = tree(owner).children(of: parent).last?.id
+        return perform(owner, "copy") {
+            var change = try $0.createTab(id: id, url: url, title: pageTitle, in: parent, after: last)
+            if let customTitle = item.customTitle { change.merge(try $0.rename(id, customTitle: customTitle)) }
+            return change
+        } != nil ? id : nil
+    }
+
     // MARK: - Home URL
 
     /// Loads a synced tab's home URL in its page.
