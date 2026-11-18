@@ -14,6 +14,8 @@ let package = Package(
         .package(path: "../NookBlocker"),
         .package(path: "../NookTweaks"),
         .package(url: "https://github.com/will-lumley/FaviconFinder.git", from: "5.1.5"),
+        // FaviconFinder's own HTML parser: Vega fetches the page itself (as Safari) and hands it the parsed page.
+        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.3.7"),
     ],
     targets: [
         .target(name: "MuteableWKWebView", path: "Sources/MuteableWKWebView", publicHeadersPath: "include"),
@@ -27,6 +29,7 @@ let package = Package(
                 .product(name: "NookBlocker", package: "NookBlocker"),
                 .product(name: "NookTweaks", package: "NookTweaks"),
                 .product(name: "FaviconFinder", package: "FaviconFinder"),
+                .product(name: "SwiftSoup", package: "SwiftSoup"),
             ],
             resources: [.copy("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]

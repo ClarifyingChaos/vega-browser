@@ -78,6 +78,11 @@ public final class PasswordPrompter {
 @MainActor
 public final class PasswordBridge: NSObject, WKScriptMessageHandlerWithReply {
     static let world = WKContentWorld.world(name: "VegaPasswords")
+
+    /// Shows the focused field's saved logins (or opens the password settings), from the field's right-click menu.
+    @MainActor public static func showPasswords(in webView: WKWebView) {
+        webView.evaluateJavaScript("window.__vegaShowPasswords && window.__vegaShowPasswords()", in: nil, in: world) { _ in }
+    }
     private weak var session: PageSession?
     private weak var userContentController: WKUserContentController?
 
