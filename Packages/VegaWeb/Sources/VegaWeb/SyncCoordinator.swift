@@ -162,6 +162,11 @@ public final class SyncCoordinator {
     /// the background must still send and take changes within a round or two.
     @ObservationIgnored private var activity: NSObjectProtocol?
     @ObservationIgnored private var lastWritten: SyncSnapshot?
+    /// Whether some Mac in the chain still reads only plain files (an older Vega, or one without the passphrase):
+    /// then the plain copy is written beside the sealed one. Assumed until the first round has looked.
+    @ObservationIgnored var plainNeeded = true
+    /// How the last snapshot was written (sealed, plain too), so a change of either writes again.
+    @ObservationIgnored private var lastWrittenMode: (sealed: Bool, plain: Bool)?
     @ObservationIgnored private var observers: [Any] = []
 
     public var backend: Backend {
@@ -365,7 +370,7 @@ public final class SyncCoordinator {
     private static let keyService = "com.vega.browser.syncKey"
     // Read from the Keychain once per launch, not on every sync round.
     @ObservationIgnored private var cachedKey: SymmetricKey?
-    private func loadKey() -> SymmetricKey? {
+    func loadKey() -> SymmetricKey? {
         if let cachedKey { return cachedKey }
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService,
                                     kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
@@ -609,7 +614,9 @@ public final class SyncCoordinator {
                 return
             }
             step(1, "Reading your other Macs")
-            let (all, pending) = try await store.readOtherSnapshots(excluding: own)
+            let key = passwordsEnabled ? loadKey() : nil
+            let (all, pending, plainOnly) = try await SealedSync.readOthers(store, excluding: own, key: key)
+            plainNeeded = key == nil || !plainOnly.subtracting(removedIDs).isEmpty
             // iCloud still bringing a file down: look again soon instead of backing off.
             if pending > 0 { found("files still downloading") }
             let snapshots = all.filter { !removedIDs.contains($0.deviceID) }
@@ -728,9 +735,14 @@ public final class SyncCoordinator {
             if let last, last.spaces == snapshot.spaces, last.items == snapshot.items { return nil }
             return snapshot
         }.value
-        guard let snapshot = built else { return false }
-        try await store.writeSnapshot(snapshot)
+        let key = passwordsEnabled ? loadKey() : nil
+        let mode = (sealed: key != nil, plain: key == nil || plainNeeded)
+        // The same snapshot written the same way is not news; a new way of writing it is.
+        let snapshot: SyncSnapshot
+        if let built { snapshot = built } else if let last, let previous = lastWrittenMode, previous != mode { snapshot = last } else { return false }
+        try await SealedSync.write(snapshot, to: store, key: key, plainNeeded: mode.plain)
         lastWritten = snapshot
+        lastWrittenMode = mode
         return true
     }
 }
