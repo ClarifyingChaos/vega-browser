@@ -151,8 +151,6 @@ public struct SpaceTab: View {
                         .nookTrailingFade(reserving: isHovering ? NookDesign.Size.row + (showsReset ? NookDesign.Size.rowButton : 0) : 0)
                         .textSelection(.disabled)
                         .opacity(isUnloaded ? NookDesign.Surface.unloadedOpacity : 1)
-                        // The row shows a short title; hovering shows the page's full one.
-                        .help(title)
                 }
             }
             .overlay(alignment: .trailing) {
@@ -216,6 +214,9 @@ public struct SpaceTab: View {
             }
         }
         .buttonStyle(NookTabButtonStyle(onPress: selectOnPress))
+        // The row shows a short title; hovering shows the page's full one. On the button, since
+        // macOS shows no tooltip set inside a button's label.
+        .help(isRenaming ? "" : title)
         .padding(.vertical, NookDesign.Tab.verticalInset)
         .onHoverTracking { hovering in
             withAnimation(NookDesign.Motion.hover(hovering)) {

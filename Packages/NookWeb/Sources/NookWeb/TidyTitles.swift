@@ -67,18 +67,22 @@ public enum TidyTitles {
     // MARK: - Any site
 
     /// Longest row title, in characters; a longer one is cut at a word and ends in "…".
-    static let maxLength = 40
+    static let maxLength = 28
 
     static func shortened(_ title: String) -> String {
         let title = title.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         guard title.count > maxLength else { return title }
         var cut = String(title.prefix(maxLength))
         // A break between parts ("Title · Section") is the cleanest place to stop, with no "…".
-        let ns = cut as NSString
-        if let last = separator.matches(in: cut, range: NSRange(location: 0, length: ns.length)).last, last.range.location >= maxLength / 3 {
+        // Looks a little past the cut, so a separator right at the limit still counts.
+        let ns = String(title.prefix(maxLength + 3)) as NSString
+        if let last = separator.matches(in: ns as String, range: NSRange(location: 0, length: ns.length)).last(where: { $0.range.location <= maxLength }),
+           last.range.location >= maxLength / 3 {
             return ns.substring(to: last.range.location)
         }
-        if let space = cut.lastIndex(of: " "), cut.distance(from: cut.startIndex, to: space) >= maxLength / 2 { cut = String(cut[..<space]) }
+        // A cut that already ends at a word keeps that word.
+        let endsAtWord = title[title.index(title.startIndex, offsetBy: maxLength)] == " "
+        if !endsAtWord, let space = cut.lastIndex(of: " "), cut.distance(from: cut.startIndex, to: space) >= maxLength / 2 { cut = String(cut[..<space]) }
         return cut.trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.whitespaces).subtracting(CharacterSet(charactersIn: ")?!\"'"))) + "\u{2026}"
     }
 
