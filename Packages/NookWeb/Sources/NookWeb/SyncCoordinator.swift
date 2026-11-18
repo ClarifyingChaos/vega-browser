@@ -98,9 +98,11 @@ public final class SyncCoordinator {
     private static let logger = Logger(subsystem: "com.vega.browser", category: "sync")
     private static let deviceKey = "fork.sync.deviceID"
     /// How soon the next round runs while things are changing, and how far it backs off when a round finds nothing
-    /// new: 20 s, 40 s, 80 s ... up to 5 minutes. A change here, coming back to Vega, or Sync Now starts it over.
+    /// new: 20 s, 40 s ... up to `slowestInterval`. A change here, coming back to Vega, or Sync Now starts it over.
     private static let interval: Duration = .seconds(20)
-    private static let slowestInterval: Duration = .seconds(300)
+    /// The longest wait between checks. Google Drive has no way to tell us about a change, so it is asked, and a quiet
+    /// check is one small request; iCloud Drive's folder is watched, so its timed check only backs the watcher up.
+    private var slowestInterval: Duration { backend == .google ? .seconds(30) : .seconds(120) }
     /// A change here is sent after it stops for this long, and never more often than `minGap`.
     private static let settleDelay: Duration = .seconds(4)
     private static let minGap: TimeInterval = 15
@@ -148,10 +150,14 @@ public final class SyncCoordinator {
     @ObservationIgnored private var quietRounds = 0
     /// Set by any step that sent or took something in this round.
     @ObservationIgnored var roundFoundWork = false
+    /// A nudge that arrived while a round was running: the next round starts at once.
+    @ObservationIgnored private var rerunRequested = false
     /// Whether this round shows its steps in Settings: only the ones the person asked for.
     @ObservationIgnored private var showsProgress = true
     @ObservationIgnored private var lastRoundEnd = Date.distantPast
     @ObservationIgnored private var settleTask: Task<Void, Never>?
+    @ObservationIgnored private var watcher: FolderWatcher?
+    @ObservationIgnored private var watchTask: Task<Void, Never>?
     /// Keeps macOS from slowing the sync loop (App Nap) while Vega sits hidden or minimised: a Mac whose Vega is in
     /// the background must still send and take changes within a round or two.
     @ObservationIgnored private var activity: NSObjectProtocol?
@@ -403,7 +409,7 @@ public final class SyncCoordinator {
     /// Next round now, and the pace starts over.
     private func nudge() {
         quietRounds = 0
-        if let sleeper { sleeper.cancel() } else if loop == nil { Task { await tick() } }
+        if let sleeper { sleeper.cancel() } else if loop == nil { Task { await tick() } } else { rerunRequested = true }
     }
 
     /// Something changed here: send it once it settles, without a round for every page load.
@@ -431,10 +437,33 @@ public final class SyncCoordinator {
         }
     }
 
+    /// Watches the iCloud Drive folder, so a file another Mac's change brings down starts a round within seconds.
+    private func watchFolder() {
+        watcher = nil
+        guard backend == .iCloud, let folder = currentStore()?.store as? FolderBlobStore else { return }
+        watcher = FolderWatcher(url: folder.url) { [weak self] in
+            Task { @MainActor in self?.folderChanged() }
+        }
+    }
+
+    /// Files changed in the sync folder. This Mac's own writes land here too; the extra round they cause finds nothing
+    /// and sends nothing, so it ends there.
+    private func folderChanged() {
+        guard isEnabled else { return }
+        watchTask?.cancel()
+        watchTask = Task { [weak self] in
+            // Several files arrive together; one round takes them all.
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            self?.nudge()
+        }
+    }
+
     /// Waits until the next round is due, or until `nudge` cuts it short.
     private func waitForNextRound() async {
+        if rerunRequested { rerunRequested = false; return }
         let steps = min(quietRounds, 8)
-        let wait = min(Self.interval * (1 << steps), Self.slowestInterval)
+        let wait = min(Self.interval * (1 << steps), slowestInterval)
         let task = Task<Void, Never> { try? await Task.sleep(for: wait) }
         sleeper = task
         await task.value
@@ -457,6 +486,7 @@ public final class SyncCoordinator {
             }
         }
         watchTree()
+        watchFolder()
         // A change made just before the app goes to the background or quits should leave this Mac.
         let center = NotificationCenter.default
         for name in [NSApplication.didResignActiveNotification, NSApplication.willTerminateNotification] {
@@ -476,6 +506,10 @@ public final class SyncCoordinator {
         sleeper = nil
         settleTask?.cancel()
         settleTask = nil
+        watchTask?.cancel()
+        watchTask = nil
+        watcher?.stop()
+        watcher = nil
         if !keepStatus, let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
