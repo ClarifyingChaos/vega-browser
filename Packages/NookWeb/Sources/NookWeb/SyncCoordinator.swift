@@ -716,12 +716,19 @@ public final class SyncCoordinator {
     @discardableResult
     private func writeOwn(store: any SyncBlobStore) async throws -> Bool {
         guard let tabs else { return false }
-        var snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName, profile: scopeProfile, includeTabs: mirrorsTabs)
-        if let placeholder = placeholderID {
-            snapshot.spaces.removeAll { $0.id == placeholder }
-            snapshot.items.removeAll { tabs.tree.spaceID(of: $0.id) == placeholder }
-        }
-        if let last = lastWritten, last.spaces == snapshot.spaces, last.items == snapshot.items { return false }
+        // Built and compared off the main thread: the tree is a value, so this works on a copy.
+        let tree = tabs.tree, id = deviceID, name = deviceName, profile = scopeProfile, mirror = mirrorsTabs
+        let placeholder = placeholderID, last = lastWritten
+        let built: SyncSnapshot? = await Task.detached(priority: .utility) {
+            var snapshot = SyncMerge.snapshot(of: tree, deviceID: id, deviceName: name, profile: profile, includeTabs: mirror)
+            if let placeholder {
+                snapshot.spaces.removeAll { $0.id == placeholder }
+                snapshot.items.removeAll { tree.spaceID(of: $0.id) == placeholder }
+            }
+            if let last, last.spaces == snapshot.spaces, last.items == snapshot.items { return nil }
+            return snapshot
+        }.value
+        guard let snapshot = built else { return false }
         try await store.writeSnapshot(snapshot)
         lastWritten = snapshot
         return true
