@@ -161,6 +161,41 @@ public final class KeychainVault: PasswordVault {
         return String(data: data, encoding: .utf8)
     }
 
+    // MARK: - Verification codes
+
+    /// One generic item per login, beside the password: only this Vega reads it.
+    private func totpQuery(host: String, username: String) -> [String: Any] {
+        [kSecClass as String: kSecClassGenericPassword,
+         kSecAttrService as String: "\(Self.keychainPrefix).totp",
+         kSecAttrAccount as String: "\(domain)|\(PasswordHosts.normalized(host))|\(username)"]
+    }
+
+    public func totp(host: String, username: String) -> TOTP? {
+        var query = totpQuery(host: host, username: username)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data,
+              let text = String(data: data, encoding: .utf8) else { return nil }
+        return TOTP(text)
+    }
+
+    public func hasTOTP(host: String, username: String) -> Bool {
+        var query = totpQuery(host: host, username: username)
+        query[kSecReturnAttributes as String] = true
+        return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
+    }
+
+    public func setTOTP(_ totp: TOTP?, host: String, username: String) {
+        let query = totpQuery(host: host, username: username)
+        SecItemDelete(query as CFDictionary)
+        guard let totp else { return }
+        var add = query
+        add[kSecValueData as String] = Data(totp.stored.utf8)
+        add[kSecAttrLabel as String] = "Vega verification code: \(PasswordHosts.normalized(host))"
+        SecItemAdd(add as CFDictionary, nil)
+    }
+
     public func save(host: String, username: String, password: String, modified: Date) {
         let data = Data(password.utf8)
         let attrs: [String: Any] = [kSecValueData as String: data, kSecAttrGeneric as String: Self.encode(modified)]
@@ -177,6 +212,7 @@ public final class KeychainVault: PasswordVault {
 
     public func delete(host: String, username: String, at: Date) {
         SecItemDelete(base(host: host, username: username) as CFDictionary)
+        setTOTP(nil, host: host, username: username)
         // An old copy cannot be deleted without a dialog: hide it instead.
         if readsLegacy, !items(in: Self.legacyDomain).filter({ $0.host == PasswordHosts.normalized(host) && $0.username == username }).isEmpty {
             let id = SavedLogin(host: PasswordHosts.normalized(host), username: username).id

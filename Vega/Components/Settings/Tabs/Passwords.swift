@@ -77,6 +77,8 @@ private struct PasswordsContent: View {
     /// Logins only an older Vega's Keychain items hold: they can't sync until imported again.
     @State private var waiting: [SavedLogin] = []
     @State private var showsWaiting = false
+    @State private var audit: PasswordAudit?
+    @State private var auditing = false
 
     @EnvironmentObject private var browserManager: BrowserManager
     /// Whose passwords are shown: the profile of the window in front, or the one picked.
@@ -168,6 +170,25 @@ private struct PasswordsContent: View {
             }
 
             Section {
+                HStack {
+                    VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                        Text("Security Check")
+                        Text(auditSummary).font(VegaDesign.Font.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if auditing { ProgressView().controlSize(.small) }
+                    else { Button(audit == nil ? "Check Passwords…" : "Check Again") { runAudit() }.disabled(logins.isEmpty) }
+                }
+                if let audit {
+                    ForEach(audit.leaked) { finding(row: $0, symbol: "exclamationmark.octagon.fill", tint: .red) }
+                    ForEach(audit.reused) { finding(row: $0, symbol: "arrow.triangle.2.circlepath", tint: .orange) }
+                    ForEach(audit.weak) { finding(row: $0, symbol: "exclamationmark.triangle.fill", tint: .yellow) }
+                }
+            } footer: {
+                Text("Finds passwords seen in known leaks, used on more than one site, or easy to guess. For the leak check only the first 5 characters of each password's hash leave your Mac. Logins saved by an older Vega are checked once imported.")
+            }
+
+            Section {
                 // Each profile keeps its own passwords, as in Chrome.
                 if browserManager.tabs.profiles.count > 1 {
                     Picker("Profile", selection: $profileID) {
@@ -236,6 +257,70 @@ private struct PasswordsContent: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You can't undo this.")
+        }
+    }
+
+    private var auditSummary: String {
+        guard let audit else { return "Check every saved password at once." }
+        if audit.leaked.isEmpty && audit.reused.isEmpty && audit.weak.isEmpty {
+            return "\(audit.checked) passwords checked: nothing to fix." + (audit.unreachable ? " The leak service couldn't be reached." : "")
+        }
+        return "\(audit.checked) checked · \(audit.leaked.count) leaked · \(audit.reused.count) reused · \(audit.weak.count) weak"
+            + (audit.unreachable ? " · leak service unreachable" : "")
+    }
+
+    private func finding(row: PasswordAudit.Finding, symbol: String, tint: Color) -> some View {
+        Button {
+            if let login = logins.first(where: { $0.id == row.id }) { opened = login }
+        } label: {
+            HStack(spacing: VegaDesign.Spacing.lg) {
+                Image(systemName: symbol).foregroundStyle(tint).frame(width: 20)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(row.host).lineLimit(1)
+                    Text("\(row.username) · \(row.detail)").font(VegaDesign.Font.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(VegaDesign.Font.caption).foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Reads every readable password once (after Touch ID), off the main thread, and checks them.
+    private func runAudit() {
+        PasswordReveal.ask(reason: "check your saved passwords") {
+            auditing = true
+            nonisolated(unsafe) let vault = self.vault
+            Task {
+                let pairs: [(login: SavedLogin, password: String)] = await Task.detached(priority: .userInitiated) {
+                    vault.readable().compactMap { l in vault.quietly { vault.password(host: l.host, username: l.username) }.map { (l, $0) } }
+                }.value
+                var result = PasswordAudit()
+                result.checked = pairs.count
+                let groups = Dictionary(grouping: pairs, by: \.password)
+                for (_, users) in groups where users.count > 1 {
+                    for user in users {
+                        result.reused.append(.init(id: user.login.id, host: user.login.host, username: user.login.username,
+                                                   detail: "Same password on \(users.count - 1) other \(users.count == 2 ? "site" : "sites")"))
+                    }
+                }
+                for pair in pairs {
+                    if let why = PasswordAudit.weakness(pair.password) {
+                        result.weak.append(.init(id: pair.login.id, host: pair.login.host, username: pair.login.username, detail: why))
+                    }
+                }
+                for (password, users) in groups {
+                    guard let seen = await PasswordBreach.timesSeen(password) else { result.unreachable = true; continue }
+                    guard seen > 0 else { continue }
+                    for user in users {
+                        result.leaked.append(.init(id: user.login.id, host: user.login.host, username: user.login.username,
+                                                   detail: "Seen \(seen.formatted()) times in known leaks"))
+                    }
+                }
+                audit = result
+                auditing = false
+            }
         }
     }
 
@@ -340,6 +425,12 @@ private struct LoginDetail: View {
     @State private var draft = ""
     @State private var breach: String?
     @State private var copied: String?
+    /// The verification-code generator, read after Touch ID; `hasCode` is known without reading it.
+    @State private var code: TOTP?
+    @State private var hasCode = false
+    @State private var settingUpCode = false
+    @State private var now = Date()
+    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -391,6 +482,30 @@ private struct LoginDetail: View {
                             .buttonStyle(.link)
                             .help("Open \(login.host) in a new tab")
                     }
+                    LabeledContent("Verification Code") {
+                        HStack(spacing: VegaDesign.Spacing.md) {
+                            if let code {
+                                let value = code.code(at: now)
+                                Text(value.count == 6 ? "\(value.prefix(3)) \(value.suffix(3))" : value)
+                                    .font(VegaDesign.Font.mono).monospacedDigit().textSelection(.enabled)
+                                Text("\(code.secondsLeft(at: now))s").font(VegaDesign.Font.caption).foregroundStyle(.secondary).monospacedDigit()
+                                copyButton("Code") { copy(value, secret: true, what: "Code") }
+                                Menu {
+                                    Button("Remove Verification Code", role: .destructive) {
+                                        vault.setTOTP(nil, host: login.host, username: login.username)
+                                        self.code = nil
+                                        hasCode = false
+                                    }
+                                } label: { Image(systemName: "ellipsis.circle") }
+                                .menuStyle(.button).buttonStyle(.borderless).menuIndicator(.hidden).fixedSize()
+                                .accessibilityLabel("More for the verification code")
+                            } else if hasCode {
+                                Button("Show Code") { unlock { _ in code = vault.totp(host: login.host, username: login.username) } }
+                            } else {
+                                Button("Set Up…") { unlock { _ in settingUpCode = true } }
+                            }
+                        }
+                    }
                 } footer: {
                     if let copied { Text("\(copied) copied. A copied password leaves the clipboard after 60 seconds.") }
                 }
@@ -428,6 +543,15 @@ private struct LoginDetail: View {
             .padding(.bottom, VegaDesign.Spacing.xxl)
         }
         .frame(width: 480)
+        .onAppear { hasCode = vault.hasTOTP(host: login.host, username: login.username) }
+        .onReceive(tick) { now = $0 }
+        .sheet(isPresented: $settingUpCode) {
+            CodeSetupSheet { totp in
+                vault.setTOTP(totp, host: login.host, username: login.username)
+                code = totp
+                hasCode = true
+            }
+        }
     }
 
     private func copyButton(_ what: String, action: @escaping () -> Void) -> some View {
@@ -477,10 +601,74 @@ private struct LoginDetail: View {
 }
 
 /// Touch ID or the Mac's password before a saved password is shown or copied.
+/// Pasting the setup key (or otpauth:// link) a site shows when you turn on two-factor sign-in.
+private struct CodeSetupSheet: View {
+    let save: (TOTP) -> Void
+    @State private var text = ""
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let parsed = TOTP(text)
+        VStack(alignment: .leading, spacing: VegaDesign.Spacing.lg) {
+            Text("Set Up Verification Code").font(VegaDesign.Font.heading)
+            Text("On the site, turn on two-factor sign-in with an authenticator app. Choose to enter a setup key instead of scanning the code, and paste the key or link here.")
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            TextField("Setup key or otpauth:// link", text: $text)
+                .textFieldStyle(.roundedBorder)
+                .font(VegaDesign.Font.mono)
+            if let parsed {
+                Text("Current code: \(parsed.code())  ·  type it on the site to finish").font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+            } else if !text.isEmpty {
+                Text("That doesn't look like a setup key.").font(VegaDesign.Font.secondary).foregroundStyle(.red)
+            }
+            HStack {
+                Spacer()
+                Button("Cancel", role: .cancel) { dismiss() }
+                Button("Save") { if let parsed { save(parsed); dismiss() } }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(parsed == nil)
+            }
+        }
+        .padding(VegaDesign.Spacing.xxl)
+        .frame(width: 440)
+    }
+}
+
+/// Every readable password checked at once: found in known leaks, used on more than one site, or weak.
+struct PasswordAudit: Sendable {
+    struct Finding: Identifiable, Sendable {
+        let id: String
+        let host: String
+        let username: String
+        let detail: String
+    }
+    var leaked: [Finding] = []
+    var reused: [Finding] = []
+    var weak: [Finding] = []
+    var checked = 0
+    var unreachable = false
+
+    static func weakness(_ password: String) -> String? {
+        if password.count < 8 { return "Shorter than 8 characters" }
+        if password.allSatisfy(\.isNumber) { return "Only numbers" }
+        if Set(password).count <= 3 { return "Repeats a few characters" }
+        let lower = password.lowercased()
+        for common in ["password", "123456", "qwerty", "letmein", "welcome", "iloveyou", "admin"] where lower.contains(common) {
+            return "Contains \u{201C}\(common)\u{201D}"
+        }
+        return nil
+    }
+}
+
 private enum PasswordReveal {
     @MainActor static func ask(_ login: SavedLogin, then use: @escaping @MainActor () -> Void) {
+        ask(reason: "show your saved password for \u{201C}\(login.host)\u{201D}", then: use)
+    }
+
+    @MainActor static func ask(reason: String, then use: @escaping @MainActor () -> Void) {
         let context = LAContext()
-        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "show your saved password for \u{201C}\(login.host)\u{201D}") { ok, _ in
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { ok, _ in
             guard ok else { return }
             Task { @MainActor in use() }
         }

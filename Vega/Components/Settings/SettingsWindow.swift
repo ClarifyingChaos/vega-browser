@@ -220,12 +220,14 @@ private struct SettingsSidebar: View {
 enum SettingsSubPane: Hashable {
     case cookies
     case cache
+    case sitePermissions
 
     @MainActor @ViewBuilder
     func view(_ browserManager: BrowserManager) -> some View {
         switch self {
         case .cookies: CookieManagementView(cookieManager: browserManager.cookieManager)
         case .cache: CacheManagementView(cacheManager: browserManager.cacheManager)
+        case .sitePermissions: SitePermissionsView()
         }
     }
 }
