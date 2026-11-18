@@ -30,7 +30,10 @@ public final class FaviconCache: @unchecked Sendable {
 
     public let directory: URL = {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        let dir = caches.appendingPathComponent("FaviconCache")
+        // FORK: Vega's own folder. "FaviconCache" was shared with Nook's builds and held icons saved by older rules (a
+        // favorite could keep another site's icon), so every icon is fetched once more under the current ones.
+        let dir = caches.appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.vega.browser", isDirectory: true)
+            .appendingPathComponent("FaviconCache", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()
