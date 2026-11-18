@@ -58,6 +58,15 @@ public enum PasswordMerge {
         }
     }
 
+    /// Of the records that carry a newer time, the ones that would change something here: a deletion, a login that is
+    /// not among the readable ones (new, or an older Vega's), or a different password. The same password under a newer
+    /// time changes nothing, and a readable login whose password cannot be read now cannot be rewritten quietly either.
+    public static func worthApplying(_ newer: [PasswordRecord], readable: Set<String>, currentPassword: (PasswordRecord) -> String?) -> [PasswordRecord] {
+        newer.filter { record in
+            record.deleted || !readable.contains(record.key) || (currentPassword(record).map { $0 != record.password } ?? false)
+        }
+    }
+
     public static func pruned(_ records: [PasswordRecord], now: Date = Date()) -> [PasswordRecord] {
         let cutoff = now.addingTimeInterval(-Double(tombstoneDays) * 86_400)
         return records.filter { !$0.deleted || $0.modified > cutoff }

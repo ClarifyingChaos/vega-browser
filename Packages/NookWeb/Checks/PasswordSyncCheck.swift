@@ -56,6 +56,16 @@ struct PasswordSyncCheck {
         let leaked = try await store.readOthers(excluding: UUID(), key: wrong)
         precondition(leaked.snapshots.isEmpty, "the wrong key reads nothing")
 
+        // A login another Mac only re-stamps (newer time, same password) is not news; a different password or a
+        // deletion is; one this Mac cannot read right now is left alone.
+        let stamp = Date().addingTimeInterval(60)
+        func rec(_ host: String, _ pw: String, deleted: Bool = false) -> PasswordRecord { PasswordRecord(host: host, username: "u", password: pw, modified: stamp, deleted: deleted) }
+        let mine: [String: String?] = ["same.com": "pw", "changed.com": "old", "locked.com": nil]
+        let readable = Set(["same.com", "changed.com", "locked.com"].map { rec($0, "").key })
+        let worth = PasswordMerge.worthApplying([rec("same.com", "pw"), rec("changed.com", "new"), rec("locked.com", "x"), rec("gone.com", "", deleted: true), rec("fresh.com", "p")],
+                                                readable: readable) { mine[$0.host] ?? nil }
+        precondition(worth.map(\.host) == ["changed.com", "gone.com", "fresh.com"], "only real changes are applied: \(worth.map(\.host))")
+
         // A change on B (newer) and then a deletion travel back to A.
         try await Task.sleep(for: .milliseconds(20))
         vaultB.save(host: "example.com", username: "amy", password: "changed")
