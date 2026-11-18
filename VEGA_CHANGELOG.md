@@ -2,6 +2,16 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.7.11 (2026-11-18)
+
+### Fixes
+- A favorite or pinned tab keeps its own site's icon after its page goes on to another site (a sign-in, a link). On a Mac that had no icon saved for it yet, it could take the other site's icon and keep it. A wrong icon already saved is replaced within a day, or as soon as the favorite shows its own site again.
+
+### Privacy and security
+Reviewed before release.
+- Icons are fetched as before, from the favorite's own site and only for public https addresses. Private tabs still never fetch or save icons.
+- No new network connections, permissions or entitlements.
+
 ## Vega 1.7.10 (2026-11-18)
 
 > **Replaces 1.7.9, which was withdrawn.** 1.7.9 started sending space deletions to your other Macs, and a deletion one Mac had held back for days could remove spaces you were still using on another. 1.7.10 fixes that and brings everything 1.7.9 added (listed under 1.7.9 below).
