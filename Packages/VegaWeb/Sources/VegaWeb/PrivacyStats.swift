@@ -69,6 +69,10 @@ public final class PrivacyStats {
             site.upgraded += 1
         }
         sites[page] = site
+        // Kept small: the 400 sites with the most blocked.
+        if sites.count > 500 {
+            sites = Dictionary(uniqueKeysWithValues: sites.sorted { $0.value.blocked > $1.value.blocked }.prefix(400).map { ($0.key, $0.value) })
+        }
         scheduleSave()
     }
 
