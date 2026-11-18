@@ -6,6 +6,24 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.7.14 (2026-11-19)
+
+### Fixes
+- **Vega no longer freezes for a moment every 20 seconds.** Password sync read your Keychain on the same thread that draws the window, one login at a time, which held the window for up to a second and a half. It now runs in the background and finds each login directly.
+- **Sync sends and takes only what changed.** While nothing changes, Vega checks less and less often (every 20 seconds at first, then up to every 5 minutes) instead of running a full round every 20 seconds. A change you make is sent a few seconds later, and Vega checks right away when you switch back to it or press Sync Now.
+- **Google Drive sync makes far fewer requests.** A round where nothing changed used to make about 30; it now makes one. A file is downloaded again only when its content changed.
+- Passwords are no longer sent again every round: logins saved by an older Vega that can't be read without a prompt used to make Vega think the job was unfinished.
+- Another Mac that re-stamps a login with the same password no longer makes this Mac take it and send it back. Updating your other Macs to this version stops the re-stamping at its source.
+- Settings › Sync shows its steps only when you ask for a sync, not for every quiet check.
+- The "Vega is available" update card no longer sits on top of the downloads list.
+
+### Privacy and security
+Reviewed before release.
+- Password sync still never shows a Keychain dialog and never reads an older item that would ask first. The only change to what is read: it looks up a single login instead of scanning all of them.
+- Passwords are still sealed with your sync passphrase before they leave this Mac. Vega now keeps the sync files it downloaded in memory between rounds, exactly as they sit in Drive (passwords still sealed); they are dropped when Vega quits.
+- Keychain access now runs on a background thread. macOS's switch that silences Keychain dialogs is shared by the whole app, so a dialog that you trigger yourself in the very moment a sync reads could be silenced for that one read; you can ask again.
+- No new network destinations, permissions or entitlements: sync talks to the same Google Drive or iCloud Drive folder as before, only less often.
+
 ## Vega 1.7.13 (2026-11-18)
 
 ### New
