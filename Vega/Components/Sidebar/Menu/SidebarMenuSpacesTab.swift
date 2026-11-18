@@ -71,7 +71,7 @@ struct SidebarMenuSpacesTab: View {
                   let scroll else { return event }
             let room = scroll.contentSize.width - scroll.containerSize.width
             guard room > 0 else { return event }
-            let x = min(max(scroll.contentOffset.x - event.scrollingDeltaY * 10, 0), room)
+            let x = min(max(scroll.contentOffset.x - event.scrollingDeltaY * 50, 0), room)
             position.scrollTo(x: x)
             return nil
         }

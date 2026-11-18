@@ -141,14 +141,14 @@ public struct SpaceTab: View {
                                 .font(VegaDesign.Tab.font)
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false)
+                                .truncationMode(.tail)
+                                // Ends in "…" at the row's width (before the close button on hover).
+                                .padding(.trailing, isHovering ? VegaDesign.Size.row + (showsReset ? VegaDesign.Size.rowButton : 0) : 0)
                                 .id(title)
                                 .transition(.blurReplace)
                         }
                         // Only a rename animates; a page changing its own title swaps without motion.
                         .animation(VegaDesign.Motion.spring, value: item.customTitle)
-                        // On hover the text ends before the close button.
-                        .vegaTrailingFade(reserving: isHovering ? VegaDesign.Size.row + (showsReset ? VegaDesign.Size.rowButton : 0) : 0)
                         .textSelection(.disabled)
                         .opacity(isUnloaded ? VegaDesign.Surface.unloadedOpacity : 1)
                 }
@@ -214,9 +214,9 @@ public struct SpaceTab: View {
             }
         }
         .buttonStyle(VegaTabButtonStyle(onPress: selectOnPress))
-        // The row shows a short title; hovering shows the page's full one. On the button, since
-        // macOS shows no tooltip set inside a button's label.
-        .help(isRenaming ? "" : title)
+        // The row shows a short title; hovering shows the page's full one. An AppKit tooltip:
+        // SwiftUI's `.help` never showed on these rows.
+        .background(RowToolTip(text: isRenaming ? nil : title))
         .padding(.vertical, VegaDesign.Tab.verticalInset)
         .onHoverTracking { hovering in
             withAnimation(VegaDesign.Motion.hover(hovering)) {
@@ -300,3 +300,17 @@ public struct SpaceTab: View {
         }
     }
 }
+
+#if os(macOS)
+/// The full page title as a standard macOS tooltip over the row.
+private struct RowToolTip: NSViewRepresentable {
+    let text: String?
+    func makeNSView(context: Context) -> NSView { NSView() }
+    func updateNSView(_ view: NSView, context: Context) { view.toolTip = text }
+}
+#else
+private struct RowToolTip: View {
+    let text: String?
+    var body: some View { Color.clear }
+}
+#endif
