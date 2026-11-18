@@ -118,6 +118,8 @@ hdiutil verify "$OUT/$DMG_NAME" -quiet
 SIG_LINE=$("$SPARKLE_BIN/sign_update" "$OUT/$DMG_NAME")   # sparkle:edSignature="..." length="..."
 URL="https://github.com/$REPO/releases/download/$TAG/$DMG_NAME"
 BUILD_FOR_FEED=$($DRY_RUN && echo $OLD_BUILD || echo $NEW_BUILD)
+# A version like 1.8.0-beta.1 goes to the beta channel only: Settings › Updates › Get beta updates.
+CHANNEL_TAG=""; [[ "$VERSION" == *-beta.* ]] && CHANNEL_TAG=$'\n      <sparkle:channel>beta</sparkle:channel>'
 cat > "$OUT/appcast.xml" <<XML
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
@@ -129,7 +131,7 @@ cat > "$OUT/appcast.xml" <<XML
       <pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
       <sparkle:version>$BUILD_FOR_FEED</sparkle:version>
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>15.5</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.5</sparkle:minimumSystemVersion>$CHANNEL_TAG
       <enclosure url="$URL" type="application/octet-stream" $SIG_LINE />
     </item>
   </channel>
@@ -165,7 +167,9 @@ else
   mkdir -p "$PAGES" && git -C "$PAGES" init -q -b gh-pages && git -C "$PAGES" remote add origin "$(git remote get-url origin)"
   touch "$PAGES/.nojekyll"
 fi
-cp "$OUT/appcast.xml" "$PAGES/appcast.xml"
+# Keeps the other channel's newest item, so a beta never hides the regular release and the reverse.
+python3 scripts/merge-appcast.py "$PAGES/appcast.xml" "$OUT/appcast.xml" "$PAGES/appcast.xml"
+xmllint --noout "$PAGES/appcast.xml"
 git -C "$PAGES" add -A && git -C "$PAGES" commit -qm "Appcast: Vega $VERSION" && git -C "$PAGES" push -q origin gh-pages
 gh api -X POST "repos/$REPO/pages" -f "source[branch]=gh-pages" -f "source[path]=/" >/dev/null 2>&1 || true
 
