@@ -418,6 +418,26 @@ public final class SyncCoordinator {
 
     var deviceName: String { Host.current().localizedName ?? "Mac" }
 
+    private var seenKey: String { "fork.sync.seen" + suffix }
+    private var seenSinceKey: String { "fork.sync.seenSince" + suffix }
+
+    /// The `writtenAt` of the last snapshot read from `device`. A Mac never read before counts from when this Mac first
+    /// ran this check, so deletions an older Vega held back (dated days ago) don't land all at once on an upgrade.
+    private func seenUntil(_ device: UUID) -> Date {
+        let defaults = UserDefaults.standard
+        if let seen = (defaults.dictionary(forKey: seenKey) as? [String: Double])?[device.uuidString] {
+            return Date(timeIntervalSince1970: seen)
+        }
+        if defaults.object(forKey: seenSinceKey) == nil { defaults.set(Date().timeIntervalSince1970, forKey: seenSinceKey) }
+        return Date(timeIntervalSince1970: defaults.double(forKey: seenSinceKey))
+    }
+
+    private func markSeen(_ snapshot: SyncSnapshot) {
+        var seen = UserDefaults.standard.dictionary(forKey: seenKey) as? [String: Double] ?? [:]
+        seen[snapshot.deviceID.uuidString] = max(seen[snapshot.deviceID.uuidString] ?? 0, snapshot.writtenAt.timeIntervalSince1970)
+        UserDefaults.standard.set(seen, forKey: seenKey)
+    }
+
     private func tick() async {
         guard isEnabled, let tabs else { return }
         guard let place = currentStore() else { status = .unavailable(missingMessage); return }
@@ -436,8 +456,9 @@ public final class SyncCoordinator {
             let snapshots = all.filter { !removedIDs.contains($0.deviceID) }
             devices = snapshots.map { SyncDevice(id: $0.deviceID, name: $0.deviceName, lastSeen: $0.writtenAt) }.sorted { $0.name < $1.name }
             for snapshot in snapshots {
-                let change = SyncMerge.change(applying: snapshot, to: tabs.tree)
+                let change = SyncMerge.change(applying: snapshot, to: tabs.tree, seenUntil: seenUntil(snapshot.deviceID))
                 if !change.isEmpty { tabs.apply(change) }
+                markSeen(snapshot)
             }
             removePlaceholderIfFilled()
             try await writeOwn(store: store)

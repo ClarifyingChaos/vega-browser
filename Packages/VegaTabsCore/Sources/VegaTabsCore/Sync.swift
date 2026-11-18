@@ -76,11 +76,15 @@ public enum SyncMerge {
     /// What to write into `tree` so it holds the newest version of every record in `remote`.
     /// Empty when the tree is already at least as new. Ties keep the local record, so two Macs
     /// that have exchanged everything stop producing changes.
-    public static func change(applying remote: SyncSnapshot, to tree: TabTree) -> Change {
+    /// `seenUntil`: when this Mac last read a snapshot from the same Mac; space deletions from before then are skipped.
+    public static func change(applying remote: SyncSnapshot, to tree: TabTree, seenUntil: Date? = nil) -> Change {
         var change = Change()
         for space in remote.spaces where !space.isAgent {
             let local = tree.spaces[space.id]
             if let local {
+                // A space deleted before this Mac last read that Mac is a deletion it never sent then (an older Vega
+                // kept them back): applying it now would remove a space in use here since. It is left alone.
+                if let deleted = space.deletedAt, local.deletedAt == nil, let seenUntil, deleted <= seenUntil { continue }
                 if space.modifiedAt > local.modifiedAt { change.spaces[space.id] = .some(space) }
             } else if space.deletedAt == nil {
                 change.spaces[space.id] = .some(space)
