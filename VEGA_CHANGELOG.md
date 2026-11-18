@@ -2,15 +2,23 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
-## Vega 1.7.9 (unreleased)
+## Vega 1.7.9 (2026-11-18)
 
 ### New
 - **Remove a Mac from sync.** Settings › General › Sync lists your other Macs; Remove stops syncing with one at once. The next time Vega opens on it, it turns its sync off and deletes the spaces, favorites, pinned and open tabs, passwords, settings, history and website sign-ins it got through sync (a fresh empty space is left if that was all of them). It can join again by turning sync on. With password sync on, removing a Mac asks for a new passphrase, which locks it out of passwords right away.
-- **Short tab names in the sidebar.** Any site's own name is dropped from the tab's title ("Best laptops | The Verge" shows as "Best laptops"), and a long title stops at about 40 characters, at a break or a word. Hover a tab for its full title. A name you gave a tab yourself is left as you wrote it.
-- **Scroll through all your spaces in the library.** Under Spaces, a sideways swipe on the trackpad scrolls the columns, and a mouse wheel moves them sideways. The swipe closes the library only once the columns are at their edge.
+- **Short tab names in the sidebar.** Any site's own name is dropped from the tab's title ("Best laptops | The Verge" shows as "Best laptops"), and a long title stops at about 28 characters, at a break or a word and ends in "…". Hover a tab for its full title. A name you gave a tab yourself is left as you wrote it.
+- **Scroll through all your spaces in the library.** Under Spaces, a sideways swipe on the trackpad scrolls the columns, and a mouse or an up-and-down scroll moves them sideways instead of scrolling the list inside a space. The swipe closes the library only once the columns are at their edge.
 - **Settings sync.** Your settings (search engine, tab behaviour, appearance, keyboard shortcuts, privacy and password switches) travel with your first profile's account. A new Mac takes them when it first signs in, after that the newest change wins, and they apply the next time Vega opens (Settings › General offers Restart Vega). Window sizes, extensions and sync's own state stay on each Mac.
 - **Open tabs are kept the same on all your Macs.** A tab you open or close on one Mac opens or closes on the others (Settings › General › Sync › Keep open tabs the same on my Macs, on by default). Each Mac keeps its own selected tab and its own sidebar layout.
-- Signing in on first launch also turns on the list under Spaces › Tabs from Other Macs, 
+- Signing in on first launch also turns on the list under Spaces › Tabs from Other Macs.
+
+### Privacy and security
+Reviewed before release.
+- Removing a Mac writes a small marker file (`removed/<Mac>.json`) to your own sync folder or Google Drive. Anyone who can write to that folder can already change your synced data, so this adds no new access. The marker only ever tells a Mac to delete what sync gave it.
+- A removed Mac deletes only what it got through sync: the synced profile's spaces and tabs, its history, its sync passphrase and the profile's saved passwords in Vega's own Keychain items. Other profiles and other apps' Keychain items are left alone. A Mac that was offline keeps its data until it next opens Vega.
+- Removing a Mac with password sync on asks for a new passphrase, so the removed Mac can no longer read passwords from the sync folder.
+- The test-only `fork.keychain.testPrefix` setting does nothing unless it is set by hand with `defaults write`; normal installs use the usual Keychain items.
+- No new network connections, permissions or entitlements.
 
 ### Fixes
 - A new Mac that signs in on first launch takes your first profile even though a new install already opens a tab (it used to end up with two profiles). It still never replaces a profile that has favorites or pinned tabs.
