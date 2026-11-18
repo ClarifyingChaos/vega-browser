@@ -60,11 +60,20 @@ public struct SpacesSettingsView: View {
 
             Section {
                 // The Agent space keeps its look and borrows another space's data, so it has no row.
-                ForEach(spaces) { space in
-                    row(space)
-                        // A grouped Form has no drag to reorder of its own, so each row takes the dragged space.
-                        .dropDestination(for: String.self) { ids, _ in dropSpace(ids.first, on: space.id) }
+                // A grouped Form's rows can't be dragged, so the spaces sit in a List of their own inside the card: its
+                // drag lifts the row under the pointer and slides the others apart, as in Dia and System Settings.
+                List {
+                    ForEach(spaces) { space in
+                        row(space)
+                            .listRowSeparator(.visible)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                    }
+                    .onMove(perform: reorder)
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .scrollDisabled(true)
+                .frame(height: CGFloat(spaces.count) * spaceRowHeight)
             } header: {
                 Text("Spaces")
             } footer: {
@@ -218,28 +227,16 @@ public struct SpacesSettingsView: View {
         }
     }
 
-    /// A space dropped on a row takes that row's place: above it when dragged up, below it when dragged down.
-    private func dropSpace(_ dragged: String?, on target: UUID) -> Bool {
-        guard let dragged, let id = UUID(uuidString: dragged), id != target,
-              let from = spaces.firstIndex(where: { $0.id == id }),
-              let to = spaces.firstIndex(where: { $0.id == target }) else { return false }
-        reorder(from: [from], to: to > from ? to + 1 : to)
-        return true
-    }
+    private let spaceRowHeight: CGFloat = 44
 
     @ViewBuilder
     private func row(_ space: SpaceRecord) -> some View {
         HStack(spacing: NookDesign.Spacing.md) {
-            // Dia's handle: the row drags by it (the whole row drags too).
+            // Dia's handle; the whole row drags.
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.tertiary)
-                .frame(width: NookDesign.Size.iconButton, height: NookDesign.Size.iconButton)
-                .contentShape(Rectangle())
                 .help("Drag to Reorder")
                 .accessibilityHidden(true)
-                .draggable(space.id.uuidString) {
-                    Text(space.name).padding(NookDesign.Spacing.sm)
-                }
             Button {
                 showAccentPickerFor = space.id
             } label: {
