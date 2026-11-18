@@ -88,7 +88,9 @@ struct PrivacySettingsView: View {
             Section {
                 settingToggle(
                     "Clear cookies, site data and history when Vega quits",
-                    detail: "Signs you out of sites each time you quit. Saved passwords and your tabs stay.",
+                    detail: settings.clearDataOnQuit
+                        ? "On: each time you quit, Vega signs you out of every site and forgets cookies and history, so you sign in again next time. Saved passwords and your tabs stay. With Sync on, your other Macs use this setting too."
+                        : "Signs you out of sites each time you quit. Saved passwords and your tabs stay. With Sync on, your other Macs use this setting too.",
                     isOn: $settings.clearDataOnQuit
                 )
                 cookiesRow

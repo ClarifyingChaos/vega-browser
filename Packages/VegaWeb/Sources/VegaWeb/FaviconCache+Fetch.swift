@@ -26,6 +26,13 @@ extension FaviconCache {
         if cached != nil, !(await isStale(key)) { return cached }
         // A background fetch for a row nobody opened: public https hosts only, so launching never
         // contacts a router page or a dev server, and a site with no icon is not retried for a day.
+        // A favorite saved as http:// asks for its icon over https: the icon is the same, and the request stays private.
+        var url = url
+        if url.scheme?.lowercased() == "http", var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            parts.scheme = "https"
+            if parts.port == 80 { parts.port = nil }
+            url = parts.url ?? url
+        }
         guard Self.isPublicHTTPS(url), await FaviconFetches.shared.begin(key) else { return cached }
         defer { Task { await FaviconFetches.shared.end(key) } }
         guard let fresh = await Self.bestIcon(for: url) else {
@@ -51,14 +58,19 @@ extension FaviconCache {
         }
         if let ico = URL(string: "/favicon.ico", relativeTo: url)?.absoluteURL { candidates.append((ico, 0, false)) }
         // Declared size first; icons with no size attribute come last but still get a chance.
+        // SVG last: drawn at the stored size, it is only used when a site offers nothing else (The Toolbox).
+        func isSVG(_ url: URL) -> Bool { url.path.lowercased().hasSuffix(".svg") }
         var seen = Set<URL>()
-        let ordered = candidates
-            .filter { !$0.source.path.lowercased().hasSuffix(".svg") && seen.insert($0.source).inserted }
-            .sorted { $0.edge > $1.edge }
-            .prefix(4)
+        let unique = candidates.filter { seen.insert($0.source).inserted }
+        let ordered = Array(unique.filter { !isSVG($0.source) }.sorted { $0.edge > $1.edge }.prefix(4)) + unique.filter { isSVG($0.source) }.prefix(1)
         var best: (image: PlatformImage, rank: IconRank)?
         for candidate in ordered {
             guard let image = await PageSession.downloadImage(from: candidate.source, isPrivate: false) else { continue }
+            if isSVG(candidate.source) {
+                // A vector has no pixel size of its own: ask for it at the stored size.
+                image.size = NSSize(width: maxStoredEdge, height: maxStoredEdge)
+                if best != nil { continue }
+            }
             let rank = IconRank(image, touchIcon: candidate.touch)
             if rank.usable, !image.isBlank, best == nil || rank > best!.rank { best = (image, rank) }
         }
@@ -70,8 +82,10 @@ extension FaviconCache {
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.httpShouldHandleCookies = false
         if let agent = PlatformUserAgent.custom { request.setValue(agent, forHTTPHeaderField: "User-Agent") }
+        // A site that turns automated visitors away (403) often still sends its page head with the icon links.
         guard let (data, response) = try? await URLSession.shared.data(for: request),
-              (response as? HTTPURLResponse)?.statusCode == 200,
+              let status = (response as? HTTPURLResponse)?.statusCode, (200..<500).contains(status),
+              (response.mimeType ?? "text/html").contains("html"),
               let html = String(data: data.prefix(2_000_000), encoding: .utf8) ?? String(data: data.prefix(2_000_000), encoding: .isoLatin1) else { return nil }
         return try? SwiftSoup.parse(html, response.url?.absoluteString ?? url.absoluteString)
     }
