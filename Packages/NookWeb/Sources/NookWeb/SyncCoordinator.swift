@@ -110,6 +110,10 @@ public final class SyncCoordinator {
     public internal(set) var removedMessage: String?
     @ObservationIgnored var removedIDs: Set<UUID> = []
     @ObservationIgnored private var rejoining = false
+    /// The step a sync round is on, while it runs.
+    public private(set) var progress: SyncProgress?
+    /// What the last round covered, shown under the sync status.
+    public private(set) var summary: String?
     /// The tabs open on the other Macs, as of the last sync.
     public private(set) var otherMacsTabs: [OpenTabsSnapshot] = []
     /// Whether this Mac lists its open tabs (titles and addresses) in the sync folder for the others.
@@ -298,7 +302,9 @@ public final class SyncCoordinator {
                     forcePasswordWrite = true
                 }
             }
-            passwordStatus = changed > 0 ? "Passwords synced · \(changed) updated" : "Passwords synced"
+            let waiting = vault.legacyCount()
+            passwordStatus = (changed > 0 ? "Passwords synced · \(changed) updated" : "Passwords synced")
+                + (waiting > 0 ? ". \(waiting) saved by an older Vega stay on this Mac: macOS asks before Vega may read them. Import them again (Settings › Passwords › Import from CSV) to sync them." : "")
         } catch {
             passwordStatus = "Couldn't sync passwords: \(error.localizedDescription)"
         }
@@ -452,27 +458,49 @@ public final class SyncCoordinator {
                 isEnabled = false
                 return
             }
+            progress = SyncProgress(step: 1, label: "Reading your other Macs")
             let (all, pending) = try await store.readOtherSnapshots(excluding: own)
             let snapshots = all.filter { !removedIDs.contains($0.deviceID) }
             devices = snapshots.map { SyncDevice(id: $0.deviceID, name: $0.deviceName, lastSeen: $0.writtenAt) }.sorted { $0.name < $1.name }
+            progress = SyncProgress(step: 2, label: "Bringing in spaces, favorites and pinned tabs")
             for snapshot in snapshots {
                 let change = SyncMerge.change(applying: snapshot, to: tabs.tree, seenUntil: seenUntil(snapshot.deviceID))
                 if !change.isEmpty { tabs.apply(change) }
                 markSeen(snapshot)
             }
             removePlaceholderIfFilled()
+            progress = SyncProgress(step: 3, label: "Sending this Mac's spaces")
             try await writeOwn(store: store)
             await writeProfileFile(store: store)
+            progress = SyncProgress(step: 4, label: "Syncing passwords")
             await syncPasswords(store: store)
+            progress = SyncProgress(step: 5, label: "Syncing settings")
             await syncSettings(store: store, own: own, deviceName: deviceName)
+            progress = SyncProgress(step: 6, label: "Syncing open tabs")
             await syncOpenTabs(store: store, tabs: tabs, own: own)
+            progress = nil
+            summary = syncedSummary(tabs: tabs)
             // Names only: which devices have a snapshot in the store, so a failed sync can be told from an empty one.
             let present = (try? await store.list("devices").names) ?? []
             Self.logger.notice("synced via \(self.backend.rawValue, privacy: .public): \(present.count) device file(s) in the store, \(snapshots.count) from other Macs")
             status = .idle(lastSync: Date(), otherMacs: snapshots.count, waitingForDownload: pending)
         } catch {
+            progress = nil
             status = .failed(error.localizedDescription)
         }
+    }
+
+    /// What this Mac's sync covers, as of the last round: "6 spaces · 109 favorites and pinned tabs · 157 passwords".
+    private func syncedSummary(tabs: TabsController) -> String {
+        let spaces = tabs.orderedSpaces.filter { !$0.isAgent && (scopeProfile == nil || tabs.profile(forSpace: $0.id)?.id == scopeProfile) }
+        let saved = spaces.reduce(0) { $0 + tabs.favorites(of: $1.id).count + tabs.children(of: .pinned(spaceID: $1.id)).count }
+        var parts = ["\(spaces.count) \(spaces.count == 1 ? "space" : "spaces")", "\(saved) favorites and pinned tabs"]
+        if passwordsEnabled {
+            let vault = PasswordPrompter.shared.vault(for: scopeProfile)
+            let total = vault.all().count, waiting = vault.legacyCount()
+            parts.append(waiting > 0 ? "\(total - waiting) of \(total) passwords" : "\(total) passwords")
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// Writes this Mac's open tabs (when shared, and only when they changed) and reads the others'.
@@ -544,6 +572,13 @@ public final class SyncCoordinator {
 }
 
 /// A Mac in the sync chain, as listed in Settings.
+/// One step of a sync round, for the progress bar in Settings.
+public struct SyncProgress: Equatable, Sendable {
+    public static let steps = 6
+    public let step: Int
+    public let label: String
+}
+
 public struct SyncDevice: Identifiable, Equatable, Sendable {
     public let id: UUID
     public let name: String
