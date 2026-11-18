@@ -95,6 +95,8 @@ struct OnboardingView: View {
         guard currentStage < 4 else { return }
         if currentStage == 3 {
             nookSettings.didFinishOnboarding = true
+            // FORK: then a short tour of what Vega can do.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [browserManager] in browserManager.showFeatureTour() }
             return
         }
 

@@ -93,11 +93,14 @@ public final class KeychainVault: PasswordVault {
 
     /// Logins still only in an older Vega's Keychain items: reading them asks first, so sync leaves them out.
     /// Attributes only, so counting never shows a dialog.
-    public func legacyCount() -> Int {
-        guard readsLegacy else { return 0 }
+    public func legacyCount() -> Int { legacyOnly().count }
+
+    /// The logins only an older Vega's items hold: they stay on this Mac until they are imported again or used once.
+    public func legacyOnly() -> [SavedLogin] {
+        guard readsLegacy else { return [] }
         let have = Set(items(in: domain).map(\.id))
         let hidden = Set(UserDefaults.standard.stringArray(forKey: Self.hiddenKey) ?? [])
-        return items(in: Self.legacyDomain).filter { !have.contains($0.id) && !hidden.contains($0.id) }.count
+        return items(in: Self.legacyDomain).filter { !have.contains($0.id) && !hidden.contains($0.id) }
     }
 
     private func items(in domain: String) -> [SavedLogin] {

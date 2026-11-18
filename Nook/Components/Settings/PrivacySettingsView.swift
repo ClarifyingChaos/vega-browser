@@ -52,8 +52,8 @@ struct PrivacySettingsView: View {
 
             Section("Security") {
                 settingToggle(
-                    "Warn before opening a site over HTTP",
-                    detail: "Vega tries HTTPS first. Asks before opening a site that only works over HTTP.",
+                    "HTTPS-Only Mode",
+                    detail: "Vega opens every site over HTTPS. A site that only works over HTTP opens after you say so.",
                     isOn: $settings.warnBeforeHTTP
                 )
             }

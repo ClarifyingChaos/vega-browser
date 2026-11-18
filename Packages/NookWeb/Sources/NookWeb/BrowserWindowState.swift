@@ -229,6 +229,7 @@ public enum SidebarMenuTab: Hashable, Sendable {
     case spaces
     case archive
     case media   // FORK: Arc's Media view
+    case easels  // FORK: Arc's Easels in the library
 }
 
 /// Toast information specific to a window
