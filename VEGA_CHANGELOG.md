@@ -2,6 +2,16 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.7.12 (2026-11-18)
+
+### Fixes
+- Site icons are saved in Vega's own cache folder, and every icon is fetched again once. A favorite that had saved another site's icon (Cosmos showed the wrong one on some Macs) shows its own again right away, instead of after a day. The old shared folder, ~/Library/Caches/FaviconCache, is no longer used.
+
+### Privacy and security
+Reviewed before release.
+- Icons are fetched once more from each favorite's own site, public https only, as before. Private tabs never fetch or save icons.
+- No new network connections, permissions or entitlements.
+
 ## Vega 1.7.11 (2026-11-18)
 
 ### Fixes
