@@ -35,16 +35,19 @@ public protocol PasswordVault: AnyObject {
     func quietly<T>(_ body: () -> T) -> T
     /// Logins sync can't read without asking (an older Vega's Keychain items).
     func legacyCount() -> Int
+    /// The logins this vault hands over without asking: exactly what sync sends.
+    func readable() -> [SavedLogin]
+    /// Every readable login with its password, plus the remembered deletions.
+    func records() -> [PasswordRecord]
 }
 
 public extension PasswordVault {
     func quietly<T>(_ body: () -> T) -> T { body() }
     func legacyCount() -> Int { 0 }
+    func readable() -> [SavedLogin] { all() }
     func save(host: String, username: String, password: String) { save(host: host, username: username, password: password, modified: Date()) }
     func delete(host: String, username: String) { delete(host: host, username: username, at: Date()) }
 
-    /// Every login with its password, plus the remembered deletions. Reading passwords may ask the
-    /// Keychain for access once per item the first time a new build does it.
     func records() -> [PasswordRecord] {
         all().compactMap { login in
             password(host: login.host, username: login.username).map {

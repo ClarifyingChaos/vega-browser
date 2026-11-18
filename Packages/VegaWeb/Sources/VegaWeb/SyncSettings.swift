@@ -50,6 +50,7 @@ extension SyncCoordinator {
             // Take the other Mac's when this Mac never synced settings, or theirs is newer than both the last one taken
             // and anything changed here since.
             if let newest, neverSynced || (newest.writtenAt > appliedAt && newest.writtenAt > changedAt) {
+                found("took settings")
                 let count = SettingsSnapshot.apply(newest.values, to: defaults)
                 defaults.set(newest.writtenAt, forKey: Self.settingsAppliedKey)
                 defaults.set(SettingsSnapshot.digest(SettingsSnapshot.current(defaults)), forKey: Self.settingsDigestKey)
@@ -59,6 +60,7 @@ extension SyncCoordinator {
             // Ours: written when it changed, or the first time (so the other Macs have something to take).
             if neverSynced || changedAt > appliedAt, let data = SettingsSnapshot.encode(values: values, writtenAt: changedAt, device: deviceName) {
                 try await store.put("settings/\(own.uuidString).plist", data)
+                found("sent settings")
                 defaults.set(changedAt, forKey: Self.settingsAppliedKey)
             }
         } catch {

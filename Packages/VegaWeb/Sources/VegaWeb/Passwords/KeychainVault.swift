@@ -107,19 +107,43 @@ public final class KeychainVault: PasswordVault {
         var result: CFTypeRef?
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
               let items = result as? [[String: Any]] else { return [] }
-        return items.compactMap { item in
-            guard let host = item[kSecAttrServer as String] as? String,
-                  let user = item[kSecAttrAccount as String] as? String else { return nil }
-            let modified = Self.decode(item[kSecAttrGeneric as String] as? Data)
-                ?? item[kSecAttrModificationDate as String] as? Date ?? .distantPast
-            return SavedLogin(host: host, username: user, modified: modified)
-        }
+        return items.compactMap(Self.login)
+    }
+
+    private static func login(_ item: [String: Any]) -> SavedLogin? {
+        guard let host = item[kSecAttrServer as String] as? String,
+              let user = item[kSecAttrAccount as String] as? String else { return nil }
+        let modified = decode(item[kSecAttrGeneric as String] as? Data)
+            ?? item[kSecAttrModificationDate as String] as? Date ?? .distantPast
+        return SavedLogin(host: host, username: user, modified: modified)
+    }
+
+    /// One old item's attributes, by a query for that item alone: scanning the whole old domain for each login was
+    /// what made reading every password take seconds.
+    private func legacyLogin(host: String, username: String) -> SavedLogin? {
+        var query = base(host: host, username: username, domain: Self.legacyDomain)
+        query[kSecReturnAttributes as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let item = result as? [String: Any] else { return nil }
+        return Self.login(item)
+    }
+
+    public func readable() -> [SavedLogin] { items(in: domain) }
+
+    /// Only the current items: an older Vega's items would ask first, and using one moves it here anyway.
+    public func records() -> [PasswordRecord] {
+        readable().compactMap { login in
+            read(base(host: login.host, username: login.username)).map {
+                PasswordRecord(host: login.host, username: login.username, password: $0, modified: login.modified)
+            }
+        } + tombstones()
     }
 
     public func password(host: String, username: String) -> String? {
         if let secret = read(base(host: host, username: username)) { return secret }
         // An old item: this read may ask once. Copy it under the stable identity so it never asks again.
-        guard readsLegacy, let login = items(in: Self.legacyDomain).first(where: { $0.host == PasswordHosts.normalized(host) && $0.username == username }),
+        guard readsLegacy, let login = legacyLogin(host: host, username: username),
               let secret = read(base(host: host, username: username, domain: Self.legacyDomain)) else { return nil }
         save(host: host, username: username, password: secret, modified: login.modified)
         return secret

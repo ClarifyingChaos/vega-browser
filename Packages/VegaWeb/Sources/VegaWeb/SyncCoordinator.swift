@@ -97,7 +97,13 @@ public final class SyncCoordinator {
 
     private static let logger = Logger(subsystem: "com.vega.browser", category: "sync")
     private static let deviceKey = "fork.sync.deviceID"
+    /// How soon the next round runs while things are changing, and how far it backs off when a round finds nothing
+    /// new: 20 s, 40 s, 80 s ... up to 5 minutes. A change here, coming back to Vega, or Sync Now starts it over.
     private static let interval: Duration = .seconds(20)
+    private static let slowestInterval: Duration = .seconds(300)
+    /// A change here is sent after it stops for this long, and never more often than `minGap`.
+    private static let settleDelay: Duration = .seconds(4)
+    private static let minGap: TimeInterval = 15
 
     public private(set) var status: Status = .off
     /// Where password sync stands, shown under its switch.
@@ -136,6 +142,16 @@ public final class SyncCoordinator {
     @ObservationIgnored private var lastOpenTabs: [OpenTabsSnapshot.Entry]?
     @ObservationIgnored private weak var tabs: TabsController?
     @ObservationIgnored private var loop: Task<Void, Never>?
+    /// The loop's wait between rounds: cancelling it starts the next round now.
+    @ObservationIgnored private var sleeper: Task<Void, Never>?
+    /// Rounds in a row that found nothing to send or take.
+    @ObservationIgnored private var quietRounds = 0
+    /// Set by any step that sent or took something in this round.
+    @ObservationIgnored var roundFoundWork = false
+    /// Whether this round shows its steps in Settings: only the ones the person asked for.
+    @ObservationIgnored private var showsProgress = true
+    @ObservationIgnored private var lastRoundEnd = Date.distantPast
+    @ObservationIgnored private var settleTask: Task<Void, Never>?
     /// Keeps macOS from slowing the sync loop (App Nap) while Vega sits hidden or minimised: a Mac whose Vega is in
     /// the background must still send and take changes within a round or two.
     @ObservationIgnored private var activity: NSObjectProtocol?
@@ -190,6 +206,11 @@ public final class SyncCoordinator {
     // What the last written password snapshot covered. Kept across launches: with it only in memory, every launch
     // read every saved password to write a snapshot again, and the Keychain asked about each one.
     @ObservationIgnored private var forcePasswordWrite = false
+    /// When to try again for logins that could not be read last time.
+    @ObservationIgnored private var passwordRetryAt: Date?
+    private var passwordRetryDue: Bool { passwordRetryAt.map { Date() >= $0 } ?? false }
+    /// Saved logins and how many of them wait for an older Vega's Keychain approval, as of the last round.
+    @ObservationIgnored private var passwordTotals: (total: Int, waiting: Int)?
     private func forgetPasswordFingerprint() {
         UserDefaults.standard.removeObject(forKey: fingerprintKey)
         forcePasswordWrite = true
@@ -265,10 +286,20 @@ public final class SyncCoordinator {
         forgetPasswordFingerprint()
     }
 
+    /// The Keychain costs a few milliseconds per login, so sync never touches it on the main thread.
+    private func keychain<T: Sendable>(_ work: @escaping @Sendable () -> T) async -> T {
+        await Task.detached(priority: .utility, operation: work).value
+    }
+
+    /// Passwords and deletions as keys and times only, no secrets.
+    private nonisolated static func light(_ logins: [SavedLogin], _ gone: [PasswordRecord]) -> [PasswordRecord] {
+        logins.map { PasswordRecord(host: $0.host, username: $0.username, password: "", modified: $0.modified) } + gone
+    }
+
     private func syncPasswords(store place: any SyncBlobStore) async {
         guard UserDefaults.standard.bool(forKey: passwordsKey), let key = loadKey() else { return }
         let store = PasswordSyncStore(store: place)
-        let vault = PasswordPrompter.shared.vault(for: scopeProfile)
+        nonisolated(unsafe) let vault = PasswordPrompter.shared.vault(for: scopeProfile)
         do {
             // The passphrase was changed on another Mac: say so instead of syncing with a key nobody else uses.
             if let meta = try await store.meta(), !meta.opens(with: key) {
@@ -277,32 +308,46 @@ public final class SyncCoordinator {
             }
             let (others, _) = try await store.readOthers(excluding: deviceID, key: key)
             // Merge decisions need only each login's key and time, so no password is read for them.
-            var light = vault.all().map { PasswordRecord(host: $0.host, username: $0.username, password: "", modified: $0.modified) } + vault.tombstones()
+            var light = await keychain { Self.light(vault.all(), vault.tombstones()) }
             var changed = 0
             for snapshot in others {
-                let changes = PasswordMerge.changes(applying: snapshot.records, to: light)
-                if !changes.isEmpty { vault.quietly { vault.apply(changes) }; changed += changes.count }
-                light = vault.all().map { PasswordRecord(host: $0.host, username: $0.username, password: "", modified: $0.modified) } + vault.tombstones()
+                let newer = PasswordMerge.changes(applying: snapshot.records, to: light)
+                // A login that only carries a newer time with the very same password changes nothing. Another Mac that
+                // stamps its logins afresh each round used to make every round look like news, and bounce back to it.
+                let changes = await keychain {
+                    let readable = Set(vault.readable().map { PasswordRecord(host: $0.host, username: $0.username, password: "", modified: $0.modified).key })
+                    return PasswordMerge.worthApplying(newer, readable: readable) { r in vault.quietly { vault.password(host: r.host, username: r.username) } }
+                }
+                guard !changes.isEmpty else { continue }
+                await keychain { vault.quietly { vault.apply(changes) } }
+                changed += changes.count
+                found("took passwords")
+                light = await keychain { Self.light(vault.all(), vault.tombstones()) }
             }
+            // What this Mac can send: logins from an older Vega wait until they are used once, so they are not
+            // part of the fingerprint. Counting them made every round look unfinished and write the snapshot again.
+            let sendable = await keychain { Self.light(vault.readable(), vault.tombstones()) }
             // Own snapshot (with passwords) only when a login or a deletion changed since the last write.
-            let fingerprint = Self.digest(light)
+            let fingerprint = Self.digest(sendable)
             let stored = UserDefaults.standard.string(forKey: fingerprintKey)
             if stored == nil && !forcePasswordWrite {
                 // First run with this memory: the snapshot an earlier version wrote still stands, so read nothing.
                 UserDefaults.standard.set(fingerprint, forKey: fingerprintKey)
-            } else if fingerprint != stored || forcePasswordWrite {
+            } else if fingerprint != stored || forcePasswordWrite || passwordRetryDue {
                 // Without a single dialog: a password the Keychain would ask about is left out for now, and
                 // goes in once the person has used it (filled or opened it) and said Always Allow.
-                let records = vault.quietly { vault.records() }
+                let changedSinceLast = fingerprint != stored || forcePasswordWrite
+                let records = await keychain { vault.quietly { vault.records() } }
                 try await store.write(PasswordSnapshot(deviceID: deviceID, records: records), key: key)
-                if records.filter({ !$0.deleted }).count == light.filter({ !$0.deleted }).count {
-                    UserDefaults.standard.set(fingerprint, forKey: fingerprintKey)
-                    forcePasswordWrite = false
-                } else {
-                    forcePasswordWrite = true
-                }
+                if changedSinceLast { found("sent passwords") }
+                UserDefaults.standard.set(fingerprint, forKey: fingerprintKey)
+                forcePasswordWrite = false
+                // Some logins can stay unreadable (saved by an older build): look again now and then, not every round.
+                let complete = records.filter({ !$0.deleted }).count == sendable.filter({ !$0.deleted }).count
+                passwordRetryAt = complete ? nil : Date().addingTimeInterval(600)
             }
-            let waiting = vault.legacyCount()
+            let waiting = await keychain { vault.legacyCount() }
+            passwordTotals = (light.filter { !$0.deleted }.count, waiting)
             passwordStatus = (changed > 0 ? "Passwords synced · \(changed) updated" : "Passwords synced")
                 + (waiting > 0 ? ". \(waiting) saved by an older Vega stay on this Mac: macOS asks before Vega may read them. Import them again (Settings › Passwords › Import from CSV) to sync them." : "")
         } catch {
@@ -349,7 +394,52 @@ public final class SyncCoordinator {
         if isEnabled { begin() }
     }
 
-    public func syncNow() { Task { await tick() } }
+    /// Starts a round now and shows its steps. The loop runs it, so two rounds never overlap.
+    public func syncNow() {
+        showsProgress = true
+        nudge()
+    }
+
+    /// Next round now, and the pace starts over.
+    private func nudge() {
+        quietRounds = 0
+        if let sleeper { sleeper.cancel() } else if loop == nil { Task { await tick() } }
+    }
+
+    /// Something changed here: send it once it settles, without a round for every page load.
+    private func treeChanged() {
+        guard isEnabled else { return }
+        settleTask?.cancel()
+        settleTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.settleDelay)
+            guard !Task.isCancelled, let self else { return }
+            let wait = self.lastRoundEnd.addingTimeInterval(Self.minGap).timeIntervalSinceNow
+            if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
+            guard !Task.isCancelled else { return }
+            self.nudge()
+        }
+    }
+
+    /// Calls `treeChanged` whenever the tab tree changes (observation fires once, so it is set up again each time).
+    private func watchTree() {
+        guard isEnabled, let tabs else { return }
+        withObservationTracking { _ = tabs.tree } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.treeChanged()
+                self?.watchTree()
+            }
+        }
+    }
+
+    /// Waits until the next round is due, or until `nudge` cuts it short.
+    private func waitForNextRound() async {
+        let steps = min(quietRounds, 8)
+        let wait = min(Self.interval * (1 << steps), Self.slowestInterval)
+        let task = Task<Void, Never> { try? await Task.sleep(for: wait) }
+        sleeper = task
+        await task.value
+        sleeper = nil
+    }
 
     private func begin() {
         stop(keepStatus: true)
@@ -358,12 +448,15 @@ public final class SyncCoordinator {
         if activity == nil {
             activity = ProcessInfo.processInfo.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason: "Vega sync")
         }
+        showsProgress = true
         loop = Task { [weak self] in
             while !Task.isCancelled {
-                await self?.tick()
-                try? await Task.sleep(for: Self.interval)
+                guard let self else { return }
+                await self.tick()
+                await self.waitForNextRound()
             }
         }
+        watchTree()
         // A change made just before the app goes to the background or quits should leave this Mac.
         let center = NotificationCenter.default
         for name in [NSApplication.didResignActiveNotification, NSApplication.willTerminateNotification] {
@@ -372,13 +465,17 @@ public final class SyncCoordinator {
             })
         }
         observers.append(center.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.syncNow() }
+            MainActor.assumeIsolated { self?.nudge() }
         })
     }
 
     private func stop(keepStatus: Bool = false) {
         loop?.cancel()
         loop = nil
+        sleeper?.cancel()
+        sleeper = nil
+        settleTask?.cancel()
+        settleTask = nil
         if !keepStatus, let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
@@ -444,7 +541,26 @@ public final class SyncCoordinator {
         UserDefaults.standard.set(seen, forKey: seenKey)
     }
 
+    func found(_ what: String) {
+        roundFoundWork = true
+        Self.logger.debug("sync round: \(what, privacy: .public)")
+    }
+
+    private func step(_ n: Int, _ label: String) {
+        if showsProgress { progress = SyncProgress(step: n, label: label) }
+    }
+
+    /// Background rounds are silent and back off when they find nothing, so an idle Vega sits quiet.
+    private func finishRound() {
+        lastRoundEnd = Date()
+        quietRounds = roundFoundWork ? 0 : quietRounds + 1
+        showsProgress = false
+        progress = nil
+    }
+
     private func tick() async {
+        roundFoundWork = false
+        defer { finishRound() }
         guard isEnabled, let tabs else { return }
         guard let place = currentStore() else { status = .unavailable(missingMessage); return }
         let store = place.store
@@ -458,25 +574,27 @@ public final class SyncCoordinator {
                 isEnabled = false
                 return
             }
-            progress = SyncProgress(step: 1, label: "Reading your other Macs")
+            step(1, "Reading your other Macs")
             let (all, pending) = try await store.readOtherSnapshots(excluding: own)
+            // iCloud still bringing a file down: look again soon instead of backing off.
+            if pending > 0 { found("files still downloading") }
             let snapshots = all.filter { !removedIDs.contains($0.deviceID) }
             devices = snapshots.map { SyncDevice(id: $0.deviceID, name: $0.deviceName, lastSeen: $0.writtenAt) }.sorted { $0.name < $1.name }
-            progress = SyncProgress(step: 2, label: "Bringing in spaces, favorites and pinned tabs")
+            step(2, "Bringing in spaces, favorites and pinned tabs")
             for snapshot in snapshots {
                 let change = SyncMerge.change(applying: snapshot, to: tabs.tree, seenUntil: seenUntil(snapshot.deviceID))
-                if !change.isEmpty { tabs.apply(change) }
+                if !change.isEmpty { tabs.apply(change); found("took spaces or favorites") }
                 markSeen(snapshot)
             }
             removePlaceholderIfFilled()
-            progress = SyncProgress(step: 3, label: "Sending this Mac's spaces")
-            try await writeOwn(store: store)
+            step(3, "Sending this Mac's spaces")
+            if try await writeOwn(store: store) { found("sent spaces") }
             await writeProfileFile(store: store)
-            progress = SyncProgress(step: 4, label: "Syncing passwords")
+            step(4, "Syncing passwords")
             await syncPasswords(store: store)
-            progress = SyncProgress(step: 5, label: "Syncing settings")
+            step(5, "Syncing settings")
             await syncSettings(store: store, own: own, deviceName: deviceName)
-            progress = SyncProgress(step: 6, label: "Syncing open tabs")
+            step(6, "Syncing open tabs")
             await syncOpenTabs(store: store, tabs: tabs, own: own)
             progress = nil
             summary = syncedSummary(tabs: tabs)
@@ -495,9 +613,7 @@ public final class SyncCoordinator {
         let spaces = tabs.orderedSpaces.filter { !$0.isAgent && (scopeProfile == nil || tabs.profile(forSpace: $0.id)?.id == scopeProfile) }
         let saved = spaces.reduce(0) { $0 + tabs.favorites(of: $1.id).count + tabs.children(of: .pinned(spaceID: $1.id)).count }
         var parts = ["\(spaces.count) \(spaces.count == 1 ? "space" : "spaces")", "\(saved) favorites and pinned tabs"]
-        if passwordsEnabled {
-            let vault = PasswordPrompter.shared.vault(for: scopeProfile)
-            let total = vault.all().count, waiting = vault.legacyCount()
+        if passwordsEnabled, let (total, waiting) = passwordTotals {
             parts.append(waiting > 0 ? "\(total - waiting) of \(total) passwords" : "\(total) passwords")
         }
         return parts.joined(separator: " · ")
@@ -512,8 +628,13 @@ public final class SyncCoordinator {
             if entries != lastOpenTabs {
                 try await store.writeOpenTabs(OpenTabsSnapshot(deviceID: own, deviceName: deviceName, writtenAt: Date(), tabs: entries), key: key)
                 lastOpenTabs = entries
+                found("sent open tabs")
             }
-            otherMacsTabs = try await store.readOtherOpenTabs(excluding: own, key: key).filter { !removedIDs.contains($0.deviceID) }
+            let others = try await store.readOtherOpenTabs(excluding: own, key: key).filter { !removedIDs.contains($0.deviceID) }
+            // The time a Mac wrote its list is not news; only a change in its tabs is.
+            let listed = { (list: [OpenTabsSnapshot]) in list.map { [$0.deviceID.uuidString, $0.deviceName, $0.tabs.description] }.sorted { $0[0] < $1[0] } }
+            if listed(others) != listed(otherMacsTabs) { found("other Macs' open tabs changed") }
+            otherMacsTabs = others
         } catch {
             Self.logger.error("open tabs sync failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -558,16 +679,18 @@ public final class SyncCoordinator {
     }
 
     /// Writes only when something other than the timestamp changed.
-    private func writeOwn(store: any SyncBlobStore) async throws {
-        guard let tabs else { return }
+    @discardableResult
+    private func writeOwn(store: any SyncBlobStore) async throws -> Bool {
+        guard let tabs else { return false }
         var snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName, profile: scopeProfile, includeTabs: mirrorsTabs)
         if let placeholder = placeholderID {
             snapshot.spaces.removeAll { $0.id == placeholder }
             snapshot.items.removeAll { tabs.tree.spaceID(of: $0.id) == placeholder }
         }
-        if let last = lastWritten, last.spaces == snapshot.spaces, last.items == snapshot.items { return }
+        if let last = lastWritten, last.spaces == snapshot.spaces, last.items == snapshot.items { return false }
         try await store.writeSnapshot(snapshot)
         lastWritten = snapshot
+        return true
     }
 }
 
