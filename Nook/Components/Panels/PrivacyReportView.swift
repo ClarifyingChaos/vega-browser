@@ -25,7 +25,7 @@ struct PrivacyReportView: View {
                     stat(stats.totalUpgraded, "made secure (HTTPS)")
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, NookDesign.Spacing.md)
+                .padding(.vertical, NookDesign.Spacing.xl)
             } footer: {
                 Text("Since \(stats.since.formatted(date: .abbreviated, time: .omitted)). Counted on this Mac only; private windows are never counted.")
             }
@@ -37,12 +37,14 @@ struct PrivacyReportView: View {
                 protection("Relay-only WebRTC (hides your local IP)", on: settings?.webRTCRelayOnly ?? false)
                 protection("Clear website data when Vega quits", on: settings?.clearDataOnQuit ?? false)
                 Button("Privacy Settings…") { browserManager.openSettings(tab: .privacy) }
+                    .padding(.vertical, NookDesign.Spacing.xs)
             }
 
             if !stats.topBlockedHosts().isEmpty {
                 Section {
                     ForEach(stats.topBlockedHosts(), id: \.host) { entry in
                         LabeledContent(entry.host) { Text(entry.count.formatted()).monospacedDigit() }
+                            .padding(.vertical, NookDesign.Spacing.xs)
                     }
                 } header: {
                     Text("Trackers Blocked")
@@ -60,6 +62,7 @@ struct PrivacyReportView: View {
                         Text("\(entry.site.blocked.formatted()) blocked" + (entry.site.upgraded > 0 ? " · \(entry.site.upgraded) secured" : ""))
                             .monospacedDigit().foregroundStyle(.secondary)
                     }
+                    .padding(.vertical, NookDesign.Spacing.xs)
                 }
             } header: {
                 Text("On These Sites")
@@ -72,7 +75,8 @@ struct PrivacyReportView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 460, minHeight: 420)
+        .environment(\.defaultMinListRowHeight, 44) // room around each row
+        .frame(minWidth: 520, minHeight: 520)
         .confirmationDialog("Reset the Privacy Report?", isPresented: $confirmingReset) {
             Button("Reset", role: .destructive) { stats.reset() }
             Button("Cancel", role: .cancel) {}
@@ -80,7 +84,7 @@ struct PrivacyReportView: View {
     }
 
     private func stat(_ value: Int, _ label: String) -> some View {
-        VStack(spacing: NookDesign.Spacing.xxs) {
+        VStack(spacing: NookDesign.Spacing.sm) {
             Text(value.formatted()).font(NookDesign.Font.display).monospacedDigit()
             Text(label).font(NookDesign.Font.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
@@ -92,5 +96,6 @@ struct PrivacyReportView: View {
             Label(on ? "On" : "Off", systemImage: on ? "checkmark.shield.fill" : "shield.slash")
                 .foregroundStyle(on ? .green : .secondary)
         }
+        .padding(.vertical, NookDesign.Spacing.xs)
     }
 }
