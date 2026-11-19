@@ -327,7 +327,11 @@ private struct SyncSection: View {
                 Picker("Sync with", selection: Binding(get: { sync.backend }, set: { sync.backend = $0 })) {
                     ForEach(SyncCoordinator.Backend.available) { Text($0.title).tag($0) }
                 }
-                if (sync.backend == .google || sync.backend == .server) && !GoogleAccount.forProfile(profileID).isSignedIn {
+                if sync.backend == .automatic && sync.status != .off {
+                    Text("Syncing through \(sync.active.title). If it can't be reached, Vega moves to the next place and tries the first again every few minutes.")
+                        .font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
+                }
+                if (sync.backend == .google || sync.backend == .server || sync.backend == .automatic) && !GoogleAccount.forProfile(profileID).isSignedIn {
                     Text("Sign in under Account above to sync with Google.").font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
                 }
                 Toggle("Keep open tabs the same on my Macs", isOn: Binding(get: { sync.mirrorsTabs }, set: { sync.mirrorsTabs = $0 }))
@@ -475,8 +479,8 @@ public struct GoogleAccountRow: View {
                             try await google.signIn()
                             // The first profile on a fresh Mac takes the account's profile instead of making a second.
                             let sync = SyncCoordinator.forProfile(profileID)
-                            sync.backend = .google
                             if ProfileScope.isPrimary(profileID) { await ProfileAdoption.reconcileFirstProfile(tabs: tabs) }
+                            sync.backend = .automatic
                             if sync.isEnabled { sync.syncNow() } else { sync.isEnabled = true }
                         }
                         catch { self.error = error.localizedDescription }
