@@ -18,38 +18,82 @@ struct SavePasswordBar: View {
 
     var body: some View {
         if let pending = prompter.pending, pending.itemID == windowState.selectedItemID {
-            VStack(alignment: .leading, spacing: VegaDesign.Spacing.md) {
-                HStack(spacing: VegaDesign.Spacing.md) {
+            VStack(alignment: .leading, spacing: 14) {
+                // What is being asked.
+                HStack(alignment: .center, spacing: 10) {
                     Image(systemName: "key.fill")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.white)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(pending.isUpdate ? "Update Password?" : "Save Password?")
-                            .font(VegaDesign.Font.title)
-                            .foregroundStyle(.white)
-                        Text(pending.isUpdate ? "Update the saved password for \(pending.username.isEmpty ? pending.host : pending.username) on \(pending.host)?" : "Save this password to sign in to \(pending.host) later?")
-                            .font(VegaDesign.Font.secondary)
-                            .foregroundStyle(.white.opacity(0.7))
-                            .lineLimit(2)
-                            .truncationMode(.middle)
+                        .frame(width: 32, height: 32)
+                        .background(Color.accentColor.gradient, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        .accessibilityHidden(true)
+                    Text(pending.isUpdate ? "Update Password?" : "Save Password?")
+                        .font(VegaDesign.Font.title)
+                        .foregroundStyle(.white)
+                    Spacer(minLength: 0)
+                }
+
+                // What it is about: the site and the user name, so it can be told at a glance.
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(pending.host)
+                        .font(VegaDesign.Font.label)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Text(pending.username.isEmpty ? (pending.isUpdate ? "Replaces the saved password" : "No user name") : pending.username)
+                        .font(VegaDesign.Font.secondary)
+                        .foregroundStyle(.white.opacity(0.78))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                // What can be done: the main answer first and widest, the other two quieter.
+                VStack(spacing: 8) {
+                    Button { prompter.savePending() } label: {
+                        Text(pending.isUpdate ? "Update Password" : "Save Password")
+                            .frame(maxWidth: .infinity)
                     }
-                    Spacer(minLength: 0)
-                }
-                HStack(spacing: VegaDesign.Spacing.sm) {
-                    if !pending.isUpdate { Button("Never for This Website") { prompter.neverSavePending() } }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+
                     Button("Not Now") { prompter.dismiss() }
-                    Spacer(minLength: 0)
-                    Button(pending.isUpdate ? "Update Password" : "Save Password") { prompter.savePending() }
-                        .keyboardShortcut(.defaultAction)
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(OnDarkSecondaryButtonStyle())
+
+                    if !pending.isUpdate {
+                        Button("Never for This Website") { prompter.neverSavePending() }
+                            .buttonStyle(.plain)
+                            .font(VegaDesign.Font.secondary)
+                            .foregroundStyle(.white.opacity(0.78))
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 2)
+                    }
                 }
-                .controlSize(.small)
+                .controlSize(.large)
             }
-            .padding(10)
-            .background(VegaDesign.Radius.shape(VegaDesign.Radius.md).fill(Color.black))
-            .overlay(VegaDesign.Radius.shape(VegaDesign.Radius.md).stroke(Color.white.opacity(0.2), lineWidth: 0.5))
+            .padding(14)
+            .background(VegaDesign.Radius.shape(VegaDesign.Radius.lg).fill(Color.black))
+            .overlay(VegaDesign.Radius.shape(VegaDesign.Radius.lg).stroke(Color.white.opacity(0.18), lineWidth: 0.5))
             .padding(.horizontal, VegaDesign.Spacing.sidebarInset)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
             .accessibilityElement(children: .contain)
         }
+    }
+}
+
+/// A second button on the prompt's black card: a light, clearly visible fill that matches the primary button's shape,
+/// since the system "bordered" look is dark grey on black and hardly reads as a button there.
+private struct OnDarkSecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 28)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.white.opacity(configuration.isPressed ? 0.28 : 0.15)))
+            .contentShape(Capsule())
     }
 }
