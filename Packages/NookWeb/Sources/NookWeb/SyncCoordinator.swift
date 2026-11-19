@@ -62,10 +62,18 @@ public final class SyncCoordinator {
         let suffix = ProfileScope.suffix(for: profileID)
         self.suffix = suffix
         isEnabled = UserDefaults.standard.bool(forKey: "fork.sync.enabled" + suffix)
-        backend = Backend(rawValue: UserDefaults.standard.string(forKey: "fork.sync.backend" + suffix) ?? "") ?? .iCloud
+        // Macs set up before Automatic existed move to it once; a later manual choice sticks.
+        if !UserDefaults.standard.bool(forKey: "fork.sync.automaticMigrated" + suffix) {
+            UserDefaults.standard.set(true, forKey: "fork.sync.automaticMigrated" + suffix)
+            UserDefaults.standard.set(Backend.automatic.rawValue, forKey: "fork.sync.backend" + suffix)
+        }
+        let chosen = Backend(rawValue: UserDefaults.standard.string(forKey: "fork.sync.backend" + suffix) ?? "") ?? .automatic
+        backend = chosen
+        active = chosen == .automatic ? .iCloud : chosen
         sharesOpenTabs = UserDefaults.standard.bool(forKey: "fork.sync.openTabs" + suffix)
         mirrorsTabs = UserDefaults.standard.object(forKey: "fork.sync.mirrorTabs" + suffix) as? Bool ?? true
         passwordsEnabled = UserDefaults.standard.bool(forKey: "fork.sync.passwords" + suffix)
+        if backend == .automatic { active = resolve() }
     }
 
     public enum Status: Equatable {
@@ -90,10 +98,11 @@ public final class SyncCoordinator {
     }
 
     public enum Backend: String, CaseIterable, Identifiable, Sendable {
-        case iCloud, google, server
+        case automatic, server, iCloud, google
         public var id: String { rawValue }
         public var title: String {
             switch self {
+            case .automatic: "Automatic (server, then iCloud, then Google)"
             case .iCloud: "iCloud Drive"
             case .google: "Google account"
             case .server: "Vega Sync server"
@@ -101,9 +110,13 @@ public final class SyncCoordinator {
         }
         /// The places to choose from: the server only once its address is set (`defaults write com.vega.browser
         /// fork.sync.serverURL https://…`), since nobody runs one by default.
-        public static var available: [Backend] { serverURL == nil ? [.iCloud, .google] : allCases }
+        public static var available: [Backend] { allCases }
+        /// Vega's own sync server, unless `fork.sync.serverURL` points somewhere else.
+        public static let defaultServer = "https://vega-sync.ortfolio-v2.workers.dev/"
+        /// The order Automatic tries: the server first, iCloud Drive second, a Google account's Drive last.
+        static let order: [Backend] = [.server, .iCloud, .google]
         public static var serverURL: URL? {
-            guard let raw = UserDefaults.standard.string(forKey: "fork.sync.serverURL"), let url = URL(string: raw) else { return nil }
+            guard let url = URL(string: UserDefaults.standard.string(forKey: "fork.sync.serverURL") ?? defaultServer) else { return nil }
             let local = url.host == "127.0.0.1" || url.host == "localhost"
             return url.scheme == "https" || (url.scheme == "http" && local) ? url : nil
         }
@@ -116,7 +129,7 @@ public final class SyncCoordinator {
     private static let interval: Duration = .seconds(20)
     /// The longest wait between checks. Google Drive has no way to tell us about a change, so it is asked, and a quiet
     /// check is one small request; iCloud Drive's folder is watched, so its timed check only backs the watcher up.
-    private var slowestInterval: Duration { backend == .google ? .seconds(30) : .seconds(120) }
+    private var slowestInterval: Duration { active == .google ? .seconds(30) : .seconds(120) }
     /// The server's live connection: another Mac's write starts a round here within a second or two.
     @ObservationIgnored private var liveConnection: ServerLive?
     /// A change here is sent after it stops for this long, and never more often than `minGap`.
@@ -185,10 +198,35 @@ public final class SyncCoordinator {
     @ObservationIgnored private var lastWrittenMode: (sealed: Bool, plain: Bool)?
     @ObservationIgnored private var observers: [Any] = []
 
+    /// Where Automatic is syncing right now (the chosen place otherwise). Read by Settings to say "via iCloud Drive".
+    public private(set) var active: Backend
+    /// Places that just failed, and when Automatic may try them again.
+    @ObservationIgnored private var coolingDown: [Backend: Date] = [:]
+    private static let retryAfter: TimeInterval = 300
+
+    /// The first place in order that can be used and hasn't just failed; failing that, the first that can be used.
+    private func resolve() -> Backend {
+        let usable = Backend.order.filter { store(for: $0) != nil }
+        let now = Date()
+        return usable.first { (coolingDown[$0] ?? .distantPast) <= now } ?? usable.first ?? .iCloud
+    }
+
+    /// Moves Automatic to another place, starting each side from scratch as a manual change does. Returns whether it moved.
+    private func switchActive(to next: Backend) -> Bool {
+        guard backend == .automatic, next != active else { return false }
+        Self.logger.notice("sync moves from \(self.active.rawValue, privacy: .public) to \(next.rawValue, privacy: .public)")
+        active = next
+        lastWritten = nil
+        forgetPasswordFingerprint()
+        begin()
+        return true
+    }
+
     public var backend: Backend {
         didSet {
             guard backend != oldValue else { return }
             UserDefaults.standard.set(backend.rawValue, forKey: backendKey)
+            if backend == .automatic { coolingDown = [:]; active = resolve() } else { active = backend }
             // Another place is another set of files: start each side from scratch.
             lastWritten = nil
             forgetPasswordFingerprint()
@@ -198,26 +236,32 @@ public final class SyncCoordinator {
 
     /// Where this Mac syncs right now, or why it can't.
     func currentStore() -> (store: any SyncBlobStore, missing: String?)? {
-        switch backend {
+        store(for: active).map { ($0, nil) }
+    }
+
+    private func store(for place: Backend) -> (any SyncBlobStore)? {
+        switch place {
+        case .automatic:
+            return nil
         case .iCloud:
             // A scripted run points two copies of Vega at one folder, standing in for two Macs.
             let override = UserDefaults.standard.string(forKey: "fork.sync.testFolder").map { URL(fileURLWithPath: $0, isDirectory: true) }
             guard var url = override ?? FolderBlobStore.iCloudDrive() else { return nil }
             // One iCloud account holds every profile's files: each other profile gets its own folder.
             if !suffix.isEmpty, let profileID { url.appendPathComponent("Profiles/\(profileID.uuidString)", isDirectory: true) }
-            return (FolderBlobStore(url: url), nil)
+            return FolderBlobStore(url: url)
         case .google:
-            guard let store = GoogleAccount.forProfile(profileID).store() else { return nil }
-            return (store, nil)
+            return GoogleAccount.forProfile(profileID).store()
         case .server:
             // Signed in with the same Google account; the server keeps one set of files per account.
-            guard let url = Backend.serverURL, let store = GoogleAccount.forProfile(profileID).serverStore(url: url) else { return nil }
-            return (store, nil)
+            guard let url = Backend.serverURL else { return nil }
+            return GoogleAccount.forProfile(profileID).serverStore(url: url)
         }
     }
 
     private var missingMessage: String {
-        switch backend {
+        switch active {
+        case .automatic: "Sign in with Google or turn on iCloud Drive to sync."
         case .iCloud: "Turn on iCloud Drive in System Settings › Apple Account › iCloud, then try again."
         case .google: "Sign in with Google to sync."
         case .server: Backend.serverURL == nil ? "Set the Vega Sync server's address first." : "Sign in with Google to use Vega Sync."
@@ -336,7 +380,18 @@ public final class SyncCoordinator {
         nonisolated(unsafe) let vault = PasswordPrompter.shared.vault(for: scopeProfile)
         do {
             // The passphrase was changed on another Mac: say so instead of syncing with a key nobody else uses.
-            if let meta = try await store.meta(), !meta.opens(with: key) {
+            var meta = try await store.meta()
+            // A place this Mac has just moved to has no passphrase record yet: copy the one from where the passwords
+            // were synced before, so the Macs that join later open the sealed files with the same passphrase.
+            if meta == nil {
+                for other in Backend.order where other != active {
+                    guard let old = self.store(for: other), let found = try? await PasswordSyncStore(store: old).meta(), found.opens(with: key) else { continue }
+                    try await store.writeMeta(found)
+                    meta = found
+                    break
+                }
+            }
+            if let meta, !meta.opens(with: key) {
                 passwordStatus = "Your sync passphrase was changed on another Mac. Turn Sync Passwords off and on, and enter the new one."
                 return
             }
@@ -469,11 +524,11 @@ public final class SyncCoordinator {
     private func watchFolder() {
         liveConnection?.stop()
         liveConnection = nil
-        if backend == .server, let server = currentStore()?.store as? ServerBlobStore {
+        if active == .server, let server = currentStore()?.store as? ServerBlobStore {
             liveConnection = server.live { [weak self] in Task { @MainActor in self?.folderChanged() } }
         }
         watcher = nil
-        guard backend == .iCloud, let folder = currentStore()?.store as? FolderBlobStore else { return }
+        guard active == .iCloud, let folder = currentStore()?.store as? FolderBlobStore else { return }
         watcher = FolderWatcher(url: folder.url) { [weak self] in
             Task { @MainActor in self?.folderChanged() }
         }
@@ -631,6 +686,8 @@ public final class SyncCoordinator {
         roundFoundWork = false
         defer { finishRound() }
         guard isEnabled, let tabs else { return }
+        // Automatic: go back to a better place once it may be tried again, or leave one that can no longer be used.
+        if backend == .automatic, switchActive(to: resolve()) { return }
         guard let place = currentStore() else { status = .unavailable(missingMessage); return }
         let store = place.store
         let own = deviceID
@@ -671,11 +728,16 @@ public final class SyncCoordinator {
             summary = syncedSummary(tabs: tabs)
             // Names only: which devices have a snapshot in the store, so a failed sync can be told from an empty one.
             let present = (try? await store.list("devices").names) ?? []
-            Self.logger.notice("synced via \(self.backend.rawValue, privacy: .public): \(present.count) device file(s) in the store, \(snapshots.count) from other Macs")
+            Self.logger.notice("synced via \(self.active.rawValue, privacy: .public): \(present.count) device file(s) in the store, \(snapshots.count) from other Macs")
             status = .idle(lastSync: Date(), otherMacs: snapshots.count, waitingForDownload: pending)
         } catch {
             progress = nil
             status = .failed(error.localizedDescription)
+            // Automatic: rest this place for a few minutes and try the next one now.
+            if backend == .automatic {
+                coolingDown[active] = Date().addingTimeInterval(Self.retryAfter)
+                _ = switchActive(to: resolve())
+            }
         }
     }
 
