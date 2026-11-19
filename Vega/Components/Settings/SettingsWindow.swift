@@ -9,6 +9,7 @@
 import SwiftUI
 import VegaDesign
 import VegaUI
+import VegaSettings
 
 struct SettingsWindow: View {
     @EnvironmentObject var browserManager: BrowserManager

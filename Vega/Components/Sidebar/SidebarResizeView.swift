@@ -4,6 +4,7 @@ import SwiftUI
 import VegaDesign
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 /// Native cursor ownership keeps the resize cursor stable over the sidebar edge.
 struct SidebarResizeView: View {

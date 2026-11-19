@@ -11,6 +11,7 @@ import AppKit
 import VegaDesign
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 struct ChatMessage: Identifiable, Equatable {
     let id = UUID()

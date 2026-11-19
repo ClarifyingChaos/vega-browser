@@ -11,6 +11,7 @@ import SwiftUI
 import VegaDesign
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 struct DevPanelColumn: View {
     @Environment(BrowserWindowState.self) private var windowState

@@ -13,6 +13,7 @@ import AppKit
 import VegaDesign
 import VegaTabsCore
 import VegaWeb
+import VegaSettings
 
 /// One tab row in the sidebar outline.
 public struct SpaceTab: View {

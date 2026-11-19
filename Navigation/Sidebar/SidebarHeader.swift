@@ -10,6 +10,7 @@ import SwiftUI
 import VegaDesign
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 /// Header section of the sidebar: the URL bar. Back, forward and reload sit in the title row
 /// above it; the space name sits under the favorites.

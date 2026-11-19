@@ -14,6 +14,7 @@ import VegaUI
 import VegaWeb
 import SwiftUI
 import UniformTypeIdentifiers
+import Combine
 
 /// The Passwords page opens only after Touch ID or the Mac's password, every time it is opened.
 struct PasswordsSettingsView: View {

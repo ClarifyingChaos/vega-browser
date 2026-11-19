@@ -12,6 +12,7 @@ import VegaDesign
 import VegaWeb
 import AppKit
 import VegaUI
+import VegaSettings
 
 struct PeekOverlayView: View {
     @EnvironmentObject var browserManager: BrowserManager

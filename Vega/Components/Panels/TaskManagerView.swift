@@ -12,6 +12,7 @@ import SwiftUI
 import VegaDesign
 import VegaWeb
 import VegaSettings
+import Combine
 
 struct TaskManagerView: View {
     @EnvironmentObject private var browserManager: BrowserManager

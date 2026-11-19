@@ -12,6 +12,7 @@ import WebKit
 import VegaDesign
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 enum TopBarMetrics {
     static let height: CGFloat = 40

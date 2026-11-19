@@ -12,6 +12,7 @@ import AppKit
 import VegaDesign
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 // MARK: - Status Bar View
 struct LinkStatusBar: View {
@@ -930,8 +931,6 @@ struct TabCompositorWrapper: NSViewRepresentable {
         session.onLinkHover = { [self] href in
             DispatchQueue.main.async {
                 self.hoveredLink = href
-                if let href = href {
-                }
             }
         }
         

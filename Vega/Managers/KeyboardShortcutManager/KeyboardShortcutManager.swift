@@ -385,11 +385,7 @@ class KeyboardShortcutManager {
         })();
         """
         
-        webView.evaluateJavaScript(js) { result, error in
-            if let error = error {
-            } else {
-            }
-        }
+        webView.evaluateJavaScript(js, completionHandler: nil)
     }
     
     /// Map NSEvent keyCode to JavaScript code string

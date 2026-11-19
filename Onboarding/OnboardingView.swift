@@ -8,6 +8,7 @@
 
 import VegaDesign
 import SwiftUI
+import VegaSettings
 
 struct OnboardingView: View {
     @Environment(\.vegaSettings) var vegaSettings

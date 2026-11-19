@@ -12,6 +12,7 @@ import VegaDesign
 import VegaTabsCore
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 struct SidebarHoverOverlayView: View {
     @EnvironmentObject var browserManager: BrowserManager

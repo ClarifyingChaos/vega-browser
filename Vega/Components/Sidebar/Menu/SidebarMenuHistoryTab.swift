@@ -17,6 +17,28 @@ struct HistorySection: Identifiable {
     var id: String { title }
     let title: String
     let entries: [HistoryEntry]
+
+    /// One row per run of neighbouring pages that share a title and a site: a sign-in redirect loop makes many
+    /// addresses (each with its own query) that read the same, and ten identical rows only bury the list.
+    var rows: [HistoryRow] {
+        var rows: [HistoryRow] = []
+        for entry in entries {
+            if let last = rows.last, last.entry.displayTitle == entry.displayTitle, last.entry.url.host == entry.url.host {
+                rows[rows.count - 1].ids.append(entry.id)
+            } else {
+                rows.append(HistoryRow(entry: entry, ids: [entry.id]))
+            }
+        }
+        return rows
+    }
+}
+
+/// A history row on screen: the newest page of a run, and the ids of every page the run folds together.
+struct HistoryRow: Identifiable {
+    let entry: HistoryEntry
+    var ids: [UUID]
+    var id: UUID { entry.id }
+    var count: Int { ids.count }
 }
 
 enum TimeRange: String, CaseIterable {
@@ -156,12 +178,13 @@ struct SidebarMenuHistoryTab: View {
                         .padding(.top, VegaDesign.Spacing.md)
                         .padding(.bottom, VegaDesign.Spacing.xs)
 
-                    ForEach(section.entries) { entry in
+                    ForEach(section.rows) { row in
                         HistoryRowView(
-                            entry: entry,
-                            onTap: { openInCurrentTab(entry.url) },
-                            onOpenInNewTab: { openInNewTab(entry.url) },
-                            onDelete: { deleteEntry(entry) }
+                            entry: row.entry,
+                            foldedCount: row.count,
+                            onTap: { openInCurrentTab(row.entry.url) },
+                            onOpenInNewTab: { openInNewTab(row.entry.url) },
+                            onDelete: { row.ids.forEach(deleteEntryID) }
                         )
                     }
                 }
@@ -311,10 +334,10 @@ struct SidebarMenuHistoryTab: View {
 
     /// Paging is by offset from what is on screen, so dropping the row here keeps the next page
     /// lined up with the store; reloading from the top lost every page past the first.
-    private func deleteEntry(_ entry: HistoryEntry) {
-        browserManager.historyManager.deleteHistoryEntry(entry.id)
+    private func deleteEntryID(_ id: UUID) {
+        browserManager.historyManager.deleteHistoryEntry(id)
         withAnimation(VegaDesign.Motion.standard) {
-            historyEntries.removeAll { $0.id == entry.id }
+            historyEntries.removeAll { $0.id == id }
             groupedHistoryEntries = groupHistoryEntries(historyEntries)
         }
     }
@@ -322,6 +345,8 @@ struct SidebarMenuHistoryTab: View {
 
 struct HistoryRowView: View {
     let entry: HistoryEntry
+    /// How many pages this row stands for; more than one when a run of look-alike pages was folded.
+    var foldedCount: Int = 1
     let onTap: () -> Void
     let onOpenInNewTab: () -> Void
     let onDelete: () -> Void
@@ -339,7 +364,7 @@ struct HistoryRowView: View {
                     .lineLimit(1)
                     .fixedSize()
 
-                Text(entry.url.host ?? "")
+                Text((entry.url.host ?? "") + (foldedCount > 1 ? " · \(foldedCount) pages" : ""))
                     .font(VegaDesign.Font.secondary)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

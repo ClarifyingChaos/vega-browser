@@ -16,6 +16,7 @@ import VegaDesign
 import VegaTabsCore
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 @MainActor
 enum LibraryMotion {

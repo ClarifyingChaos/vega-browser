@@ -11,6 +11,7 @@ import VegaDesign
 import VegaTabsCore
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 /// Bottom bar of the sidebar containing menu button, spaces list, and new space button
 struct SidebarBottomBar: View {

@@ -12,6 +12,7 @@ import SwiftUI
 import VegaDesign
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 struct AISidebarResizeView: View {
     @EnvironmentObject var browserManager: BrowserManager

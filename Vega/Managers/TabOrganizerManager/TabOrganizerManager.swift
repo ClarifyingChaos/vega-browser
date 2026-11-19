@@ -108,11 +108,12 @@ final class TabOrganizerManager {
             }
 
             // Titles run beside the grouping. They are a bonus: an error there must not cost the grouping.
+            let log = Self.log
             async let titled: [TabOrganizationPlan.Rename] = {
                 do {
                     return try await TabOrganizationModel.renames(for: kept.filter { renamable.contains($0.index) })
                 } catch {
-                    Self.log.error("Renames failed: \(error.localizedDescription)")
+                    log.error("Renames failed: \(error.localizedDescription)")
                     return []
                 }
             }()

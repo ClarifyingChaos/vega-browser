@@ -11,6 +11,7 @@ import VegaDesign
 import VegaTabsCore
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 struct SpaceSwitcherTitle: View {
     @Environment(TabsController.self) private var tabs

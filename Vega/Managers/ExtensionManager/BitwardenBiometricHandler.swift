@@ -194,6 +194,8 @@ final class BitwardenBiometricHandler: InternalNativePortHandler {
         // main thread, which the blocking Keychain read needs.
         let context = LAContext()
         context.localizedReason = "unlock Bitwarden vault"
+        // Read here: the reply below runs off the main actor, which owns this constant.
+        let service = Self.keychainService
         context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
             localizedReason: "unlock your Bitwarden vault"
@@ -205,7 +207,7 @@ final class BitwardenBiometricHandler: InternalNativePortHandler {
 
             let query: [String: Any] = [
                 kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: Self.keychainService,
+                kSecAttrService as String: service,
                 kSecAttrAccount as String: account,
                 kSecReturnData as String: true,
                 kSecMatchLimit as String: kSecMatchLimitOne,

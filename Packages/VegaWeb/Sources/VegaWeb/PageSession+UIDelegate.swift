@@ -137,9 +137,12 @@ extension PageSession: WKUIDelegate {
 
         if !isFromExtension, let url, shouldRedirectToPeek(url: url) {
             // Trigger Peek after returning control to WebKit to avoid runloop-mode issues
+            // The main run loop: this block runs on the main thread, after WebKit has the decision.
             RunLoop.current.perform { [weak self] in
-                guard let self else { return }
-                self.controller?.sessionDelegate?.presentPeek(url: url, from: self)
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.controller?.sessionDelegate?.presentPeek(url: url, from: self)
+                }
             }
             return nil
         }

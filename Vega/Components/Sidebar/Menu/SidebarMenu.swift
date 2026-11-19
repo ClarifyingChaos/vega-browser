@@ -12,6 +12,7 @@ import VegaDesign
 import VegaTabsCore
 import VegaWeb
 import VegaUI
+import VegaSettings
 
 struct SidebarMenu: View {
     @Environment(BrowserWindowState.self) private var windowState

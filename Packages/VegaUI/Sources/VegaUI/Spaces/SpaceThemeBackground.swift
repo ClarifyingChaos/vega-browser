@@ -12,6 +12,7 @@ import AppKit
 #endif
 import VegaDesign
 import VegaTabsCore
+import VegaSettings
 
 public struct SpaceChromeBackground: View {
     let theme: SpaceTheme?
