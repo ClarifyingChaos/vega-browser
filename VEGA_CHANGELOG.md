@@ -2,6 +2,28 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.2 (2026-11-19)
+
+### New
+- **Spaces settings, redesigned:** each space is a calm row with its icon and color, its tab count at the right and a quiet … menu (rename, change icon or color, move). A soft highlight follows the pointer, the badge gives feedback when pressed, and spaces slide into place when you reorder them (a plain fade if you use Reduce Motion).
+- **AI settings, redesigned:** the assistant, on-device features, providers, models and generation settings are grouped into clear sections. Providers and models have a switch and a … menu instead of rows of buttons, and Chat Position is a menu that opens below its control.
+- **Slimmer scroll bars everywhere:** the wide always-visible bar no longer takes a strip of the window; the slim one shows while you scroll.
+- **Privacy Report and Task Manager** have more room, a taller title bar, and clearer section titles. The Task Manager drops its blank rows, and "1 sites" now reads "1 site".
+- **History in the Library** folds a run of look-alike pages (same title and site, such as a sign-in redirect loop) into one row, "accounts.google.com · 10 pages". Removing it removes all of them.
+
+### Fixes
+- Release notes in Settings › Updates showed raw `>` and `**`; they now read properly. The beta and crash-report rows have room.
+- Settings › Tweaks: SponsorBlock has its own header.
+- **Sync passphrase dialog:** on a first-time setup, or a new sync server, it said Vega couldn't reach your sync folder. It now offers "Create Sync Passphrase", as intended.
+- Quieter internals: missing imports, actor-isolation notices and dead error branches cleaned up.
+
+### Privacy and security
+Reviewed before release.
+- No new network destinations, permissions or entitlements.
+- Scroll bars: Vega now asks each of its own scroll views to use the slim style; web pages are not touched.
+- History folding changes only what the list shows; nothing is deleted or sent anywhere unless you remove a row.
+- The passphrase fix changes which message is shown. It does not change how passphrases, keys or passwords are stored or sent.
+
 ## Vega 1.8.1 (2026-11-19)
 
 ### New
