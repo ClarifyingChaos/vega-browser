@@ -13,4 +13,4 @@ new_sqlite_classes = ["Account"]
 
 [vars]
 # The OAuth client ID in Vega's GoogleOAuth configuration.
-GOOGLE_CLIENT_ID = "SET-ME.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = "1053050526715-vgj409prklu4gn4q6rci229ck274uuaj.apps.googleusercontent.com"
