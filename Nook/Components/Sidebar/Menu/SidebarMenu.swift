@@ -12,6 +12,7 @@ import NookDesign
 import NookTabsCore
 import NookWeb
 import NookUI
+import NookSettings
 
 struct SidebarMenu: View {
     @Environment(BrowserWindowState.self) private var windowState

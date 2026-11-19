@@ -16,6 +16,7 @@ import NookDesign
 import NookTabsCore
 import NookWeb
 import NookUI
+import NookSettings
 
 @MainActor
 enum LibraryMotion {

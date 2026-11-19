@@ -13,6 +13,7 @@ import AppKit
 import NookDesign
 import NookTabsCore
 import NookWeb
+import NookSettings
 
 /// One tab row in the sidebar outline.
 public struct SpaceTab: View {

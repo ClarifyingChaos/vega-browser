@@ -11,6 +11,7 @@ import AppKit
 import NookDesign
 import NookWeb
 import NookUI
+import NookSettings
 
 struct ChatMessage: Identifiable, Equatable {
     let id = UUID()

@@ -11,6 +11,7 @@ import SwiftUI
 import NookDesign
 import NookWeb
 import NookUI
+import NookSettings
 
 struct DevPanelColumn: View {
     @Environment(BrowserWindowState.self) private var windowState

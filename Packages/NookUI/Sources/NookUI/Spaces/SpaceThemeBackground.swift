@@ -12,6 +12,7 @@ import AppKit
 #endif
 import NookDesign
 import NookTabsCore
+import NookSettings
 
 public struct SpaceChromeBackground: View {
     let theme: SpaceTheme?

@@ -121,11 +121,7 @@ extension PageSession {
             })();
             """
 
-        webView.evaluateJavaScript(mediaDetectionScript) { result, error in
-            if let error = error {
-            } else {
-            }
-        }
+        webView.evaluateJavaScript(mediaDetectionScript, completionHandler: nil)
     }
 
     // MARK: - JavaScript Injection
@@ -248,10 +244,7 @@ extension PageSession {
             })();
             """
 
-        webView.evaluateJavaScript(historyScript) { _, error in
-            if let error = error {
-            }
-        }
+        webView.evaluateJavaScript(historyScript, completionHandler: nil)
     }
 
     /// The PiP state listener and its handler live here: the state decides unloading and auto

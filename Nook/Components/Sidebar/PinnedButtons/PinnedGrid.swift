@@ -12,6 +12,7 @@ import NookDesign
 import NookTabsCore
 import NookWeb
 import NookUI
+import NookSettings
 
 struct PinnedGrid: View {
     let width: CGFloat

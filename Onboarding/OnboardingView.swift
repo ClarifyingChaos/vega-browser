@@ -8,6 +8,7 @@
 
 import NookDesign
 import SwiftUI
+import NookSettings
 
 struct OnboardingView: View {
     @Environment(\.nookSettings) var nookSettings

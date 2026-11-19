@@ -12,6 +12,7 @@ import SwiftUI
 import NookDesign
 import NookWeb
 import NookSettings
+import Combine
 
 struct TaskManagerView: View {
     @EnvironmentObject private var browserManager: BrowserManager

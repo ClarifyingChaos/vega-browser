@@ -188,8 +188,11 @@ struct NookApp: App {
             object: nil,
             queue: .main
         ) { [weak settingsManager] _ in
-            guard let settings = settingsManager else { return }
-            applyAppearanceMode(settings.appearanceMode)
+            // Posted on the main queue; says so to the compiler.
+            MainActor.assumeIsolated {
+                guard let settings = settingsManager else { return }
+                applyAppearanceMode(settings.appearanceMode)
+            }
         }
 
         // Initialize keyboard shortcut manager
