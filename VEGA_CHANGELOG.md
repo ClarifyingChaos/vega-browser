@@ -2,6 +2,19 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.1 (2026-11-19)
+
+### New
+- **Vega Sync server.** Sync now has its own server (Cloudflare) for near-instant changes between your Macs. It is the first place Vega tries.
+- **Automatic sync.** Vega syncs through the Vega Sync server, then iCloud Drive, then your Google account, and moves to the next one if a place can't be reached. It tries the first again every few minutes. You can still pick one place in Settings › General › Sync.
+- Moving to a new place carries your sync passphrase with it, so your other Macs open the sealed passwords and settings with the same passphrase.
+
+### Privacy and security
+Reviewed before release.
+- The server stores only files sealed on your Mac with your sync passphrase, so it can't read them. It checks your Google sign-in against Google's public keys, keeps files per account, and stores no passwords or emails.
+- Mac-to-server traffic is HTTPS only. There are no new permissions or entitlements.
+- A Mac that still runs an older Vega keeps syncing through Google or iCloud; it won't see this Mac until it updates.
+
 ## Vega 1.8.0 (2026-11-19)
 
 ### New
