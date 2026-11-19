@@ -433,7 +433,7 @@ struct URLBarView: View {
         case .history(let entry): return entry.url
         case .tab(let match): return match.url
         case .url: return URL(string: normalizeURL(suggestion.text, queryTemplate: SearchProvider.google.queryTemplate))
-        case .search: return nil
+        case .search, .command: return nil
         }
     }
 
@@ -442,6 +442,7 @@ struct URLBarView: View {
         case .history: return "clock"
         case .search: return "magnifyingglass"
         case .url, .tab: return "globe"
+        case .command: return "command"
         }
     }
 
@@ -493,6 +494,7 @@ struct URLBarView: View {
         case .url, .search:
             let template = browserManager.nookSettings?.resolvedSearchEngineTemplate ?? SearchProvider.google.queryTemplate
             url = URL(string: normalizeURL(suggestion.text, queryTemplate: template))
+        case .command: url = nil
         }
         guard let url else { return }
         cancelEditing()
@@ -625,7 +627,7 @@ private struct AddressSuggestionFavicon: View {
         case .history(let entry): return entry.url
         case .tab(let match): return match.url
         case .url: return URL(string: normalizeURL(suggestion.text, queryTemplate: SearchProvider.google.queryTemplate))
-        case .search: return nil
+        case .search, .command: return nil
         }
     }
 

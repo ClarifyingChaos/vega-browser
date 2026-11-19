@@ -1,0 +1,16 @@
+# Deploy with: npx wrangler deploy   (after `npx wrangler login`; see README.md)
+name = "vega-sync"
+main = "src/worker.ts"
+compatibility_date = "2026-11-01"
+
+[[durable_objects.bindings]]
+name = "ACCOUNTS"
+class_name = "Account"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Account"]
+
+[vars]
+# The OAuth client ID in Vega's GoogleOAuth configuration.
+GOOGLE_CLIENT_ID = "SET-ME.apps.googleusercontent.com"
