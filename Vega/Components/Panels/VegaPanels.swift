@@ -27,12 +27,12 @@ final class VegaPanels {
         window.title = title
         // An empty toolbar gives the taller unified title bar the Settings window has; a bare title bar is thin.
         window.toolbar = NSToolbar(identifier: "VegaPanelToolbar")
-        window.toolbarStyle = .unified
+        window.toolbarStyle = .unifiedCompact
         // The hosting controller sizes the window to the view's minimum; open at the intended size instead.
         window.setContentSize(size)
         window.isReleasedWhenClosed = false
-        window.setFrameAutosaveName("VegaPanel6-\(id)")
-        if !window.setFrameUsingName("VegaPanel6-\(id)") { window.center() }
+        window.setFrameAutosaveName("VegaPanel7-\(id)")
+        if !window.setFrameUsingName("VegaPanel7-\(id)") { window.center() }
         windows[id] = window
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.windows[id] = nil }
