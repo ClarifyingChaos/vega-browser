@@ -78,14 +78,11 @@ public struct SpacesSettingsView: View {
                 .scrollContentBackground(.hidden)
                 .scrollDisabled(true)
                 .frame(height: CGFloat(spaces.count) * spaceRowHeight)
+                Button("New Space…", vegaIcon: "plus", action: showCreateDialog)
             } header: {
                 Text("Spaces")
             } footer: {
-                Text("Drag a space by its handle, or use its … menu, to change its place in the sidebar. Each space belongs to a profile; moving a space to another profile signs it in as that profile.")
-            }
-
-            Section {
-                Button("New Space…", vegaIcon: "plus", action: showCreateDialog)
+                Text("Drag a space by its handle to change its place in the sidebar. The … menu renames it, changes its icon or color, or moves it to another profile.")
             }
 
             Section {
@@ -285,39 +282,33 @@ public struct SpacesSettingsView: View {
         }
     }
 
-    private let spaceRowHeight: CGFloat = 44
+    private let spaceRowHeight: CGFloat = 56
 
     @ViewBuilder
     private func row(_ space: SpaceRecord) -> some View {
+        let tabCount = tabs.tabCount(inSpace: space.id)
         HStack(spacing: VegaDesign.Spacing.md) {
-            // Dia's handle; the whole row drags.
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.tertiary)
                 .help("Drag to Reorder")
                 .accessibilityHidden(true)
-            Button {
-                showAccentPickerFor = space.id
-            } label: {
-                Circle()
-                    .fill(space.accentColor)
-                    .frame(width: VegaDesign.Size.iconButton, height: VegaDesign.Size.iconButton)
-            }
-            .buttonStyle(.plain)
-            .popover(isPresented: Binding(
-                get: { showAccentPickerFor == space.id },
-                set: { if !$0 { showAccentPickerFor = nil } }
-            )) {
-                SpaceAccentPicker(selectedHex: Binding(
-                    get: { space.accentHex },
-                    set: { tabs.updateSpace(space.id, name: nil, icon: nil, accentHex: $0) }
-                ))
-                .padding(VegaDesign.Spacing.lg)
-            }
 
+            // One badge: the space's colour behind its icon (or its first letter). Click to change the icon.
             Button { showIconPickerFor = space.id } label: {
-                SpaceIcon(space.icon)
-                    .frame(width: VegaDesign.Size.spaceTarget, height: VegaDesign.Size.spaceTarget)
-                    .contentShape(Rectangle())
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(space.accentColor.opacity(0.25))
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(space.accentColor.opacity(0.6), lineWidth: 1)
+                    if space.icon.isEmpty {
+                        Text(String(space.name.prefix(1)).uppercased())
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(space.accentColor)
+                    } else {
+                        SpaceIcon(space.icon)
+                            .frame(width: 18, height: 18)
+                    }
+                }
+                .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help("Change Icon or Emoji…")
@@ -334,15 +325,35 @@ public struct SpacesSettingsView: View {
 
             // FORK: the name as text, renamed from the menu. A live field took focus when the page
             // opened, with its text selected, and the next keys typed anywhere replaced the name.
-            Text(space.name)
-                .font(VegaDesign.Font.body)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(space.name).font(VegaDesign.Font.body)
+                Text("\(tabCount) \(tabCount == 1 ? "tab" : "tabs")")
+                    .font(VegaDesign.Font.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .popover(isPresented: Binding(
+                get: { showAccentPickerFor == space.id },
+                set: { if !$0 { showAccentPickerFor = nil } }
+            )) {
+                SpaceAccentPicker(selectedHex: Binding(
+                    get: { space.accentHex },
+                    set: { tabs.updateSpace(space.id, name: nil, icon: nil, accentHex: $0) }
+                ))
+                .padding(VegaDesign.Spacing.lg)
+            }
             Spacer()
-            profilePicker(space)
+            // With one profile every row would say the same thing; the picker only matters once there are two.
+            if tabs.profiles.count > 1 {
+                profilePicker(space)
+            }
             Menu {
                 Button("Rename…", vegaIcon: "pencil") {
                     renamingSpace = (space.id, space.name)
                 }
+                Button("Change Icon…", systemImage: "face.smiling") { showIconPickerFor = space.id }
+                Button("Change Color…", systemImage: "paintpalette") { showAccentPickerFor = space.id }
                 if let index = spaces.firstIndex(where: { $0.id == space.id }) {
+                    Divider()
                     Button("Move Up", systemImage: "arrow.up") { reorder(from: [index], to: index - 1) }
                         .disabled(index == 0)
                     Button("Move Down", systemImage: "arrow.down") { reorder(from: [index], to: index + 2) }
