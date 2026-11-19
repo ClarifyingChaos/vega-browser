@@ -13,6 +13,7 @@ import NookDesign
 import NookTabsCore
 import NookWeb
 import NookUI
+import NookSettings
 
 /// Main window view that orchestrates the browser UI layout
 struct WindowView: View {

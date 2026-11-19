@@ -18,6 +18,7 @@ import NookDesign
 import NookTabsCore
 import NookWeb
 import NookUI
+import NookSettings
 
 struct SpaceView: View {
     let spaceID: UUID

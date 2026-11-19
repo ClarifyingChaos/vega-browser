@@ -444,9 +444,12 @@ extension PageSession: WKNavigationDelegate {
 
             // Trigger Peek instead of normal navigation
             decisionHandler(.cancel)
+            // The main run loop: this block runs on the main thread, after WebKit has the decision.
             RunLoop.current.perform { [weak self] in
-                guard let self else { return }
-                self.controller?.sessionDelegate?.presentPeek(url: url, from: self)
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.controller?.sessionDelegate?.presentPeek(url: url, from: self)
+                }
             }
             return
         }
@@ -489,9 +492,12 @@ extension PageSession: WKNavigationDelegate {
            shouldRedirectToPeek(url: url)
         {
             decisionHandler(.cancel)
+            // The main run loop: this block runs on the main thread, after WebKit has the decision.
             RunLoop.current.perform { [weak self] in
-                guard let self else { return }
-                self.controller?.sessionDelegate?.presentPeek(url: url, from: self)
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.controller?.sessionDelegate?.presentPeek(url: url, from: self)
+                }
             }
             return
         }

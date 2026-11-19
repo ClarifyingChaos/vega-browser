@@ -4,6 +4,7 @@ import SwiftUI
 import NookDesign
 import NookWeb
 import NookUI
+import NookSettings
 
 /// Native cursor ownership keeps the resize cursor stable over the sidebar edge.
 struct SidebarResizeView: View {

@@ -9,6 +9,7 @@
 import SwiftUI
 import NookDesign
 import NookUI
+import NookSettings
 
 struct SettingsWindow: View {
     @EnvironmentObject var browserManager: BrowserManager

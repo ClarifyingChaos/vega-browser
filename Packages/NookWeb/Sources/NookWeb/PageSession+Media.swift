@@ -74,7 +74,7 @@ extension PageSession {
             webView.evaluateJavaScript(mediaCheckScript) { result, error in
                 defer { group.leave() }
 
-                if let error = error {
+                if error != nil {
                     return
                 }
 

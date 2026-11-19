@@ -10,6 +10,7 @@ import SwiftUI
 import NookDesign
 import NookWeb
 import NookUI
+import NookSettings
 
 /// Header section of the sidebar: the URL bar. Back, forward and reload sit in the title row
 /// above it; the space name sits under the favorites.
