@@ -46,7 +46,10 @@ struct ChangelogRelease: Identifiable {
                 if groups.isEmpty { groups.append(("Changes", [])) }
                 groups[groups.count - 1].1.append(String(line.dropFirst(2)))
             } else if !line.trimmingCharacters(in: .whitespaces).isEmpty, groups.isEmpty {
-                intro.append(line.trimmingCharacters(in: .whitespaces))
+                // A "> " quote marker is markdown, not text.
+                var text = line.trimmingCharacters(in: .whitespaces)
+                if text.hasPrefix(">") { text = String(text.dropFirst()).trimmingCharacters(in: .whitespaces) }
+                intro.append(text)
             }
         }
         flush()
@@ -127,7 +130,7 @@ struct UpdatesSettingsView: View {
                     VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
                         Text("Get beta updates")
                         Text("Try new features a little early. A beta can have rough edges; turn this off to go back to the next regular release.")
-                            .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                            .font(NookDesign.Font.caption).foregroundStyle(.secondary)
                     }
                 }
                 Toggle(isOn: Binding(
@@ -137,7 +140,7 @@ struct UpdatesSettingsView: View {
                     VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
                         Text("Offer to send crash reports")
                         Text("After a crash, Vega offers a short report (version, macOS, where it crashed: no pages, passwords or history) that you read and send yourself.")
-                            .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                            .font(NookDesign.Font.caption).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -145,7 +148,7 @@ struct UpdatesSettingsView: View {
             ForEach(Array(releases.enumerated()), id: \.element.id) { index, release in
                 Section {
                     if !release.intro.isEmpty {
-                        Text(release.intro).foregroundStyle(.secondary)
+                        Text(markdown(release.intro)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
                     ForEach(release.groups, id: \.heading) { group in
                         DisclosureGroup(group.heading, isExpanded: expansion(index, group.heading)) {
@@ -172,6 +175,7 @@ struct UpdatesSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .environment(\.defaultMinListRowHeight, 52) // rows with a description need the room
         .onAppear { automatic = updater?.automaticallyDownloadsUpdates ?? true }
     }
 

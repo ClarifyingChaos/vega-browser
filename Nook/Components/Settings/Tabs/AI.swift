@@ -45,100 +45,52 @@ struct SettingsAITab: View {
         Form {
             SettingsHero(symbol: "sparkles", title: "AI", detail: "Tab organizer, providers and the assistant\u{2019}s tools.")
 
+            // MARK: - Assistant
             Section {
-                Toggle(isOn: $settings.showAIAssistant) {
-                    VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
-                        Text("AI Assistant")
-                            .font(NookDesign.Font.body)
-                        Text("Shows the chat button in the sidebar and toolbar")
-                            .font(NookDesign.Font.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                toggleRow("AI Assistant", "Shows the chat button in the sidebar and toolbar", isOn: $settings.showAIAssistant)
 
                 // FORK: where the chat opens. Either way it stays on the right and leaves the tab sidebar alone.
-                Picker(selection: $settings.aiChatFloating) {
-                    Text("Sidebar on the right").tag(false)
-                    Text("Floating over the page").tag(true)
-                } label: {
-                    VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
-                        Text("Chat Position")
-                            .font(NookDesign.Font.body)
-                        Text("Floating keeps the page at full width; drag the card by its top edge")
-                            .font(NookDesign.Font.caption)
-                            .foregroundStyle(.secondary)
+                // A pull-down, not a pop-up: a pop-up opens its list over the selected item, covering the control.
+                HStack(alignment: .center) {
+                    rowLabel("Chat Position", "Floating keeps the page at full width; drag the card by its top edge")
+                    Spacer(minLength: NookDesign.Spacing.lg)
+                    Menu {
+                        // Toggles, so the menu marks the current choice with a checkmark.
+                        Toggle("Sidebar", isOn: Binding(get: { !settings.aiChatFloating }, set: { if $0 { settings.aiChatFloating = false } }))
+                        Toggle("Floating", isOn: Binding(get: { settings.aiChatFloating }, set: { if $0 { settings.aiChatFloating = true } }))
+                    } label: {
+                        Text(settings.aiChatFloating ? "Floating" : "Sidebar")
                     }
-                }
-                }
-            }
-
-            // MARK: - Tab Organizer
-            Section {
-                if let note = TabOrganizationModel.unavailableNote {
-                    Text(note)
-                        .font(NookDesign.Font.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Toggle(isOn: $settings.tabOrganizerEnabled) {
-                        VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
-                            Text("Tab Organizer")
-                                .font(NookDesign.Font.body)
-                            Text("Uses Apple Intelligence on this Mac to group, rename, sort, and deduplicate tabs")
-                                .font(NookDesign.Font.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Toggle(isOn: $settings.autoRenamePinnedTabs) {
-                        VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
-                            Text("Rename Pinned Tabs")
-                                .font(NookDesign.Font.body)
-                            Text("Shortens a tab's title when you pin it to a space")
-                                .font(NookDesign.Font.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Toggle(isOn: $settings.linkPreviews) {
-                        VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
-                            Text("Link Previews")
-                                .font(NookDesign.Font.body)
-                            Text("Hold Shift while hovering a link to see a short summary of the page")
-                                .font(NookDesign.Font.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    .menuStyle(.button)
+                    .fixedSize()
+                    .disabled(!settings.showAIAssistant)
+                    .accessibilityLabel("Chat Position")
                 }
             } header: {
-                Text("Tab Organizer")
+                Text("Assistant")
+            }
+
+            // MARK: - On this Mac
+            // Tab Organizer, pinned-tab names, link previews and download names all run on Apple Intelligence, so
+            // they share one section and one note when it is not available.
+            Section {
+                toggleRow("Tab Organizer", "Group, rename, sort and deduplicate tabs", isOn: $settings.tabOrganizerEnabled)
+                toggleRow("Rename Pinned Tabs", "Shortens a tab\u{2019}s title when you pin it to a space", isOn: $settings.autoRenamePinnedTabs)
+                toggleRow("Link Previews", "Hold Shift while hovering a link to see a short summary", isOn: $settings.linkPreviews)
+                toggleRow("Tidy Downloads", "Names files like 387494876.pdf after the page they came from", isOn: $settings.tidyDownloads)
+            } header: {
+                Text("On This Mac")
             } footer: {
-                if nookSettings.tabOrganizerEnabled, TabOrganizationModel.unavailableNote == nil {
-                    Text("Right-click a space or press \u{2318}\u{21E7}\u{2325}O to organize tabs")
-                        .font(NookDesign.Font.caption)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-
-            // MARK: - Downloads
-            Section {
-                Toggle(isOn: $settings.tidyDownloads) {
-                    VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
-                        Text("Tidy Downloads")
-                            .font(NookDesign.Font.body)
-                        Text("Renames downloads with meaningless names, such as 387494876.pdf, after the page they came from")
-                            .font(NookDesign.Font.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .disabled(TabOrganizationModel.unavailableNote != nil)
                 if let note = TabOrganizationModel.unavailableNote {
                     Text(note)
-                        .font(NookDesign.Font.caption)
-                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Runs with Apple Intelligence on this Mac. Right-click a space or press \u{2318}\u{21E7}\u{2325}O to organize tabs.")
                 }
-            } header: {
-                Text("Downloads")
             }
+            .disabled(TabOrganizationModel.unavailableNote != nil)
 
             // MARK: - Providers
-            Section("Providers") {
+            Section {
                 ForEach(configService.providers.filter { $0.providerType != .appleIntelligence || AppleIntelligenceProvider.isAvailable }) { provider in
                     providerRow(provider)
                         .padding(.vertical, NookDesign.Spacing.md)
@@ -187,6 +139,10 @@ struct SettingsAITab: View {
                         Label("Add Custom Provider", nookIcon: "plus.circle")
                     }
                 }
+            } header: {
+                Text("Providers")
+            } footer: {
+                Text("Private windows never send a page to a provider, whatever you choose here.")
             }
 
             // MARK: - Models
@@ -198,38 +154,46 @@ struct SettingsAITab: View {
                 }
 
                 ForEach(configService.models.filter { $0.providerId != AppleIntelligenceProvider.providerId || AppleIntelligenceProvider.isAvailable }) { model in
-                    HStack {
-                        VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
-                            Text(model.displayName)
-                                .font(NookDesign.Font.secondary)
-                            Text(model.id)
-                                .font(NookDesign.Font.caption.monospaced())
-                                .foregroundStyle(.secondary)
+                    let isActive = configService.config.activeModelId == model.id
+                    HStack(spacing: NookDesign.Spacing.md) {
+                        // The model you chat with: pick one, as in a list of radio choices.
+                        Button { configService.setActiveModel(model.id) } label: {
+                            HStack(spacing: NookDesign.Spacing.md) {
+                                Image(systemName: isActive ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(isActive ? Color.accentColor : Color.secondary.opacity(0.6))
+                                    .font(.system(size: 16))
+                                VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
+                                    Text(model.displayName)
+                                    Text(model.id)
+                                        .font(NookDesign.Font.caption.monospaced())
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .contentShape(Rectangle())
                         }
-                        Spacer()
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(model.displayName)\(isActive ? ", active" : "")")
+                        .accessibilityHint("Use this model for the chat")
 
-                        if configService.config.activeModelId == model.id {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(Color.accentColor)
-                                .font(NookDesign.Font.body)
+                        Menu {
+                            Button("Use This Model", systemImage: "checkmark.circle") { configService.setActiveModel(model.id) }
+                                .disabled(isActive)
+                            Divider()
+                            Button("Remove", systemImage: "trash", role: .destructive) {
+                                configService.removeModel(model.id, providerId: model.providerId)
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
                         }
-
-                        Button(action: { configService.setActiveModel(model.id) }) {
-                            Text(configService.config.activeModelId == model.id ? "Active" : "Use")
-                                .font(NookDesign.Font.caption)
-                        }
+                        .menuStyle(.button)
                         .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .disabled(configService.config.activeModelId == model.id)
-
-                        Button(action: {
-                            configService.removeModel(model.id, providerId: model.providerId)
-                        }) {
-                            NookSymbol("trash", size: 14)
-                                .font(NookDesign.Font.caption)
-                                .foregroundStyle(.red)
-                        }
-                        .buttonStyle(.borderless)
+                        .buttonBorderShape(.circle)
+                        .menuIndicator(.hidden)
+                        .fixedSize()
+                        .accessibilityLabel("More for \(model.displayName)")
                     }
                 }
 
@@ -309,29 +273,29 @@ struct SettingsAITab: View {
             // MARK: - Generation
             Section("Generation") {
                 // Temperature
-                VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
-                    HStack {
-                        Text("Temperature")
-                        Spacer()
+                LabeledContent {
+                    HStack(spacing: NookDesign.Spacing.md) {
+                        Slider(
+                            value: Binding(
+                                get: { configService.generationConfig.temperature },
+                                set: {
+                                    var config = configService.generationConfig
+                                    config.temperature = $0
+                                    configService.generationConfig = config
+                                }
+                            ),
+                            in: 0...2,
+                            step: 0.1
+                        )
+                        .frame(width: 180)
+                        .accessibilityLabel("Temperature")
                         Text(String(format: "%.1f", configService.generationConfig.temperature))
-                            .font(NookDesign.Font.secondary.monospaced())
+                            .font(NookDesign.Font.secondary.monospacedDigit())
                             .foregroundStyle(.secondary)
+                            .frame(width: 28, alignment: .trailing)
                     }
-                    Slider(
-                        value: Binding(
-                            get: { configService.generationConfig.temperature },
-                            set: {
-                                var config = configService.generationConfig
-                                config.temperature = $0
-                                configService.generationConfig = config
-                            }
-                        ),
-                        in: 0...2,
-                        step: 0.1
-                    )
-                    Text("Lower = more focused, Higher = more creative")
-                        .font(NookDesign.Font.caption)
-                        .foregroundStyle(.secondary)
+                } label: {
+                    rowLabel("Temperature", "Lower is more focused, higher is more creative")
                 }
 
                 // Max tokens
@@ -374,7 +338,7 @@ struct SettingsAITab: View {
                             configService.generationConfig = config
                         }
                     ))
-                    .font(NookDesign.Font.secondary)
+                    .font(NookDesign.Font.secondary.weight(.regular))
                     // FORK: the same filled, rounded surface as the other fields, not a square border.
                     .scrollContentBackground(.hidden)
                     .padding(NookDesign.Spacing.md)
@@ -524,6 +488,27 @@ struct SettingsAITab: View {
         .environment(\.defaultMinListRowHeight, 52) // FORK: rows with a description need the room
     }
 
+    // MARK: - Rows
+
+    /// A title with its one-line explanation under it: the pattern of System Settings.
+    private func rowLabel(_ title: String, _ detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            Text(detail)
+                .font(NookDesign.Font.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Label block on the left, switch centred against both lines on the right.
+    private func toggleRow(_ title: String, _ detail: String, isOn: Binding<Bool>) -> some View {
+        HStack(alignment: .center) {
+            rowLabel(title, detail)
+            Spacer(minLength: NookDesign.Spacing.lg)
+            Toggle(title, isOn: isOn).labelsHidden()
+        }
+    }
+
     // MARK: - Provider Row
 
     @ViewBuilder
@@ -555,7 +540,7 @@ struct SettingsAITab: View {
 
                 Spacer()
 
-                Toggle("", isOn: Binding(
+                Toggle("Enabled", isOn: Binding(
                     get: { provider.isEnabled },
                     set: { newValue in
                         var updated = provider
@@ -563,23 +548,26 @@ struct SettingsAITab: View {
                         configService.updateProvider(updated)
                     }
                 ))
+                .labelsHidden()
 
-                if configService.config.activeProviderId != provider.id {
-                    Button("Use") {
-                        configService.setActiveProvider(provider.id)
+                // Use and Remove live in a menu, as in System Settings, so the row keeps one control and a toggle.
+                Menu {
+                    if configService.config.activeProviderId != provider.id {
+                        Button("Use This Provider", systemImage: "checkmark.circle") { configService.setActiveProvider(provider.id) }
                     }
-                    .font(NookDesign.Font.caption)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    // FORK: any provider but the built-in on-device one can be removed, with its key and models.
+                    if provider.providerType != .appleIntelligence {
+                        Button("Remove\u{2026}", systemImage: "trash", role: .destructive) { providerToRemove = provider }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
                 }
-
-                // FORK: any provider but the built-in on-device one can be removed, with its key and models.
-                if provider.providerType != .appleIntelligence {
-                    Button("Remove", role: .destructive) { providerToRemove = provider }
-                        .font(NookDesign.Font.caption)
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                }
+                .menuStyle(.button)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.circle)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .accessibilityLabel("More for \(provider.displayName)")
             }
 
             // FORK: a custom provider can take a key later too, not only when it is added.
@@ -651,7 +639,7 @@ struct SettingsAITab: View {
                 )) {
                     VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
                         Text("Send the page to this provider").font(NookDesign.Font.secondary)
-                        Text("Off, it answers from your question alone. Private windows never send a page.")
+                        Text("Off, it answers from your question alone.")
                             .font(NookDesign.Font.caption).foregroundStyle(.secondary)
                     }
                 }
