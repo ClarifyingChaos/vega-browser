@@ -55,9 +55,10 @@ struct SettingsAITab: View {
                     rowLabel("Chat Position", "Floating keeps the page at full width; drag the card by its top edge")
                     Spacer(minLength: VegaDesign.Spacing.lg)
                     Menu {
-                        // Toggles, so the menu marks the current choice with a checkmark.
-                        Toggle("Sidebar", isOn: Binding(get: { !settings.aiChatFloating }, set: { if $0 { settings.aiChatFloating = false } }))
-                        Toggle("Floating", isOn: Binding(get: { settings.aiChatFloating }, set: { if $0 { settings.aiChatFloating = true } }))
+                        // Plain buttons: the control's own label already names the current choice. Toggles here
+                        // drew dim and did nothing.
+                        Button("Sidebar") { settings.aiChatFloating = false }
+                        Button("Floating") { settings.aiChatFloating = true }
                     } label: {
                         Text(settings.aiChatFloating ? "Floating" : "Sidebar")
                     }
