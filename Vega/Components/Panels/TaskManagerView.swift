@@ -57,18 +57,23 @@ struct TaskManagerView: View {
                         .foregroundStyle(row.asleep ? .secondary : .primary)
                 }
                 .width(min: 90, ideal: 110)
-                TableColumn("") { row in
+                TableColumn("Status") { row in
                     HStack {
                         if row.onScreen { Text("In view").font(VegaDesign.Font.caption).foregroundStyle(.secondary) }
                         else if row.audible { Text("Playing").font(VegaDesign.Font.caption).foregroundStyle(.secondary) }
                         Spacer()
-                        Button("Sleep") { sleep(row.id) }
-                            .disabled(row.asleep || row.onScreen)
-                            .controlSize(.small)
+                        // Only where it can be used: a tab in view or already asleep has nothing to sleep.
+                        if !row.asleep && !row.onScreen {
+                            Button("Sleep") { sleep(row.id) }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                        }
                     }
                 }
                 .width(min: 120, ideal: 140)
             }
+            // The list is short: blank striped rows under it only look like missing data.
+            .alternatingRowBackgrounds(.disabled)
             HStack {
                 Picker("Put tabs to sleep", selection: Binding(
                     get: { browserManager.vegaSettings?.tabManagementMode ?? .standard },

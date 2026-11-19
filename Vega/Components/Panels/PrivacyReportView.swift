@@ -20,8 +20,8 @@ struct PrivacyReportView: View {
         Form {
             Section {
                 HStack(spacing: VegaDesign.Spacing.xxl) {
-                    stat(stats.totalBlocked, "trackers and ads blocked")
-                    stat(stats.sites.count, "sites")
+                    stat(stats.totalBlocked, stats.totalBlocked == 1 ? "tracker or ad blocked" : "trackers and ads blocked")
+                    stat(stats.sites.count, stats.sites.count == 1 ? "site" : "sites")
                     stat(stats.totalUpgraded, "made secure (HTTPS)")
                 }
                 .frame(maxWidth: .infinity)
@@ -40,14 +40,18 @@ struct PrivacyReportView: View {
             }
 
             if !stats.topBlockedHosts().isEmpty {
-                Section("Most Blocked") {
+                Section {
                     ForEach(stats.topBlockedHosts(), id: \.host) { entry in
                         LabeledContent(entry.host) { Text(entry.count.formatted()).monospacedDigit() }
                     }
+                } header: {
+                    Text("Trackers Blocked")
+                } footer: {
+                    Text("The addresses that tried to load most often.")
                 }
             }
 
-            Section("Sites") {
+            Section {
                 if stats.sites.isEmpty {
                     Text("Nothing blocked yet. Browse a little and come back.").foregroundStyle(.secondary)
                 }
@@ -57,6 +61,10 @@ struct PrivacyReportView: View {
                             .monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
+            } header: {
+                Text("On These Sites")
+            } footer: {
+                Text("The pages you were on when they were blocked.")
             }
 
             Section {
