@@ -30,7 +30,7 @@ struct PrivacyReportView: View {
                 Text("Since \(stats.since.formatted(date: .abbreviated, time: .omitted)). Counted on this Mac only; private windows are never counted.")
             }
 
-            Section("Protections") {
+            Section {
                 protection("Ad and tracker blocking", on: settings?.adBlockerEnabled ?? false)
                 protection("HTTPS-Only Mode", on: settings?.warnBeforeHTTP ?? false)
                 protection("Pop-up guard", on: settings?.blockScriptedPopups ?? false)
@@ -38,6 +38,9 @@ struct PrivacyReportView: View {
                 protection("Clear website data when Vega quits", on: settings?.clearDataOnQuit ?? false)
                 Button("Privacy Settings…") { browserManager.openSettings(tab: .privacy) }
                     .padding(.vertical, VegaDesign.Spacing.xs)
+                .padding(.horizontal, VegaDesign.Spacing.sm)
+            } header: {
+                Text("Protections").padding(.top, VegaDesign.Spacing.md)
             }
 
             if !stats.topBlockedHosts().isEmpty {
@@ -45,9 +48,10 @@ struct PrivacyReportView: View {
                     ForEach(stats.topBlockedHosts(), id: \.host) { entry in
                         LabeledContent(entry.host) { Text(entry.count.formatted()).monospacedDigit() }
                             .padding(.vertical, VegaDesign.Spacing.xs)
+                .padding(.horizontal, VegaDesign.Spacing.sm)
                     }
                 } header: {
-                    Text("Trackers Blocked")
+                    Text("Trackers Blocked").padding(.top, VegaDesign.Spacing.md)
                 } footer: {
                     Text("The addresses that tried to load most often.")
                 }
@@ -63,9 +67,10 @@ struct PrivacyReportView: View {
                             .monospacedDigit().foregroundStyle(.secondary)
                     }
                     .padding(.vertical, VegaDesign.Spacing.xs)
+                .padding(.horizontal, VegaDesign.Spacing.sm)
                 }
             } header: {
-                Text("On These Sites")
+                Text("On These Sites").padding(.top, VegaDesign.Spacing.md)
             } footer: {
                 Text("The pages you were on when they were blocked.")
             }
@@ -76,6 +81,9 @@ struct PrivacyReportView: View {
         }
         .formStyle(.grouped)
         .environment(\.defaultMinListRowHeight, 44) // room around each row
+        // More air: wider margins around the cards, more between sections, more inside each row.
+        .contentMargins(.horizontal, 32, for: .scrollContent)
+        .contentMargins(.vertical, 20, for: .scrollContent)
         .frame(minWidth: 520, minHeight: 520)
         .confirmationDialog("Reset the Privacy Report?", isPresented: $confirmingReset) {
             Button("Reset", role: .destructive) { stats.reset() }
@@ -97,5 +105,6 @@ struct PrivacyReportView: View {
                 .foregroundStyle(on ? .green : .secondary)
         }
         .padding(.vertical, VegaDesign.Spacing.xs)
+                .padding(.horizontal, VegaDesign.Spacing.sm)
     }
 }
