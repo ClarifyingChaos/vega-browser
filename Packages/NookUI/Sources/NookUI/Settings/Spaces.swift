@@ -74,6 +74,13 @@ public struct SpacesSettingsView: View {
                         row(space)
                             .listRowSeparator(.visible)
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            // A soft highlight under the pointer, edge to edge of the card (its rounded corners trim
+                            // the first and last row). It fades in at once and out a little slower, so passing over rows
+                            // does not flicker.
+                            .listRowBackground(
+                                Color.primary.opacity(hoveredSpace == space.id ? 0.06 : 0)
+                                    .animation(reduceMotion ? nil : .easeOut(duration: hoveredSpace == space.id ? 0.1 : 0.22), value: hoveredSpace)
+                            )
                     }
                     .onMove(perform: reorder)
                 }
@@ -82,6 +89,8 @@ public struct SpacesSettingsView: View {
                 .scrollDisabled(true)
                 .frame(height: CGFloat(spaces.count) * spaceRowHeight)
                 .animation(rowSpring, value: spaces.map(\.id))
+                // The list runs to the card's edges, so a row's highlight does too; each row pads its own content.
+                .listRowInsets(EdgeInsets())
                 Button("New Space…", nookIcon: "plus", action: showCreateDialog)
             } header: {
                 Text("Spaces")
@@ -384,18 +393,9 @@ public struct SpacesSettingsView: View {
             .fixedSize()
             .accessibilityLabel("More for \(space.name)")
         }
-        // The highlight sits 4 pt inside the card and the content 6 pt inside the highlight: 10 pt from the card's
-        // edge, the same as the rows above, so the badges line up with the profile's picture.
-        .padding(.horizontal, 6)
+        // Content 10 pt from the card's edge, the same as the rows above, so the badges line up with the profile's picture.
+        .padding(.horizontal, 10)
         .frame(height: spaceRowHeight)
-        // A soft highlight under the pointer, inset 4 pt on every side of the row; its corner radius is the card's
-        // (12) minus that inset, so the two curves stay concentric. It fades in at once and out a little slower,
-        // so passing over rows does not flicker.
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.primary.opacity(hovered ? 0.06 : 0))
-                .padding(4)
-        )
         .animation(reduceMotion ? nil : .easeOut(duration: hovered ? 0.1 : 0.22), value: hovered)
         .onHover { inside in
             if inside { hoveredSpace = space.id } else if hoveredSpace == space.id { hoveredSpace = nil }
