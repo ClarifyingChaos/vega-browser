@@ -6,6 +6,20 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.3 (2026-11-19)
+
+### New
+- **A clearer "Save Password?" prompt in the sidebar.** It names the site and the user name in its own box, "Save Password" is the full-width main button, "Not Now" is a lighter full-width button you can actually see on the dark card, and "Never for This Website" is a quiet link under them instead of a third button squeezed into one row. The text is brighter and the spacing is roomier. "Update Password?" looks the same.
+
+### Privacy and security
+Reviewed before release.
+- Only how the prompt looks changed. What it saves, where, and when it asks is the same: nothing is saved until you press Save Password, private windows never ask, and Never for This Website still remembers your choice for that site.
+- No new network destinations, permissions or entitlements.
+- The password itself is never shown in the prompt.
+
+### Known
+- The macOS "Passwords" pop-up can still appear over a login field. macOS draws it, and Vega has no setting that hides it; System Settings › General › AutoFill & Passwords can.
+
 ## Vega 1.8.2 (2026-11-19)
 
 ### New
