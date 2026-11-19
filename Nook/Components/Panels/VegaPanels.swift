@@ -28,8 +28,8 @@ final class VegaPanels {
         // The hosting controller sizes the window to the view's minimum; open at the intended size instead.
         window.setContentSize(size)
         window.isReleasedWhenClosed = false
-        window.setFrameAutosaveName("VegaPanel3-\(id)")
-        if !window.setFrameUsingName("VegaPanel3-\(id)") { window.center() }
+        window.setFrameAutosaveName("VegaPanel5-\(id)")
+        if !window.setFrameUsingName("VegaPanel5-\(id)") { window.center() }
         windows[id] = window
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.windows[id] = nil }
@@ -49,7 +49,7 @@ extension BrowserManager {
     }
 
     func showPrivacyReport() {
-        VegaPanels.shared.show("privacyReport", title: "Privacy Report", size: CGSize(width: 640, height: 860)) {
+        VegaPanels.shared.show("privacyReport", title: "Privacy Report", size: CGSize(width: 700, height: 920)) {
             PrivacyReportView().environmentObject(self)
         }
     }
