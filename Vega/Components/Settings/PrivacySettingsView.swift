@@ -50,10 +50,37 @@ struct PrivacySettingsView: View {
                 }
             }
 
+            Section {
+                // A real button, so VoiceOver and keyboard users can open it too.
+                Button { showSettingsSubPane(.sitePermissions) } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text("Site Permissions")
+                            Text("Camera, microphone, JavaScript, ad blocking and more, for each site")
+                                .font(VegaDesign.Font.secondary)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        VegaSymbol("chevron.right", size: 16)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                HStack {
+                    Text("Privacy Report")
+                    Spacer()
+                    Button("Show…") { browserManager.showPrivacyReport() }
+                }
+            }
+
             Section("Security") {
                 settingToggle(
-                    "Warn before opening a site over HTTP",
-                    detail: "Vega tries HTTPS first. Asks before opening a site that only works over HTTP.",
+                    "HTTPS-Only Mode",
+                    detail: "Vega opens every site over HTTPS. A site that only works over HTTP opens after you say so.",
                     isOn: $settings.warnBeforeHTTP
                 )
             }
@@ -88,7 +115,9 @@ struct PrivacySettingsView: View {
             Section {
                 settingToggle(
                     "Clear cookies, site data and history when Vega quits",
-                    detail: "Signs you out of sites each time you quit. Saved passwords and your tabs stay.",
+                    detail: settings.clearDataOnQuit
+                        ? "On: each time you quit, Vega signs you out of every site and forgets cookies and history, so you sign in again next time. Saved passwords and your tabs stay. With Sync on, your other Macs use this setting too."
+                        : "Signs you out of sites each time you quit. Saved passwords and your tabs stay. With Sync on, your other Macs use this setting too.",
                     isOn: $settings.clearDataOnQuit
                 )
                 cookiesRow

@@ -151,6 +151,20 @@ public struct FolderBlobStore: SyncBlobStore {
     }
 }
 
+public extension SyncSnapshot {
+    /// The bytes a snapshot is stored as, plain or before sealing.
+    func encoded() throws -> Data {
+        let e = JSONEncoder(); e.dateEncodingStrategy = .millisecondsSince1970; e.outputFormatting = [.sortedKeys]
+        return try e.encode(self)
+    }
+
+    static func decoded(_ data: Data) -> SyncSnapshot? {
+        let d = JSONDecoder(); d.dateDecodingStrategy = .millisecondsSince1970
+        guard let snapshot = try? d.decode(SyncSnapshot.self, from: data), snapshot.formatVersion <= formatVersion else { return nil }
+        return snapshot
+    }
+}
+
 public extension SyncBlobStore {
     private static var encoder: JSONEncoder { let e = JSONEncoder(); e.dateEncodingStrategy = .millisecondsSince1970; e.outputFormatting = [.sortedKeys]; return e }
     private static var decoder: JSONDecoder { let d = JSONDecoder(); d.dateDecodingStrategy = .millisecondsSince1970; return d }

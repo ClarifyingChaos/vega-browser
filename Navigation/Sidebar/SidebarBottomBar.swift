@@ -139,6 +139,20 @@ struct SidebarBottomBar: View {
             }
             .disabled(!selectedPageIsWeb)
 
+            Button("New Easel", vegaIcon: "scribble.variable") {
+                EaselManager.shared.newEasel()
+            }
+
+            Button("Capture Page…", vegaIcon: "camera.viewfinder") {
+                browserManager.capturePage(fullPage: false)
+            }
+            .disabled(!selectedPageIsWeb)
+
+            Button("Cast…", vegaIcon: "airplayvideo") {
+                browserManager.castPage()
+            }
+            .disabled(!selectedPageIsWeb)
+
             Divider()
 
             Button("New Split", vegaIcon: "rectangle.split.2x1") {

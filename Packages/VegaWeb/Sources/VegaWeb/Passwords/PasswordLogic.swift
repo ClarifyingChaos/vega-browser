@@ -35,6 +35,13 @@ public protocol PasswordVault: AnyObject {
     func quietly<T>(_ body: () -> T) -> T
     /// Logins sync can't read without asking (an older Vega's Keychain items).
     func legacyCount() -> Int
+    /// Those logins themselves (host and username only).
+    func legacyOnly() -> [SavedLogin]
+    /// The login's verification-code generator, if one was set up.
+    func totp(host: String, username: String) -> TOTP?
+    /// Whether one is set up, without reading the secret.
+    func hasTOTP(host: String, username: String) -> Bool
+    func setTOTP(_ totp: TOTP?, host: String, username: String)
     /// The logins this vault hands over without asking: exactly what sync sends.
     func readable() -> [SavedLogin]
     /// Every readable login with its password, plus the remembered deletions.
@@ -44,6 +51,10 @@ public protocol PasswordVault: AnyObject {
 public extension PasswordVault {
     func quietly<T>(_ body: () -> T) -> T { body() }
     func legacyCount() -> Int { 0 }
+    func legacyOnly() -> [SavedLogin] { [] }
+    func totp(host: String, username: String) -> TOTP? { nil }
+    func hasTOTP(host: String, username: String) -> Bool { false }
+    func setTOTP(_ totp: TOTP?, host: String, username: String) {}
     func readable() -> [SavedLogin] { all() }
     func save(host: String, username: String, password: String) { save(host: host, username: username, password: password, modified: Date()) }
     func delete(host: String, username: String) { delete(host: host, username: username, at: Date()) }

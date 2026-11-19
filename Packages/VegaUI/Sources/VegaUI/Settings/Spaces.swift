@@ -36,6 +36,10 @@ public struct SpacesSettingsView: View {
     @State private var showIconPickerFor: UUID?
     /// A move that would leave its profile empty, waiting on confirmation.
     @State private var pendingMove: (space: UUID, to: UUID?, profile: String)?
+    /// FORK: the daily backups, and the one waiting on "Restore?".
+    @State private var backups: [TabStore.BackupSummary] = []
+    @State private var restoring: TabStore.BackupSummary?
+    @State private var restoreError: String?
 
     public init() {}
 
@@ -74,17 +78,53 @@ public struct SpacesSettingsView: View {
                 .scrollContentBackground(.hidden)
                 .scrollDisabled(true)
                 .frame(height: CGFloat(spaces.count) * spaceRowHeight)
+                Button("New Space…", vegaIcon: "plus", action: showCreateDialog)
             } header: {
                 Text("Spaces")
             } footer: {
-                Text("Drag a space by its handle, or use its … menu, to change its place in the sidebar. Each space belongs to a profile; moving a space to another profile signs it in as that profile.")
+                Text("Drag a space by its handle to change its place in the sidebar. The … menu renames it, changes its icon or color, or moves it to another profile.")
             }
 
             Section {
-                Button("New Space…", vegaIcon: "plus", action: showCreateDialog)
+                if backups.isEmpty {
+                    Text("No backups yet. Vega saves one each day you use it.").foregroundStyle(.secondary)
+                }
+                ForEach(backups) { backup in
+                    HStack {
+                        VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                            Text(Self.title(for: backup))
+                            Text("\(backup.spaceNames.count) \(backup.spaceNames.count == 1 ? "space" : "spaces") · \(backup.tabCount) tabs · \(backup.spaceNames.prefix(4).joined(separator: ", "))\(backup.spaceNames.count > 4 ? "…" : "")")
+                                .font(VegaDesign.Font.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                        Button("Restore…") { restoring = backup }
+                    }
+                }
+            } header: {
+                Text("Backups")
+            } footer: {
+                Text(restoreError ?? "Vega keeps a copy of your spaces, favorites, pinned tabs and folders from each of the last 7 days. Restoring one restarts Vega; what you have now is kept as a backup first.")
             }
         }
         .formStyle(.grouped)
+        .task { backups = tabs.backupSummaries() }
+        .confirmationDialog(restoring.map { "Restore your spaces and tabs from \(Self.title(for: $0))?" } ?? "",
+                            isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } })) {
+            Button("Restore and Restart Vega") {
+                guard let backup = restoring else { return }
+                do {
+                    try tabs.scheduleRestore(backup.id)
+                    Self.relaunch()
+                } catch {
+                    restoreError = "Couldn't restore that backup: \(error.localizedDescription)"
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Vega quits and opens again with those spaces and tabs. With Sync on, your other Macs get them too. What you have now is saved as a backup, so you can go back.")
+        }
         .task(id: tabs.profiles.map(\.id)) { await refreshStats() }
         // System Settings' pattern: the ⓘ button opens a sheet with the profile's details and actions.
         .sheet(isPresented: Binding(get: { detailsFor != nil }, set: { if !$0 { detailsFor = nil } })) {
@@ -217,6 +257,21 @@ public struct SpacesSettingsView: View {
     }
 
     /// Puts the dragged space after the one now above it, so the sidebar and the space switcher follow.
+    static func title(for backup: TabStore.BackupSummary) -> String {
+        if backup.id.hasSuffix("-before-restore") { return "Before the restore on \(backup.id.prefix(10))" }
+        if let date = backup.savedAt { return date.formatted(date: .abbreviated, time: .shortened) }
+        return backup.id
+    }
+
+    /// Quits and opens this copy of Vega again once it has fully quit.
+    static func relaunch() {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "while kill -0 \(ProcessInfo.processInfo.processIdentifier) 2>/dev/null; do sleep 0.3; done; /usr/bin/open \"$0\"", Bundle.main.bundlePath]
+        try? task.run()
+        NSApp.terminate(nil)
+    }
+
     private func reorder(from source: IndexSet, to destination: Int) {
         var ids = spaces.map(\.id)
         let moved = source.map { ids[$0] }
@@ -227,39 +282,33 @@ public struct SpacesSettingsView: View {
         }
     }
 
-    private let spaceRowHeight: CGFloat = 44
+    private let spaceRowHeight: CGFloat = 56
 
     @ViewBuilder
     private func row(_ space: SpaceRecord) -> some View {
+        let tabCount = tabs.tabCount(inSpace: space.id)
         HStack(spacing: VegaDesign.Spacing.md) {
-            // Dia's handle; the whole row drags.
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.tertiary)
                 .help("Drag to Reorder")
                 .accessibilityHidden(true)
-            Button {
-                showAccentPickerFor = space.id
-            } label: {
-                Circle()
-                    .fill(space.accentColor)
-                    .frame(width: VegaDesign.Size.iconButton, height: VegaDesign.Size.iconButton)
-            }
-            .buttonStyle(.plain)
-            .popover(isPresented: Binding(
-                get: { showAccentPickerFor == space.id },
-                set: { if !$0 { showAccentPickerFor = nil } }
-            )) {
-                SpaceAccentPicker(selectedHex: Binding(
-                    get: { space.accentHex },
-                    set: { tabs.updateSpace(space.id, name: nil, icon: nil, accentHex: $0) }
-                ))
-                .padding(VegaDesign.Spacing.lg)
-            }
 
+            // One badge: the space's colour behind its icon (or its first letter). Click to change the icon.
             Button { showIconPickerFor = space.id } label: {
-                SpaceIcon(space.icon)
-                    .frame(width: VegaDesign.Size.spaceTarget, height: VegaDesign.Size.spaceTarget)
-                    .contentShape(Rectangle())
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(space.accentColor.opacity(0.25))
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(space.accentColor.opacity(0.6), lineWidth: 1)
+                    if space.icon.isEmpty {
+                        Text(String(space.name.prefix(1)).uppercased())
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(space.accentColor)
+                    } else {
+                        SpaceIcon(space.icon)
+                            .frame(width: 18, height: 18)
+                    }
+                }
+                .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help("Change Icon or Emoji…")
@@ -276,15 +325,35 @@ public struct SpacesSettingsView: View {
 
             // FORK: the name as text, renamed from the menu. A live field took focus when the page
             // opened, with its text selected, and the next keys typed anywhere replaced the name.
-            Text(space.name)
-                .font(VegaDesign.Font.body)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(space.name).font(VegaDesign.Font.body)
+                Text("\(tabCount) \(tabCount == 1 ? "tab" : "tabs")")
+                    .font(VegaDesign.Font.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .popover(isPresented: Binding(
+                get: { showAccentPickerFor == space.id },
+                set: { if !$0 { showAccentPickerFor = nil } }
+            )) {
+                SpaceAccentPicker(selectedHex: Binding(
+                    get: { space.accentHex },
+                    set: { tabs.updateSpace(space.id, name: nil, icon: nil, accentHex: $0) }
+                ))
+                .padding(VegaDesign.Spacing.lg)
+            }
             Spacer()
-            profilePicker(space)
+            // With one profile every row would say the same thing; the picker only matters once there are two.
+            if tabs.profiles.count > 1 {
+                profilePicker(space)
+            }
             Menu {
                 Button("Rename…", vegaIcon: "pencil") {
                     renamingSpace = (space.id, space.name)
                 }
+                Button("Change Icon…", systemImage: "face.smiling") { showIconPickerFor = space.id }
+                Button("Change Color…", systemImage: "paintpalette") { showAccentPickerFor = space.id }
                 if let index = spaces.firstIndex(where: { $0.id == space.id }) {
+                    Divider()
                     Button("Move Up", systemImage: "arrow.up") { reorder(from: [index], to: index - 1) }
                         .disabled(index == 0)
                     Button("Move Down", systemImage: "arrow.down") { reorder(from: [index], to: index + 2) }

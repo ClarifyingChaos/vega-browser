@@ -37,7 +37,6 @@ final class ExtensionWindowAdapter: NSObject, WKWebExtensionWindow {
 
     private var nsWindow: NSWindow? { state?.window }
 
-    // ponytail: no query cache; displayOrder is cheap and a generation cache missed tree moves.
     func activeTab(for extensionContext: WKWebExtensionContext) -> (any WKWebExtensionTab)? {
         guard let state else { return nil }
         let tabs = browserManager.tabs
@@ -50,8 +49,24 @@ final class ExtensionWindowAdapter: NSObject, WKWebExtensionWindow {
 
     func tabs(for extensionContext: WKWebExtensionContext) -> [any WKWebExtensionTab] {
         guard let state else { return [] }
-        let items = browserManager.tabs.displayOrder(in: state).compactMap { ExtensionManager.shared.adapter(for: $0) }
+        let items = Self.order(in: state, tabs: browserManager.tabs).compactMap { ExtensionManager.shared.adapter(for: $0) }
         return items + ExtensionManager.shared.detachedAdapters(in: state)
+    }
+
+    /// WebKit asks for a window's tabs once per extension for every tab change, often many times in one turn of the
+    /// run loop; building the order each time cost half a second over a few tab switches. One build per turn: the
+    /// cache is dropped on the next turn, so a tree move is never missed.
+    private static var orderCache: [UUID: [UUID]] = [:]
+    private static var orderCacheClearScheduled = false
+    private static func order(in state: BrowserWindowState, tabs: TabsController) -> [UUID] {
+        if let hit = orderCache[state.id] { return hit }
+        let order = tabs.displayOrder(in: state)
+        orderCache[state.id] = order
+        if !orderCacheClearScheduled {
+            orderCacheClearScheduled = true
+            DispatchQueue.main.async { orderCache = [:]; orderCacheClearScheduled = false }
+        }
+        return order
     }
 
     func frame(for extensionContext: WKWebExtensionContext) -> CGRect {

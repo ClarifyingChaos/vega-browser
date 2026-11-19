@@ -325,9 +325,9 @@ private struct SyncSection: View {
             }
             if sync.isEnabled {
                 Picker("Sync with", selection: Binding(get: { sync.backend }, set: { sync.backend = $0 })) {
-                    ForEach(SyncCoordinator.Backend.allCases) { Text($0.title).tag($0) }
+                    ForEach(SyncCoordinator.Backend.available) { Text($0.title).tag($0) }
                 }
-                if sync.backend == .google && !GoogleAccount.forProfile(profileID).isSignedIn {
+                if (sync.backend == .google || sync.backend == .server) && !GoogleAccount.forProfile(profileID).isSignedIn {
                     Text("Sign in under Account above to sync with Google.").font(VegaDesign.Font.secondary).foregroundStyle(.secondary)
                 }
                 Toggle("Keep open tabs the same on my Macs", isOn: Binding(get: { sync.mirrorsTabs }, set: { sync.mirrorsTabs = $0 }))
@@ -410,7 +410,8 @@ private struct SyncSection: View {
             Text("Sync")
         } footer: {
             if !sync.isEnabled { Text(detail) }
-            else if !sync.passwordsEnabled { Text("Passwords sync end to end encrypted with a passphrase only you know. iCloud never sees them.") }
+            else if !sync.passwordsEnabled { Text("Turn on Sync Passwords to seal everything Vega syncs (spaces, favorites, settings, open tabs and passwords) with a passphrase only you know, so neither iCloud nor Google can read it.") }
+            else { Text("Spaces, favorites, settings, open tabs and passwords are sealed with your sync passphrase: iCloud and Google can't read them. A Mac with an older Vega still gets a readable copy of your spaces until it updates.") }
         }
         .confirmationDialog("Remove \(removing?.name ?? "this Mac") from sync?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
             Button("Remove", role: .destructive) {

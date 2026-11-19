@@ -648,11 +648,23 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
     private var lastPublish: ContinuousClock.Instant?
     private var trailingPublish: Task<Void, Never>?
 
+    /// WebKit asked where to save it: from here on the download is waiting on a person or making progress.
+    private var destinationAsked = false
+
     init(downloadManager: DownloadManager, download: Download, wkDownload: WKDownload) {
         self.downloadManager = downloadManager
         self.download = download
         self.wkDownload = wkDownload
         super.init()
+        // FORK: a download WebKit never gets a response for (a page's blob: link revoked before it started, a page
+        // closed) used to sit at "Pending" for good. It fails after a minute instead.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(60))
+            guard let self, !self.destinationAsked, self.download.state == .pending else { return }
+            self.wkDownload.cancel { _ in }
+            self.downloadManager?.updateDownloadState(self.download.id, state: .failed,
+                error: NSError(domain: "Vega", code: 1, userInfo: [NSLocalizedDescriptionKey: "The site never sent this file."]))
+        }
     }
 
     private enum DestinationDecision {
@@ -661,6 +673,7 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
     }
 
     public func download(_: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
+        destinationAsked = true
         decideDestination(response: response, suggestedFilename: suggestedFilename) { [weak self] decision in
             guard let self else { return }
             switch decision {

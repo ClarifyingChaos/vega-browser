@@ -70,6 +70,8 @@ public class SearchManager {
             case url
             case tab(TabMatch)
             case history(HistoryEntry)
+            /// FORK: a command palette action, by its id.
+            case command(String)
         }
         
         public static func == (lhs: SearchSuggestion, rhs: SearchSuggestion) -> Bool {
@@ -78,6 +80,8 @@ public class SearchManager {
                 return lhs.text == rhs.text
             case (.tab(let lhsTab), .tab(let rhsTab)):
                 return lhs.text == rhs.text && lhsTab.itemID == rhsTab.itemID
+            case (.command(let a), .command(let b)):
+                return a == b
             case (.history(let lhsHistory), .history(let rhsHistory)):
                 return lhs.text == rhs.text && lhsHistory.id == rhsHistory.id
             default:

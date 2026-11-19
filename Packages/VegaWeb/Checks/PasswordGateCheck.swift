@@ -7,7 +7,7 @@
 //  covers the same site for a minute and never another site, and two fills at once ask once.
 //
 //    swiftc -parse-as-library Packages/VegaTabsCore/Sources/VegaTabsCore/*.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordGate.swift \
-//           Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordLogic.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordSync.swift \
+//           Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordLogic.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/TOTP.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordSync.swift \
 //           Packages/VegaWeb/Checks/PasswordGateCheck.swift -o /tmp/password-gate-check && /tmp/password-gate-check
 
 import Foundation

@@ -102,6 +102,22 @@ public final class GoogleAccount {
         return GoogleDriveStore(token: { [weak self] in try await self?.accessToken() ?? { throw GoogleOAuth.OAuthError.cancelled }() })
     }
 
+    /// A store on Vega's own sync server at `url`, signed in with this Google account.
+    public func serverStore(url: URL) -> ServerBlobStore? {
+        guard isSignedIn else { return nil }
+        return ServerBlobStore(base: url, token: { [weak self] in try await self?.idToken() ?? { throw GoogleOAuth.OAuthError.cancelled }() })
+    }
+
+    /// The Google ID token, refreshed with the access token (both last an hour).
+    public func idToken() async throws -> String {
+        if let access, access.expires > Date(), let id = access.idToken { return id }
+        guard let config = GoogleOAuthConfig.load(), let refresh = loadRefreshToken() else { throw GoogleOAuth.OAuthError.notConfigured }
+        let fresh = try await GoogleOAuth.refresh(refresh, config: config)
+        access = fresh
+        guard let id = fresh.idToken else { throw GoogleOAuth.OAuthError.badResponse }
+        return id
+    }
+
     private func accessToken() async throws -> String {
         if let access, access.expires > Date() { return access.access }
         guard let config = GoogleOAuthConfig.load(), let refresh = loadRefreshToken() else { throw GoogleOAuth.OAuthError.notConfigured }

@@ -6,7 +6,7 @@
 //  Host matching, the in-memory vault and CSV import of the password manager. VegaWeb has no
 //  test target, so this compiles the shipped source directly:
 //
-//    swiftc Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordLogic.swift \
+//    swiftc Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordLogic.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/TOTP.swift \
 //           Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordSync.swift \
 //           Packages/VegaWeb/Checks/PasswordLogicCheck.swift -o /tmp/password-check && /tmp/password-check
 //

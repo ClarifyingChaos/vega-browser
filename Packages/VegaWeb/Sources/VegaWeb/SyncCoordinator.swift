@@ -90,17 +90,35 @@ public final class SyncCoordinator {
     }
 
     public enum Backend: String, CaseIterable, Identifiable, Sendable {
-        case iCloud, google
+        case iCloud, google, server
         public var id: String { rawValue }
-        public var title: String { self == .iCloud ? "iCloud Drive" : "Google account" }
+        public var title: String {
+            switch self {
+            case .iCloud: "iCloud Drive"
+            case .google: "Google account"
+            case .server: "Vega Sync server"
+            }
+        }
+        /// The places to choose from: the server only once its address is set (`defaults write com.vega.browser
+        /// fork.sync.serverURL https://…`), since nobody runs one by default.
+        public static var available: [Backend] { serverURL == nil ? [.iCloud, .google] : allCases }
+        public static var serverURL: URL? {
+            guard let raw = UserDefaults.standard.string(forKey: "fork.sync.serverURL"), let url = URL(string: raw) else { return nil }
+            let local = url.host == "127.0.0.1" || url.host == "localhost"
+            return url.scheme == "https" || (url.scheme == "http" && local) ? url : nil
+        }
     }
 
     private static let logger = Logger(subsystem: "com.vega.browser", category: "sync")
     private static let deviceKey = "fork.sync.deviceID"
     /// How soon the next round runs while things are changing, and how far it backs off when a round finds nothing
-    /// new: 20 s, 40 s, 80 s ... up to 5 minutes. A change here, coming back to Vega, or Sync Now starts it over.
+    /// new: 20 s, 40 s ... up to `slowestInterval`. A change here, coming back to Vega, or Sync Now starts it over.
     private static let interval: Duration = .seconds(20)
-    private static let slowestInterval: Duration = .seconds(300)
+    /// The longest wait between checks. Google Drive has no way to tell us about a change, so it is asked, and a quiet
+    /// check is one small request; iCloud Drive's folder is watched, so its timed check only backs the watcher up.
+    private var slowestInterval: Duration { backend == .google ? .seconds(30) : .seconds(120) }
+    /// The server's live connection: another Mac's write starts a round here within a second or two.
+    @ObservationIgnored private var liveConnection: ServerLive?
     /// A change here is sent after it stops for this long, and never more often than `minGap`.
     private static let settleDelay: Duration = .seconds(4)
     private static let minGap: TimeInterval = 15
@@ -148,14 +166,23 @@ public final class SyncCoordinator {
     @ObservationIgnored private var quietRounds = 0
     /// Set by any step that sent or took something in this round.
     @ObservationIgnored var roundFoundWork = false
+    /// A nudge that arrived while a round was running: the next round starts at once.
+    @ObservationIgnored private var rerunRequested = false
     /// Whether this round shows its steps in Settings: only the ones the person asked for.
     @ObservationIgnored private var showsProgress = true
     @ObservationIgnored private var lastRoundEnd = Date.distantPast
     @ObservationIgnored private var settleTask: Task<Void, Never>?
+    @ObservationIgnored private var watcher: FolderWatcher?
+    @ObservationIgnored private var watchTask: Task<Void, Never>?
     /// Keeps macOS from slowing the sync loop (App Nap) while Vega sits hidden or minimised: a Mac whose Vega is in
     /// the background must still send and take changes within a round or two.
     @ObservationIgnored private var activity: NSObjectProtocol?
     @ObservationIgnored private var lastWritten: SyncSnapshot?
+    /// Whether some Mac in the chain still reads only plain files (an older Vega, or one without the passphrase):
+    /// then the plain copy is written beside the sealed one. Assumed until the first round has looked.
+    @ObservationIgnored var plainNeeded = true
+    /// How the last snapshot was written (sealed, plain too), so a change of either writes again.
+    @ObservationIgnored private var lastWrittenMode: (sealed: Bool, plain: Bool)?
     @ObservationIgnored private var observers: [Any] = []
 
     public var backend: Backend {
@@ -182,12 +209,19 @@ public final class SyncCoordinator {
         case .google:
             guard let store = GoogleAccount.forProfile(profileID).store() else { return nil }
             return (store, nil)
+        case .server:
+            // Signed in with the same Google account; the server keeps one set of files per account.
+            guard let url = Backend.serverURL, let store = GoogleAccount.forProfile(profileID).serverStore(url: url) else { return nil }
+            return (store, nil)
         }
     }
 
     private var missingMessage: String {
-        backend == .iCloud ? "Turn on iCloud Drive in System Settings › Apple Account › iCloud, then try again."
-                           : "Sign in with Google to sync."
+        switch backend {
+        case .iCloud: "Turn on iCloud Drive in System Settings › Apple Account › iCloud, then try again."
+        case .google: "Sign in with Google to sync."
+        case .server: Backend.serverURL == nil ? "Set the Vega Sync server's address first." : "Sign in with Google to use Vega Sync."
+        }
     }
 
     public var isEnabled: Bool {
@@ -359,7 +393,7 @@ public final class SyncCoordinator {
     private static let keyService = "com.vega.browser.syncKey"
     // Read from the Keychain once per launch, not on every sync round.
     @ObservationIgnored private var cachedKey: SymmetricKey?
-    private func loadKey() -> SymmetricKey? {
+    func loadKey() -> SymmetricKey? {
         if let cachedKey { return cachedKey }
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keyService,
                                     kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
@@ -403,7 +437,7 @@ public final class SyncCoordinator {
     /// Next round now, and the pace starts over.
     private func nudge() {
         quietRounds = 0
-        if let sleeper { sleeper.cancel() } else if loop == nil { Task { await tick() } }
+        if let sleeper { sleeper.cancel() } else if loop == nil { Task { await tick() } } else { rerunRequested = true }
     }
 
     /// Something changed here: send it once it settles, without a round for every page load.
@@ -431,10 +465,38 @@ public final class SyncCoordinator {
         }
     }
 
+    /// Watches the iCloud Drive folder, so a file another Mac's change brings down starts a round within seconds.
+    private func watchFolder() {
+        liveConnection?.stop()
+        liveConnection = nil
+        if backend == .server, let server = currentStore()?.store as? ServerBlobStore {
+            liveConnection = server.live { [weak self] in Task { @MainActor in self?.folderChanged() } }
+        }
+        watcher = nil
+        guard backend == .iCloud, let folder = currentStore()?.store as? FolderBlobStore else { return }
+        watcher = FolderWatcher(url: folder.url) { [weak self] in
+            Task { @MainActor in self?.folderChanged() }
+        }
+    }
+
+    /// Files changed in the sync folder. This Mac's own writes land here too; the extra round they cause finds nothing
+    /// and sends nothing, so it ends there.
+    private func folderChanged() {
+        guard isEnabled else { return }
+        watchTask?.cancel()
+        watchTask = Task { [weak self] in
+            // Several files arrive together; one round takes them all.
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            self?.nudge()
+        }
+    }
+
     /// Waits until the next round is due, or until `nudge` cuts it short.
     private func waitForNextRound() async {
+        if rerunRequested { rerunRequested = false; return }
         let steps = min(quietRounds, 8)
-        let wait = min(Self.interval * (1 << steps), Self.slowestInterval)
+        let wait = min(Self.interval * (1 << steps), slowestInterval)
         let task = Task<Void, Never> { try? await Task.sleep(for: wait) }
         sleeper = task
         await task.value
@@ -457,6 +519,7 @@ public final class SyncCoordinator {
             }
         }
         watchTree()
+        watchFolder()
         // A change made just before the app goes to the background or quits should leave this Mac.
         let center = NotificationCenter.default
         for name in [NSApplication.didResignActiveNotification, NSApplication.willTerminateNotification] {
@@ -476,6 +539,12 @@ public final class SyncCoordinator {
         sleeper = nil
         settleTask?.cancel()
         settleTask = nil
+        watchTask?.cancel()
+        watchTask = nil
+        watcher?.stop()
+        watcher = nil
+        liveConnection?.stop()
+        liveConnection = nil
         if !keepStatus, let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
@@ -575,7 +644,9 @@ public final class SyncCoordinator {
                 return
             }
             step(1, "Reading your other Macs")
-            let (all, pending) = try await store.readOtherSnapshots(excluding: own)
+            let key = passwordsEnabled ? loadKey() : nil
+            let (all, pending, plainOnly) = try await SealedSync.readOthers(store, excluding: own, key: key)
+            plainNeeded = key == nil || !plainOnly.subtracting(removedIDs).isEmpty
             // iCloud still bringing a file down: look again soon instead of backing off.
             if pending > 0 { found("files still downloading") }
             let snapshots = all.filter { !removedIDs.contains($0.deviceID) }
@@ -682,14 +753,26 @@ public final class SyncCoordinator {
     @discardableResult
     private func writeOwn(store: any SyncBlobStore) async throws -> Bool {
         guard let tabs else { return false }
-        var snapshot = SyncMerge.snapshot(of: tabs.tree, deviceID: deviceID, deviceName: deviceName, profile: scopeProfile, includeTabs: mirrorsTabs)
-        if let placeholder = placeholderID {
-            snapshot.spaces.removeAll { $0.id == placeholder }
-            snapshot.items.removeAll { tabs.tree.spaceID(of: $0.id) == placeholder }
-        }
-        if let last = lastWritten, last.spaces == snapshot.spaces, last.items == snapshot.items { return false }
-        try await store.writeSnapshot(snapshot)
+        // Built and compared off the main thread: the tree is a value, so this works on a copy.
+        let tree = tabs.tree, id = deviceID, name = deviceName, profile = scopeProfile, mirror = mirrorsTabs
+        let placeholder = placeholderID, last = lastWritten
+        let built: SyncSnapshot? = await Task.detached(priority: .utility) {
+            var snapshot = SyncMerge.snapshot(of: tree, deviceID: id, deviceName: name, profile: profile, includeTabs: mirror)
+            if let placeholder {
+                snapshot.spaces.removeAll { $0.id == placeholder }
+                snapshot.items.removeAll { tree.spaceID(of: $0.id) == placeholder }
+            }
+            if let last, last.spaces == snapshot.spaces, last.items == snapshot.items { return nil }
+            return snapshot
+        }.value
+        let key = passwordsEnabled ? loadKey() : nil
+        let mode = (sealed: key != nil, plain: key == nil || plainNeeded)
+        // The same snapshot written the same way is not news; a new way of writing it is.
+        let snapshot: SyncSnapshot
+        if let built { snapshot = built } else if let last, let previous = lastWrittenMode, previous != mode { snapshot = last } else { return false }
+        try await SealedSync.write(snapshot, to: store, key: key, plainNeeded: mode.plain)
         lastWritten = snapshot
+        lastWrittenMode = mode
         return true
     }
 }

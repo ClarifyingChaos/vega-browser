@@ -125,6 +125,7 @@ struct VegaApp: App {
     private func setupAIServices() {
         aiService.browserManager = browserManager
         EaselManager.shared.browserManager = browserManager
+        VegaIntents.browserManager = browserManager
         BrowserToolExecutor.prunePages()
         aiService.mcpManager = mcpManager
 

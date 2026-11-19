@@ -71,6 +71,8 @@ public enum GoogleOAuth {
         public var refresh: String?
         public var expires: Date
         public var email: String?
+        /// FORK: the signed ID token, which Vega's sync server checks to know whose files these are.
+        public var idToken: String? = nil
     }
 
     public enum OAuthError: LocalizedError {
@@ -99,7 +101,8 @@ public enum GoogleOAuth {
         guard (response as? HTTPURLResponse)?.statusCode == 200, let access = json["access_token"] as? String else { throw OAuthError.badResponse }
         let seconds = (json["expires_in"] as? Double) ?? 3600
         return Tokens(access: access, refresh: json["refresh_token"] as? String,
-                      expires: Date().addingTimeInterval(seconds - 60), email: (json["id_token"] as? String).flatMap(email(fromIDToken:)))
+                      expires: Date().addingTimeInterval(seconds - 60), email: (json["id_token"] as? String).flatMap(email(fromIDToken:)),
+                      idToken: json["id_token"] as? String)
     }
 
     /// The email in the signed ID token. It is read, not trusted for anything: it only labels the account.

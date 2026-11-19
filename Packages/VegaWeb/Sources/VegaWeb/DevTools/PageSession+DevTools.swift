@@ -135,10 +135,15 @@ extension PageSession {
     /// The identifier is a chunk of every list merged, so it does not name the list.
     @objc(_webView:contentRuleListWithIdentifier:performedAction:forURL:)
     func devContentRuleList(_ webView: WKWebView, identifier: String, performedAction action: NSObject, url: URL) {
-        guard let capture = devCapture else { return }
         func flag(_ key: String) -> Bool {
             action.responds(to: NSSelectorFromString(key)) && (action.value(forKey: key) as? Bool) == true
         }
+        // FORK: the Privacy Report's counts. Never for a private window.
+        if profile?.isEphemeral != true {
+            if flag("blockedLoad") { PrivacyStats.shared.record(.blocked, page: webView.url?.host, resource: url.host) }
+            else if flag("madeHTTPS") { PrivacyStats.shared.record(.upgraded, page: webView.url?.host, resource: url.host) }
+        }
+        guard let capture = devCapture else { return }
         let kind: DevBlockEntry.Action
         if flag("blockedLoad") { kind = .blocked }
         else if flag("madeHTTPS") { kind = .madeHTTPS }

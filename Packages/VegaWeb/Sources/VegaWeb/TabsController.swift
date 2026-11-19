@@ -63,6 +63,14 @@ public final class TabsController {
     @ObservationIgnored private var spaceProfiles: [UUID: Profile] = [:]
 
     @ObservationIgnored let store: TabStore
+
+    /// FORK: the daily backups of spaces and tabs, for Settings › Spaces › Restore.
+    public func backupSummaries() -> [TabStore.BackupSummary] { store.backupSummaries() }
+    public func scheduleRestore(_ name: String) throws {
+        // What is open now is written first, so the "before restore" copy holds it.
+        flushSync()
+        try store.scheduleRestore(name)
+    }
     @ObservationIgnored private(set) var undoStack: [Change] = []
     /// Collects the changes of one multi-item intent into a single undo step (`grouped`).
     @ObservationIgnored private var undoGroup: Change?
