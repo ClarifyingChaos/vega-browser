@@ -70,7 +70,7 @@ public struct SpacesSettingsView: View {
                     ForEach(spaces) { space in
                         row(space)
                             .listRowSeparator(.visible)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     }
                     .onMove(perform: reorder)
                 }
@@ -282,7 +282,7 @@ public struct SpacesSettingsView: View {
         }
     }
 
-    private let spaceRowHeight: CGFloat = 56
+    private let spaceRowHeight: CGFloat = 52
 
     @ViewBuilder
     private func row(_ space: SpaceRecord) -> some View {
@@ -376,6 +376,7 @@ public struct SpacesSettingsView: View {
             .fixedSize()
             .accessibilityLabel("More for \(space.name)")
         }
+        .frame(height: spaceRowHeight)
     }
 
     // MARK: - Data
