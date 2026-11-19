@@ -2,6 +2,41 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.0 (2026-11-19)
+
+### New
+- **Easels in the Library**, plus New Easel in the + menu, the sidebar's right-click menu, Window › View Easels… and the command palette.
+- **Command palette commands.** Type a command's name, or `>` to list them all: Capture, Cast, Reader View, Task Manager, Privacy Report, Restore and other Macs' tabs.
+- **Task Manager** (Window menu, ⌥⌘Esc): memory per tab, with Sleep and Sleep Background Tabs.
+- **Privacy Report** (Privacy menu): trackers blocked per site and pages upgraded to HTTPS. "Warn before HTTP" is now named HTTPS-Only Mode.
+- **Site Permissions** (Settings › Privacy): every site's camera, microphone, JavaScript, mobile site, picture-in-picture and ad blocking, editable and resettable.
+- **Restore from Backup** (Settings › Spaces › Backups): the last 7 days of spaces, favorites, pinned tabs and folders.
+- **Security Check** for all your passwords (leaked, reused, weak) and **verification codes** (TOTP) beside a login.
+- **Shortcuts actions:** open a page, search, switch space, new easel, Task Manager.
+- **Feature Tour** (Help menu), shown once after this update.
+- **Opt-in crash reports** and a **beta update channel** (Settings › Updates), both off by default.
+- **Spaces settings redesigned:** one badge per space with its icon and color, tab counts, and a profile picker only when you have more than one profile. Change a space's icon or color from its … menu.
+
+### Fixes
+- **Sync from iCloud Drive arrives in about 4 seconds**, and Google Drive is checked every 30 seconds with one small request.
+- **Spaces, favorites and settings are now sealed in sync** with your sync passphrase, like passwords. A readable copy stays while a Mac with an older Vega is in the chain.
+- A "Not Synced" banner in Passwords lists logins from older Vega versions that can't sync without a prompt, with a CSV re-import to fix them.
+- A download stuck at "Pending" now fails after a minute.
+- Site icons for The Toolbox and Freepik load on their own.
+- Clear-on-quit says plainly what it does and that Sync carries it to your other Macs.
+- Extensions: the window's tab list is built once per turn instead of once per extension per tab change.
+- Sync's local work runs off the main thread.
+
+### Privacy and security
+Reviewed before release.
+- Spaces, favorites and settings are end-to-end sealed in sync with the same key as passwords (AES-GCM). Older Macs still get a readable copy until they update.
+- Privacy Report counts are host names and numbers kept only on this Mac, never from private windows, capped at 400 sites.
+- Verification-code secrets live in this Mac's Keychain beside the password. They're shown or copied only after Touch ID, aren't synced, and are deleted with the login.
+- The Security Check reads passwords only after Touch ID, off the main thread. The leak check sends only the first 5 characters of each password's hash.
+- Crash reports are off by default; nothing is sent on its own, and home-folder paths are shortened to `~`.
+- Shortcuts actions skip the vega:// setting's gate (a shortcut is your own); vega:// links from other apps still need it.
+- No new entitlements. The only new network destination is a sync server you must set up yourself; nothing talks to it by default.
+
 ## Vega 1.7.14 (2026-11-19)
 
 ### Fixes
