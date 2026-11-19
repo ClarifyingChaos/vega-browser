@@ -327,7 +327,8 @@ public final class SyncCoordinator {
     /// Mac would create it, nil when the sync folder can't be read.
     public func passphraseExists() async -> Bool? {
         guard isEnabled, let place = currentStore() else { return nil }
-        return (try? await PasswordSyncStore(store: place.store).meta()).map { $0 != nil }
+        // A folder with no passphrase yet is "false" (this Mac creates it); only a failed read is nil.
+        do { return try await PasswordSyncStore(store: place.store).meta() != nil } catch { return nil }
     }
 
     /// A new passphrase for every Mac: a new salt and key, this Mac's passwords sealed again with it. The other
