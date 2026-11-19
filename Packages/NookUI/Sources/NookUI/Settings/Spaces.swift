@@ -34,6 +34,9 @@ public struct SpacesSettingsView: View {
     @State private var renamingSpace: (id: UUID, name: String)?
     @State private var showAccentPickerFor: UUID?
     @State private var showIconPickerFor: UUID?
+    /// The space row under the pointer.
+    @State private var hoveredSpace: UUID?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// A move that would leave its profile empty, waiting on confirmation.
     @State private var pendingMove: (space: UUID, to: UUID?, profile: String)?
     /// FORK: the daily backups, and the one waiting on "Restore?".
@@ -78,11 +81,12 @@ public struct SpacesSettingsView: View {
                 .scrollContentBackground(.hidden)
                 .scrollDisabled(true)
                 .frame(height: CGFloat(spaces.count) * spaceRowHeight)
+                .animation(rowSpring, value: spaces.map(\.id))
                 Button("New Space…", nookIcon: "plus", action: showCreateDialog)
             } header: {
                 Text("Spaces")
             } footer: {
-                Text("Drag a space by its handle to change its place in the sidebar. The … menu renames it, changes its icon or color, or moves it to another profile.")
+                Text("Drag a space to change its place in the sidebar. Use … to rename it, change its icon or color, or move it to another profile.")
             }
 
             Section {
@@ -276,41 +280,51 @@ public struct SpacesSettingsView: View {
         var ids = spaces.map(\.id)
         let moved = source.map { ids[$0] }
         ids.move(fromOffsets: source, toOffset: destination)
-        for id in moved {
-            guard let index = ids.firstIndex(of: id) else { continue }
-            tabs.moveSpace(id, after: index > 0 ? ids[index - 1] : nil)
+        withAnimation(rowSpring) {
+            for id in moved {
+                guard let index = ids.firstIndex(of: id) else { continue }
+                tabs.moveSpace(id, after: index > 0 ? ids[index - 1] : nil)
+            }
         }
     }
 
-    private let spaceRowHeight: CGFloat = 52
+    private let spaceRowHeight: CGFloat = 56
+
+    /// Rows slide with a critically damped spring (no overshoot), and stay interruptible; Reduce Motion cuts it short.
+    private var rowSpring: Animation? { reduceMotion ? nil : .spring(duration: 0.34, bounce: 0) }
 
     @ViewBuilder
     private func row(_ space: SpaceRecord) -> some View {
         let tabCount = tabs.tabCount(inSpace: space.id)
+        let hovered = hoveredSpace == space.id
         HStack(spacing: NookDesign.Spacing.md) {
+            // The handle shows when the pointer is over the row, so the list stays quiet and still says "drag me".
             Image(systemName: "line.3.horizontal")
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.tertiary)
+                .frame(width: 14)
+                .opacity(hovered ? 1 : 0)
                 .help("Drag to Reorder")
                 .accessibilityHidden(true)
 
             // One badge: the space's colour behind its icon (or its first letter). Click to change the icon.
             Button { showIconPickerFor = space.id } label: {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(space.accentColor.opacity(0.25))
-                    RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(space.accentColor.opacity(0.6), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 9, style: .continuous).fill(space.accentColor.opacity(0.22))
+                    RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(space.accentColor.opacity(0.55), lineWidth: 1)
                     if space.icon.isEmpty {
                         Text(String(space.name.prefix(1)).uppercased())
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(space.accentColor)
                     } else {
                         SpaceIcon(space.icon)
-                            .frame(width: 18, height: 18)
+                            .frame(width: 20, height: 20)
                     }
                 }
-                .frame(width: 30, height: 30)
+                .frame(width: 34, height: 34)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressScaleStyle(spring: rowSpring))
             .help("Change Icon or Emoji…")
             .accessibilityLabel("Space icon for \(space.name)")
             .popover(isPresented: Binding(
@@ -325,27 +339,28 @@ public struct SpacesSettingsView: View {
 
             // FORK: the name as text, renamed from the menu. A live field took focus when the page
             // opened, with its text selected, and the next keys typed anywhere replaced the name.
-            VStack(alignment: .leading, spacing: 1) {
-                Text(space.name).font(NookDesign.Font.body)
-                Text("\(tabCount) \(tabCount == 1 ? "tab" : "tabs")")
-                    .font(NookDesign.Font.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .popover(isPresented: Binding(
-                get: { showAccentPickerFor == space.id },
-                set: { if !$0 { showAccentPickerFor = nil } }
-            )) {
-                SpaceAccentPicker(selectedHex: Binding(
-                    get: { space.accentHex },
-                    set: { tabs.updateSpace(space.id, name: nil, icon: nil, accentHex: $0) }
-                ))
-                .padding(NookDesign.Spacing.lg)
-            }
-            Spacer()
+            Text(space.name)
+                .font(NookDesign.Font.body)
+                .lineLimit(1)
+                .popover(isPresented: Binding(
+                    get: { showAccentPickerFor == space.id },
+                    set: { if !$0 { showAccentPickerFor = nil } }
+                )) {
+                    SpaceAccentPicker(selectedHex: Binding(
+                        get: { space.accentHex },
+                        set: { tabs.updateSpace(space.id, name: nil, icon: nil, accentHex: $0) }
+                    ))
+                    .padding(NookDesign.Spacing.lg)
+                }
+            Spacer(minLength: NookDesign.Spacing.md)
             // With one profile every row would say the same thing; the picker only matters once there are two.
             if tabs.profiles.count > 1 {
                 profilePicker(space)
             }
+            Text("\(tabCount) \(tabCount == 1 ? "tab" : "tabs")")
+                .font(NookDesign.Font.secondary)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
             Menu {
                 Button("Rename…", nookIcon: "pencil") {
                     renamingSpace = (space.id, space.name)
@@ -367,16 +382,30 @@ public struct SpacesSettingsView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(hovered ? .primary : .secondary)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Circle())
             }
-            // FORK: System Settings' row menu: a round "…" button with no disclosure arrow.
-            .menuStyle(.button)
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
+            // A quiet "…": no circle until the pointer is on the row, and no disclosure arrow.
+            .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
             .accessibilityLabel("More for \(space.name)")
         }
+        .padding(.horizontal, NookDesign.Spacing.md)
         .frame(height: spaceRowHeight)
+        // A soft highlight under the pointer: it fades in at once and out a little slower, so passing over rows
+        // does not flicker.
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.primary.opacity(hovered ? 0.06 : 0))
+                .padding(.horizontal, 4)
+        )
+        .animation(reduceMotion ? nil : .easeOut(duration: hovered ? 0.1 : 0.22), value: hovered)
+        .onHover { inside in
+            if inside { hoveredSpace = space.id } else if hoveredSpace == space.id { hoveredSpace = nil }
+        }
     }
 
     // MARK: - Data
@@ -551,5 +580,16 @@ private struct ProfileDetailsSheet: View {
     private func commit() {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         if !trimmed.isEmpty, trimmed != profile.name { rename(trimmed) }
+    }
+}
+
+
+/// A press shrinks the control a little at once and lets go with a spring: feedback on touch-down, not on release.
+private struct PressScaleStyle: ButtonStyle {
+    let spring: Animation?
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(spring, value: configuration.isPressed)
     }
 }
