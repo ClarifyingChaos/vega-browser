@@ -52,9 +52,11 @@ public struct YouTubeSettingsSections: View {
             }
 
             Section {
-                Toggle("SponsorBlock", isOn: $settings.sponsorBlockEnabled)
+                Toggle("Skip sponsored segments", isOn: $settings.sponsorBlockEnabled)
+            } header: {
+                Text("SponsorBlock")
             } footer: {
-                Text("Skip sponsored segments, intros, and other non-content on YouTube using community data from SponsorBlock.")
+                Text("Skips sponsored segments, intros and other non-content on YouTube, using community data from SponsorBlock.")
             }
 
             if nookSettings.sponsorBlockEnabled {
