@@ -298,15 +298,6 @@ public struct SpacesSettingsView: View {
         let tabCount = tabs.tabCount(inSpace: space.id)
         let hovered = hoveredSpace == space.id
         HStack(spacing: NookDesign.Spacing.md) {
-            // The handle shows when the pointer is over the row, so the list stays quiet and still says "drag me".
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.tertiary)
-                .frame(width: 14)
-                .opacity(hovered ? 1 : 0)
-                .help("Drag to Reorder")
-                .accessibilityHidden(true)
-
             // One badge: the space's colour behind its icon (or its first letter). Click to change the icon.
             Button { showIconPickerFor = space.id } label: {
                 ZStack {
@@ -393,14 +384,17 @@ public struct SpacesSettingsView: View {
             .fixedSize()
             .accessibilityLabel("More for \(space.name)")
         }
-        .padding(.horizontal, NookDesign.Spacing.md)
+        // The highlight sits 4 pt inside the card and the content 6 pt inside the highlight: 10 pt from the card's
+        // edge, the same as the rows above, so the badges line up with the profile's picture.
+        .padding(.horizontal, 6)
         .frame(height: spaceRowHeight)
-        // A soft highlight under the pointer: it fades in at once and out a little slower, so passing over rows
-        // does not flicker.
+        // A soft highlight under the pointer, inset 4 pt on every side of the row; its corner radius is the card's
+        // (12) minus that inset, so the two curves stay concentric. It fades in at once and out a little slower,
+        // so passing over rows does not flicker.
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color.primary.opacity(hovered ? 0.06 : 0))
-                .padding(.horizontal, 4)
+                .padding(4)
         )
         .animation(reduceMotion ? nil : .easeOut(duration: hovered ? 0.1 : 0.22), value: hovered)
         .onHover { inside in
