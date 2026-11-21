@@ -41,6 +41,7 @@ struct DialogView: View {
         VegaDesign.Surface.scrim
             .ignoresSafeArea()
             .onTapGesture {
+                guard browserManager.dialogManager.closesOnBackdropClick else { return }
                 browserManager.dialogManager.closeDialog()
             }
             .transition(.opacity)
