@@ -4,7 +4,7 @@
 //  Vega
 //
 //  Ordinary links must not look like sign-in popups, or they open in the mini window.
-//  swiftc Sources/VegaBlocker/OAuthDetector.swift Checks/OAuthDetectorCheck.swift -o /tmp/oauth && /tmp/oauth
+//  swiftc Packages/VegaBlocker/Sources/VegaBlocker/OAuthDetector.swift Packages/VegaBlocker/Checks/OAuthDetectorCheck.swift -o /tmp/oauth && /tmp/oauth
 //
 
 import Foundation

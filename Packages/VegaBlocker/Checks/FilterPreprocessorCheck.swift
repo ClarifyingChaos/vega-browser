@@ -4,7 +4,7 @@
 //  Vega
 //
 //  uBO's `!#if` blocks load only for the environment Vega reports.
-//  swiftc Sources/VegaBlocker/FilterPreprocessor.swift Checks/FilterPreprocessorCheck.swift -o /tmp/pp && /tmp/pp
+//  swiftc Packages/VegaBlocker/Sources/VegaBlocker/FilterPreprocessor.swift Packages/VegaBlocker/Checks/FilterPreprocessorCheck.swift -o /tmp/pp && /tmp/pp
 //
 
 import Foundation
