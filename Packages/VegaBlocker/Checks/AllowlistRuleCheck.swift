@@ -3,7 +3,7 @@
 //  AllowlistRuleCheck.swift
 //  Vega
 //
-//  swiftc Sources/VegaBlocker/AllowlistRule.swift Checks/AllowlistRuleCheck.swift -o /tmp/allow && /tmp/allow
+//  swiftc Packages/VegaBlocker/Sources/VegaBlocker/AllowlistRule.swift Packages/VegaBlocker/Checks/AllowlistRuleCheck.swift -o /tmp/allow && /tmp/allow
 //
 
 @main
