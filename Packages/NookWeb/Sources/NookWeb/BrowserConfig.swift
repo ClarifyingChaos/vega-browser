@@ -126,8 +126,9 @@ public class BrowserConfiguration {
 
         // FORK: pop-up ads. Ad scripts open their window on any click by making a link and clicking it from script,
         // or by calling window.open. Neither is a link you clicked: a window to another site opens only when the click
-        // you made landed on a link or a button. Runs in every frame; read once, at start-up (on unless turned off).
-        if (UserDefaults.standard.object(forKey: "settings.blockScriptedPopups") as? Bool) ?? true {
+        // you made landed on a link or a button. Runs in every frame and always; the page session sets `__vegaAllowPopups`
+        // when it commits a site the person allowed (or when blocking is off), and the guard then steps aside.
+        do {
             config.userContentController.addUserScript(WKUserScript(
                 source: """
                 // Nook popup guard
@@ -165,7 +166,10 @@ public class BrowserConfiguration {
                     const share = u => { try { const t = new URL(u, location.href); const h = t.hostname.replace(/^www\\./, '');
                         const net = /(^|\\.)(twitter\\.com|x\\.com|facebook\\.com|linkedin\\.com|pinterest\\.[a-z.]+|reddit\\.com|tumblr\\.com|vk\\.com|t\\.me|telegram\\.me|wa\\.me|whatsapp\\.com|api\\.whatsapp\\.com|line\\.me|weibo\\.com|ok\\.ru|bsky\\.app|threads\\.net|mastodon\\.social|getpocket\\.com|flipboard\\.com|buffer\\.com|mail\\.google\\.com|outlook\\.live\\.com)$/i.test(h);
                         return net && /(share|sharer|intent|submit|post|compose|dialog|send|pin\\/create|add)/i.test(t.pathname + t.search); } catch (e) { return false; } };
-                    const mayOpen = url => sameSite(url) || signIn(url) || share(url) || (Date.now() - trusted.at < 1500 && trusted.href && sameHost(url, trusted.href));
+                    // A site's own link-out page (behance.net/…?url=https://their.site) carries the real address in its query.
+                    const carriedBy = (href, url) => { try { const h = new URL(url, location.href).hostname;
+                        return [...new URL(href, location.href).searchParams.values()].some(v => { try { return new URL(v).hostname === h; } catch (e) { return false; } }); } catch (e) { return false; } };
+                    const mayOpen = url => window.__vegaAllowPopups === true || sameSite(url) || signIn(url) || share(url) || (Date.now() - trusted.at < 1500 && trusted.href && (sameHost(url, trusted.href) || carriedBy(trusted.href, url)));
                     const opensNewWindow = a => { const t = (a.target || '').toLowerCase(); return t && t !== '_self' && t !== '_top' && t !== '_parent'; };
 
                     // A link clicked or "dispatched" by script, to another site, in a new window.

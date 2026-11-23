@@ -47,6 +47,8 @@ extension PageSession: WKNavigationDelegate {
         didCommit navigation: WKNavigation!
     ) {
         loadingState = .didCommit
+        // Tells the page guard whether this site may open pop-ups (see BrowserConfig).
+        webView.evaluateJavaScript("window.__vegaAllowPopups = \(!blocksPopups)", completionHandler: nil)
         navigationRewrites = 0
         linkPreview = nil
         pdfLoadStateChanged(webView)

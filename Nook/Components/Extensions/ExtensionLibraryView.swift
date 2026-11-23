@@ -193,6 +193,16 @@ struct ExtensionLibraryView: View {
                     currentTab?.refresh()
                 }
 
+                let popupsAllowed = site.allowsPopups ?? !settings.blockScriptedPopups
+                SiteSettingRow(
+                    icon: "macwindow.badge.plus",
+                    title: "Pop-ups",
+                    subtitle: popupsAllowed ? "Allowed for this site" : "Blocked",
+                    isOn: popupsAllowed
+                ) {
+                    SitePreferences.shared.update(host) { $0.allowsPopups = !popupsAllowed }
+                }
+
                 let developer = settings.isDeveloperSite(host)
                 SiteSettingRow(
                     icon: "hammer.fill",

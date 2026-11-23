@@ -71,6 +71,13 @@ extension PageSession {
 
 // MARK: - WKUIDelegate
 extension PageSession: WKUIDelegate {
+    /// This site's own choice, else the global Block pop-up ads setting (on by default).
+    var blocksPopups: Bool {
+        MainActor.assumeIsolated {
+            SitePreferences.shared.prefs(for: url.host).allowsPopups.map { !$0 } ?? (controller?.settings.blockScriptedPopups == true)
+        }
+    }
+
     private static let popupLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Nook", category: "PopupBlocker")
 
     public func webView(
@@ -114,7 +121,7 @@ extension PageSession: WKUIDelegate {
 
         // FORK: pop-up ads. A window a page's script opens without any click is blocked. With a click behind it, the
         // guard script in BrowserConfig decides. A link with target=_blank and a sign-in window (handled above) are not touched.
-        if !isFromExtension, !isAgentPage, controller?.settings.blockScriptedPopups == true,
+        if !isFromExtension, !isAgentPage, blocksPopups,
            navigationAction.navigationType == .other {
             let target = url.flatMap { Self.destinationHost(of: $0) }
             // With a click behind it, the page's own guard script decides (a click on a link or button is let through).

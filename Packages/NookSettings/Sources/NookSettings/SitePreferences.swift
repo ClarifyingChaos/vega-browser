@@ -18,14 +18,17 @@ public struct SitePrefs: Codable, Equatable, Sendable {
     public var mobileSite: Bool?
     /// Overrides Settings > General > Keep videos playing in the sidebar for this site.
     public var autoPiP: Bool?
+    /// True lets the site open pop-up windows, false blocks them; unset follows Settings > Privacy > Block pop-up ads (on).
+    public var allowsPopups: Bool?
 
-    public init(javaScript: Bool? = nil, mobileSite: Bool? = nil, autoPiP: Bool? = nil) {
+    public init(javaScript: Bool? = nil, mobileSite: Bool? = nil, autoPiP: Bool? = nil, allowsPopups: Bool? = nil) {
         self.javaScript = javaScript
         self.mobileSite = mobileSite
         self.autoPiP = autoPiP
+        self.allowsPopups = allowsPopups
     }
 
-    public var isDefault: Bool { javaScript == nil && mobileSite == nil && autoPiP == nil }
+    public var isDefault: Bool { javaScript == nil && mobileSite == nil && autoPiP == nil && allowsPopups == nil }
 }
 
 @MainActor
