@@ -89,16 +89,32 @@ public class BrowserConfiguration {
             (function() {
                 // !important, and an adopted sheet (which sorts after the page's own), so a site that styles its scrollbars
                 // itself (Pinterest does) still gets the slim one.
-                const css = '::-webkit-scrollbar{width:12px !important;height:12px !important;background:transparent !important}' +
+                // WebKit paints a transparent corner opaque white, and the rounded window clips that square into a white
+                // wedge at the bottom-right. So the corner takes the page's own colour, resampled as the page settles.
+                const bg = () => {
+                    for (const el of [document.body, document.documentElement]) {
+                        if (!el) continue;
+                        const c = getComputedStyle(el).backgroundColor;
+                        if (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') return c;
+                    }
+                    return matchMedia('(prefers-color-scheme: dark)').matches ? '#1c1c1e' : '#fff';
+                };
+                const css = () => '::-webkit-scrollbar{width:12px !important;height:12px !important;background:transparent !important}' +
                             '::-webkit-scrollbar-track{background:transparent !important}' +
-                            '::-webkit-scrollbar-corner{background:transparent !important}' +
+                            '::-webkit-scrollbar-corner{background:' + bg() + ' !important}' +
                             '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55) !important;border-radius:6px !important;border:3px solid transparent !important;background-clip:padding-box !important;min-height:34px}' +
                             '::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.8) !important}';
+                let sheet = null, style = null;
                 const apply = () => {
-                    try { const sheet = new CSSStyleSheet(); sheet.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]; }
-                    catch (e) { const s = document.createElement('style'); s.textContent = css; (document.head || document.documentElement).appendChild(s); }
+                    if (sheet) { sheet.replaceSync(css()); return; }
+                    if (style) { style.textContent = css(); return; }
+                    try { sheet = new CSSStyleSheet(); sheet.replaceSync(css()); document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]; }
+                    catch (e) { sheet = null; style = document.createElement('style'); style.textContent = css(); (document.head || document.documentElement).appendChild(style); }
                 };
                 apply();
+                document.addEventListener('DOMContentLoaded', apply);
+                window.addEventListener('load', () => { apply(); setTimeout(apply, 1000); });
+                window.addEventListener('resize', apply);
             })();
             """,
             injectionTime: .atDocumentStart,
