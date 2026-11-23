@@ -231,6 +231,10 @@ private struct PinnedTile: View {
             .anchorPreference(key: FavoritePreviewAnchorKey.self, value: .bounds) {
                 FavoritePreview.shared.itemID == item.id && FavoritePreview.shared.windowID == windowState.id ? $0 : nil
             }
+            // A page preview beside the tile, except on github.com, whose own card lists its pull requests.
+            .anchorPreference(key: TabHoverAnchorKey.self, value: .bounds) {
+                browserManager.hoveredPinnedTabId == item.id && item.url?.host != "github.com" ? [item.id: $0] : [:]
+            }
             .contextMenu {
                 TabContextMenu(itemID: item.id, context: .favorite)
                     .environment(windowState)

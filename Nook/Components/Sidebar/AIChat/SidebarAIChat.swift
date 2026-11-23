@@ -474,7 +474,7 @@ struct SidebarAIChat: View {
             }
         }) {
             AnimatedIcon("globe", fallback: "globe", size: 18,
-                         ink: configService.generationConfig.webSearchEnabled ? .green : .secondary)
+                         ink: configService.generationConfig.webSearchEnabled ? Color.accentColor : .secondary)
         }
         .buttonStyle(NookIconButtonStyle())
         .help(configService.generationConfig.webSearchEnabled ? "Web Search On" : "Web Search Off")
@@ -522,10 +522,10 @@ struct SidebarAIChat: View {
                 if webSearchEnabled && supportsWebSearch {
                     Text("Web search is on")
                         .font(NookDesign.Font.caption)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.accentColor)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(.green.opacity(0.12), in: NookDesign.Radius.shape(NookDesign.Radius.sm))
+                        .background(Color.accentColor.opacity(0.12), in: NookDesign.Radius.shape(NookDesign.Radius.sm))
                 }
             }
 

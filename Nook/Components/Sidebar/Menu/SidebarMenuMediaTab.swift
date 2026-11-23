@@ -3,9 +3,9 @@
 //  SidebarMenuMediaTab.swift
 //  Nook
 //
-//  FORK: Arc's Media view in the Library: the images and videos you downloaded, as a grid of
-//  thumbnails with a search field on top. shortcut: downloads only, upgrade to captures saved
-//  elsewhere if people ask.
+//  FORK: Arc's Media view in the Library: the images and videos you downloaded and every capture you took, as one
+//  grid of thumbnails, newest first, with a search field on top. Captures are kept in Vega's own folder, so all of
+//  them are listed whichever folder you also saved a copy to.
 //
 
 import AppKit
@@ -27,16 +27,20 @@ struct SidebarMenuMediaTab: View {
     }
 
     private var items: [Download] {
-        browserManager.downloadManager.allDownloads.filter { download in
-            guard isVideo(download) != nil else { return false }
-            return text.isEmpty
+        let captures = CaptureLibrary.shared.items + CaptureLibrary.shared.systemShots
+        let media = browserManager.downloadManager.allDownloads.filter { isVideo($0) != nil }
+        // A file that is both a download and a screenshot (the Downloads folder as the screenshot folder) shows once.
+        let known = Set(captures.compactMap { $0.destinationURL?.path })
+        return (captures + media.filter { !known.contains($0.destinationURL?.path ?? "") }).filter { download in
+            text.isEmpty
                 || download.displayName.localizedCaseInsensitiveContains(text)
                 || download.originalURL.absoluteString.localizedCaseInsensitiveContains(text)
-        }
+        }.sorted { $0.startDate > $1.startDate }
     }
 
     var body: some View {
         let items = items
+        let _ = CaptureLibrary.shared.loadIfNeeded()
         ScrollView {
             if items.isEmpty {
                 VStack(spacing: NookDesign.Spacing.md) {
@@ -51,10 +55,21 @@ struct SidebarMenuMediaTab: View {
                 .padding(.vertical, NookDesign.Spacing.xxxl)
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 124), spacing: NookDesign.Spacing.md)], spacing: NookDesign.Spacing.md) {
-                    ForEach(items) { MediaTile(download: $0, isVideo: isVideo($0) == true) }
+                    ForEach(items) { item in
+                        MediaTile(download: item, isVideo: isVideo(item) == true,
+                                  source: CaptureLibrary.shared.items.contains { $0.id == item.id } ? .capture
+                                      : CaptureLibrary.shared.systemShots.contains { $0.id == item.id } ? .screenshot : .download)
+                    }
                 }
                 .padding(.horizontal, NookDesign.Spacing.md)
                 .padding(.bottom, NookDesign.Spacing.md)
+            }
+        }
+        // The macOS screenshots are read when the tab opens and again every few seconds while it is up.
+        .task {
+            while !Task.isCancelled {
+                CaptureLibrary.shared.refreshSystemShots()
+                try? await Task.sleep(for: .seconds(5))
             }
         }
         // Same header as History and Downloads: the field floats over the grid, padding included.
@@ -69,6 +84,10 @@ struct SidebarMenuMediaTab: View {
 private struct MediaTile: View {
     let download: Download
     let isVideo: Bool
+    enum Source { case download, capture, screenshot }
+    var source: Source = .download
+    private var isCapture: Bool { source == .capture }
+    @EnvironmentObject private var browserManager: BrowserManager
     @State private var isHovering = false
 
     private var shape: some InsettableShape { NookDesign.Radius.shape(NookDesign.Radius.lg) }
@@ -108,7 +127,16 @@ private struct MediaTile: View {
                     Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([file]) }
                     Divider()
                 }
-                Button("Hide from Vega") { DownloadManager.shared.removeDownload(download.id) }
+                if isCapture {
+                    Button("Save As…") { browserManager.saveCaptureAs(download) }
+                    Divider()
+                    Button("Delete Capture") { CaptureLibrary.shared.delete(download) }
+                } else if source == .screenshot {
+                    Divider()
+                    Button("Move to Trash") { CaptureLibrary.shared.trash(download) }
+                } else {
+                    Button("Hide from Vega") { DownloadManager.shared.removeDownload(download.id) }
+                }
             }
     }
 }

@@ -11,12 +11,14 @@ import Foundation
 
 public enum SpaceAccent {
     public static let presets: [(name: String, hex: String)] = [
+        // Apple's blue first: the default for a new space and for the app's own chrome.
+        ("Blue", "#0A84FF"),
         ("Teal", "#3A8FA3"),
         ("Orange", "#D6603A"),
         ("Violet", "#6B5BD6"),
         ("Green", "#2F9E6A"),
         ("Red", "#D64545"),
-        ("Blue", "#2F6FDB"),
+        ("Deep Blue", "#2F6FDB"),
         ("Pink", "#C94F8E"),
         ("Graphite", "#6E6E73"),
     ]

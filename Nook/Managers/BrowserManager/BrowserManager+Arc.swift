@@ -8,6 +8,7 @@
 //
 
 import AppKit
+import PDFKit
 import SwiftUI
 import NookDesign
 import Observation
@@ -208,36 +209,64 @@ extension BrowserManager {
         }
     }
 
-    /// Arc's Capture Visible Area / Capture Full Page: a PNG of the page, saved where the person picks.
+    /// Arc's Capture Visible Area / Capture Full Page: a PNG of the page, copied, kept in the Library's Media view, and
+    /// offered with a toast (View in Library, Save As…).
     func capturePage(fullPage: Bool) {
-        guard let page = tabs.activeWindowSession, let webView = page.webView, let window = activeWindowState?.window else { return }
-        let save: (WKSnapshotConfiguration) -> Void = { config in
-            webView.takeSnapshot(with: config) { image, error in
-                guard let image, let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else {
-                    SystemAlert.present(SystemAlert.make("Couldn't capture the page", error?.localizedDescription ?? "The page has nothing to capture.", style: .warning, buttons: ["OK"])) { _ in }
-                    return
-                }
-                let panel = NSSavePanel()
-                panel.allowedContentTypes = [.png]
-                panel.nameFieldStringValue = "\(page.url.host ?? "Page") \(fullPage ? "full page" : "capture").png"
-                panel.beginSheetModal(for: window) { response in
-                    guard response == .OK, let url = panel.url else { return }
-                    do { try png.write(to: url, options: .atomic) } catch {
-                        SystemAlert.present(SystemAlert.make("Couldn't save the capture", error.localizedDescription, style: .warning, buttons: ["OK"])) { _ in }
-                    }
+        guard let page = tabs.activeWindowSession, let windowID = activeWindowState?.id else { return }
+        // The view on screen in this window; the tab's primary view may be another window's, or not displayed at all.
+        guard let webView = getWebView(for: page.itemID, in: windowID) ?? page.webView else { return }
+        let host = page.url.host ?? ""
+        let fail: (String?) -> Void = { message in
+            SystemAlert.present(SystemAlert.make("Couldn't capture the page", message ?? "The page has nothing to capture.", style: .warning, buttons: ["OK"])) { _ in }
+        }
+        let finish: (NSImage?, String?) -> Void = { image, message in
+            guard let image, let tiff = image.tiffRepresentation,
+                  let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { return fail(message) }
+            do { try CaptureLibrary.shared.save(png: png, image: image, host: host, fullPage: fullPage) } catch { fail(error.localizedDescription) }
+        }
+        guard fullPage else {
+            let config = WKSnapshotConfiguration()
+            config.afterScreenUpdates = true
+            // Twice the points: a Retina display's own pixels, so the picture is not soft.
+            config.snapshotWidth = NSNumber(value: Double(webView.bounds.width * 2))
+            webView.takeSnapshot(with: config) { image, error in finish(image, error?.localizedDescription) }
+            return
+        }
+        // The whole scrollable page. A snapshot only sees what is on screen, so this asks WebKit for the page as a
+        // PDF of the full rectangle and draws that; capped so a very long page cannot exhaust memory.
+        webView.evaluateJavaScript("[document.documentElement.scrollWidth, document.documentElement.scrollHeight]") { result, _ in
+            let size = (result as? [Double]) ?? []
+            let width = max(1, size.first ?? Double(webView.bounds.width))
+            let height = max(1, min(size.last ?? Double(webView.bounds.height), 16_000))
+            let config = WKPDFConfiguration()
+            config.rect = CGRect(x: 0, y: 0, width: width, height: height)
+            webView.createPDF(configuration: config) { result in
+                switch result {
+                case .failure(let error): finish(nil, error.localizedDescription)
+                case .success(let data):
+                    guard let page = PDFDocument(data: data)?.page(at: 0) else { return finish(nil, nil) }
+                    let box = page.bounds(for: .mediaBox)
+                    let scale = min(2, 20_000 / max(box.height, 1), 4_000 / max(box.width, 1))
+                    finish(page.thumbnail(of: CGSize(width: box.width * scale, height: box.height * scale), for: .mediaBox), nil)
                 }
             }
         }
-        let config = WKSnapshotConfiguration()
-        config.afterScreenUpdates = true
-        guard fullPage else { save(config); return }
-        // The whole scrollable page, capped so a very long page cannot exhaust memory.
-        webView.evaluateJavaScript("[document.documentElement.scrollWidth, document.documentElement.scrollHeight]") { result, _ in
-            let size = (result as? [Double]) ?? []
-            let width = size.first ?? Double(webView.bounds.width), height = min(size.last ?? Double(webView.bounds.height), 16_000)
-            config.rect = CGRect(x: 0, y: 0, width: width, height: height)
-            config.snapshotWidth = NSNumber(value: min(width, 2_400))
-            save(config)
+    }
+
+    /// Save As… for the latest capture, or any capture file: a copy where the person picks.
+    func saveCaptureAs(_ capture: Download) {
+        guard let source = capture.destinationURL, let window = activeWindowState?.window else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = source.lastPathComponent
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
+                try FileManager.default.copyItem(at: source, to: url)
+            } catch {
+                SystemAlert.present(SystemAlert.make("Couldn't save the capture", error.localizedDescription, style: .warning, buttons: ["OK"])) { _ in }
+            }
         }
     }
 

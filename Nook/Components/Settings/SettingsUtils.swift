@@ -111,13 +111,13 @@ enum SettingsTabs: String, Hashable, CaseIterable {
         case .ai: return .purple
         case .privacy: return .blue
         case .passwords: return .yellow
-        case .adBlocker: return .green
+        case .adBlocker: return .red
         case .tweaks: return .orange
         case .links: return .mint
         case .spaces: return .cyan
         case .shortcuts: return .indigo
         case .extensions: return .teal
-        case .updates: return .green
+        case .updates: return .blue
         case .developer: return .gray
         }
     }

@@ -48,7 +48,9 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
               down.clickCount == 1,
               down.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty,
               down.locationInWindow.y >= window.contentLayoutRect.maxY,
-              NSCursor.current == NSCursor.arrow else { return false }
+              NSCursor.current == NSCursor.arrow,
+              // Over text a press starts a selection, whatever cursor the page shows there.
+              !pointerOverTextInTitleBand else { return false }
         let start = NSEvent.mouseLocation
         while let next = window.nextEvent(matching: [.leftMouseDragged, .leftMouseUp]) {
             if next.type == .leftMouseUp {

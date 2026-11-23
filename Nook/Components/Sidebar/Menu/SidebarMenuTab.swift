@@ -41,11 +41,11 @@ struct SidebarMenuTab: View {
         VStack(spacing: NookDesign.Spacing.md) {
             Group {
                 if let animation {
-                    AnimatedIcon(animation, fallback: isActive ? activeImage : image, size: 28, ink: isActive ? .green : nil)
+                    AnimatedIcon(animation, fallback: isActive ? activeImage : image, size: 28, ink: isActive ? Color.accentColor : nil)
                 } else {
                     Image(systemName: isActive ? activeImage : image)
                         .font(NookDesign.Font.titleLarge)
-                        .foregroundStyle(isActive ? .green : .primary)
+                        .foregroundStyle(isActive ? Color.accentColor : .primary)
                         .symbolRenderingMode(.hierarchical)
                         .symbolEffect(.wiggle, value: shouldWiggle)
                         .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))

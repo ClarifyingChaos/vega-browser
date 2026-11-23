@@ -54,7 +54,7 @@ struct SidebarUpdateNotification: View {
                     Label {
                         Text("Vega \(availability.shortVersion) is available")
                     } icon: {
-                        Image(systemName: "arrow.down.circle.fill").foregroundStyle(.green)
+                        Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accentColor)
                     }
                         .font(NookDesign.Font.secondary)
                         .foregroundStyle(.primary)
@@ -75,7 +75,7 @@ struct SidebarUpdateNotification: View {
                                     NookDesign.Radius.shape(NookDesign.Radius.md)
                                         .fill(
                                             LinearGradient(
-                                                gradient: Gradient(colors: [Color.green, Color.white, Color.green, Color.white]),
+                                                gradient: Gradient(colors: [Color.accentColor, Color.white, Color.accentColor, Color.white]),
                                                 startPoint: UnitPoint(x: gradientPhase, y: gradientPhase),
                                                 endPoint: UnitPoint(x: gradientPhase + 1.0, y: gradientPhase + 1.0)
                                             )

@@ -1005,8 +1005,8 @@ public enum TabManagementMode: String, CaseIterable, Identifiable {
     public var unloadTimeout: TimeInterval {
         switch self {
         case .powerSaving: return 300       // 5 minutes
-        case .standard: return 1800         // 30 minutes
-        case .performance: return 14400     // 4 hours
+        case .standard: return 14400        // 4 hours: 30 minutes had tabs reloading, and sites asking to sign in, all day
+        case .performance: return 86400     // 24 hours
         }
     }
 

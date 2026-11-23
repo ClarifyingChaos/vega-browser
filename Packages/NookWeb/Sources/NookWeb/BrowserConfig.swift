@@ -222,6 +222,8 @@ public class BrowserConfiguration {
         for script in webViewConfiguration.userContentController.userScripts.nookOwned {
             controller.addUserScript(script)
         }
+        // The page's top strip drags the window only over empty space, not over text.
+        MainActor.assumeIsolated { TitleBandProbe.install(in: controller) }
         // Apply content blocker rule lists if available
         contentRuleListApplicator?(controller)
         return controller
@@ -248,6 +250,8 @@ public class BrowserConfiguration {
         // Private pages keep the controller; WebKit runs only extensions with
         // `hasAccessToPrivateData` in a non-persistent store's pages.
         config.websiteDataStore = profile.dataStore
+        // A tab waking from sleep gets back any sign-in cookie the store lost while nothing was using it.
+        profile.reapplyMissingSessionCookies()
 
         return config
     }

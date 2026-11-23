@@ -30,11 +30,9 @@ extension PageSession: WKNavigationDelegate {
                 hasPlayingAudio = false
                 // Note: isAudioMuted is preserved to maintain user's mute preference
                 // Reset sampled domain to force resampling on new page
-                if let newDomain = extractDomain(from: newURL),
-                   newDomain != lastSampledDomain {
-                    lastSampledDomain = nil
-                    lastTopBarDomain = nil
-                }
+                // Every page of a site can have its own colours (a dark page after a light one), so any URL change resamples.
+                lastSampledDomain = nil
+                lastTopBarDomain = nil
                 // Update URL but don't persist yet - wait for navigation to complete
                 self.url = newURL
             } else {

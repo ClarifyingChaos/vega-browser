@@ -45,22 +45,18 @@ extension BrowserManager {
         }
     }
 
-    /// Clears site cache for current page excluding cookies, then reloads from origin.
+    /// Reloads the page from its origin at once, and clears the site's cache (cookies kept) in the background.
+    /// `reloadFromOrigin` already revalidates the page and its parts, so the purge no longer holds the reload back:
+    /// waiting for it first made the shortcut feel dead for several seconds.
     func hardReloadCurrentPage() {
         guard let currentTab = tabs.activeWindowSession,
             let host = currentTab.url.host,
             let activeWindowId = windowRegistry?.activeWindow?.id
         else { return }
-        Task { @MainActor in
-            await cacheManager.clearCacheForDomainExcludingCookies(host)
-            // Use the WebView that's actually visible in the current window
-            if let webView = getWebView(for: currentTab.itemID, in: activeWindowId) {
-                webView.reloadFromOrigin()
-            } else {
-                // Fallback to the tab's default webView
-                currentTab.webView?.reloadFromOrigin()
-            }
-        }
+        // Use the WebView that's actually visible in the current window, else the tab's default one.
+        let webView = getWebView(for: currentTab.itemID, in: activeWindowId) ?? currentTab.webView
+        webView?.reloadFromOrigin()
+        Task { await cacheManager.clearCacheForDomainExcludingCookies(host) }
     }
 
     func clearStaleCache() {

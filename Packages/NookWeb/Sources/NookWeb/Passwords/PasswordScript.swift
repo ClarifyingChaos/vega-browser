@@ -59,7 +59,7 @@ enum PasswordScript {
 
       // ---- The menu of saved logins ---------------------------------------------------------
       let menu = null, cache = null;
-      const closeMenu = () => { if (menu) { menu.host.remove(); menu = null; } };
+      const closeMenu = () => { if (menu) { clearInterval(menu.timer); menu.host.remove(); menu = null; } };
       const logins = async () => { if (!cache) cache = Promise.resolve(ask({ op: 'list' })).then((r) => Array.isArray(r) ? r : []); return cache; };
 
       const openMenu = async (field) => {
@@ -132,7 +132,13 @@ enum PasswordScript {
         box.append(rule, manage);
         root.append(style, box);
         document.documentElement.appendChild(host);
-        menu = { host, field, index: -1, rows, list, choose, mark };
+        menu = { host, field, index: -1, rows, list, choose, mark, href: location.href };
+        // The menu belongs to its field and its page: it goes when the field loses focus, leaves the page or is hidden,
+        // or the address changes (a single-page site moving on without a reload). It used to stay until a click.
+        menu.timer = setInterval(() => {
+          if (!menu) return;
+          if (!field.isConnected || !visible(field) || document.activeElement !== field || location.href !== menu.href) closeMenu();
+        }, 200);
       };
 
       // The field's right-click menu › Passwords…: this field's saved logins, or Vega's password settings when it has
@@ -146,6 +152,15 @@ enum PasswordScript {
       document.addEventListener('focusin', (e) => {
         const el = e.target;
         if (el && el.tagName === 'INPUT' && (el.type === 'password' || isUserField(el))) openMenu(el);
+      }, true);
+      // Moving on closes it at once, without waiting for the check above.
+      addEventListener('pagehide', closeMenu);
+      addEventListener('popstate', closeMenu);
+      addEventListener('hashchange', closeMenu);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) closeMenu(); });
+      document.addEventListener('focusout', (e) => {
+        // A click on a row never takes focus (its mousedown is cancelled), so a focusout here is the person leaving.
+        if (menu && e.target === menu.field && !(e.relatedTarget && e.composedPath().includes(menu.host))) setTimeout(() => { if (menu && document.activeElement !== menu.field) closeMenu(); }, 0);
       }, true);
       document.addEventListener('mousedown', (e) => { if (menu && e.target !== menu.field && !e.composedPath().includes(menu.host)) closeMenu(); }, true);
       document.addEventListener('keydown', (e) => {

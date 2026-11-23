@@ -202,16 +202,12 @@ public class Download: Identifiable {
 
         let supportedExtensions: Set<String> = [
             // Images
-            "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "heic", "webp", "ico", "svg",
+            "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "heic", "webp",
             // Videos
             "mp4", "mov", "avi", "mkv", "wmv", "flv", "webm", "m4v",
-            // Documents
-            "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "pages", "numbers", "keynote",
-            // Text files
-            "txt", "rtf", "md", "swift", "js", "css", "json", "xml",
-            // Audio files
-            "mp3", "m4a", "flac", "aac",
         ]
+        // Documents, text, audio and icons are shown by the file's own icon: their QuickLook preview is a white page
+        // card, which read as a background behind the icon.
 
         return supportedExtensions.contains(fileExtension)
     }

@@ -20,7 +20,8 @@ struct SidebarMenuHoverDownloads: View {
     /// Shown only while there is something to list; the sidebar leaves it out otherwise.
     var body: some View {
         // Once per render: it sorts, and the rows used to ask per row.
-        let downloads = browserManager.downloadManager.recentDownloads
+        // Oldest first, so the newest sits at the bottom, next to the Library button the list rises from.
+        let downloads = Array(browserManager.downloadManager.recentDownloads.reversed())
         VStack(spacing: NookDesign.Spacing.rowGap) {
             ForEach(Array(downloads.enumerated()), id: \.element.id) { index, download in
                 let shown = index < itemsVisible.count && itemsVisible[index]
@@ -129,9 +130,7 @@ struct SidebarMenuHoverDownloadItem: View {
                         .resizable()
                         .aspectRatio(contentMode: download.downloadThumbnail == nil ? .fit : .fill)
                         .frame(width: iconSize, height: iconSize)
-                        .background(download.downloadThumbnail == nil ? Color.clear : Color.white)
                         .clipShape(NookDesign.Radius.shape(NookDesign.Radius.sm))
-                        .overlay(NookDesign.Radius.shape(NookDesign.Radius.sm).strokeBorder(NookDesign.Surface.hairline))
                 }
             }
             .frame(width: iconSize, height: iconSize)
