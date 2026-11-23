@@ -88,7 +88,7 @@ struct PrivacySettingsView: View {
             Section("Pop-ups") {
                 settingToggle(
                     "Block pop-up ads",
-                    detail: "Stops windows a page opens by script when you click or scroll, and windows that open on their own. Links you click and sign-in windows still open. Applies after you restart Vega.",
+                    detail: "Stops windows a page opens by script when you click or scroll, and windows that open on their own. Links you click and sign-in windows still open. Choose differently for one site in Site Controls or Site Permissions.",
                     isOn: $settings.blockScriptedPopups
                 )
             }

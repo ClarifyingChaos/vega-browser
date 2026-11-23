@@ -27,6 +27,11 @@ struct SitePreferencesCheck {
         store.update("example.com") { $0.javaScript = nil; $0.mobileSite = nil }
         precondition(store.sites.isEmpty)
 
+        store.update("p.com") { $0.allowsPopups = true }
+        precondition(store.prefs(for: "p.com").allowsPopups == true && store.prefs(for: "q.com").allowsPopups == nil, "pop-up choice is per site")
+        store.update("p.com") { $0.allowsPopups = nil }
+        precondition(store.sites.isEmpty, "back to default drops the entry")
+
         store.update("a.com") { $0.autoPiP = true }
         store.update("b.com") { $0.javaScript = false }
         let again = SitePreferences(directory: dir)
