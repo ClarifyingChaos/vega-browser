@@ -241,23 +241,27 @@ public enum VegaDesign {
 
     public enum Surface {
         // FORK: these three follow Increase Contrast (HIG, Accessibility); same look otherwise.
-        public static let fill = contrastAware(0.045, increased: 0.12)          // hover, idle tile
-        public static let fillPressed = contrastAware(0.08, increased: 0.2)
+        public static let fill = contrastAware(0.045, light: 0.095, increased: 0.12)          // hover, idle tile
+        public static let fillPressed = contrastAware(0.08, light: 0.16, increased: 0.2)
         public static let tintOpacity: Double = 0.18                       // accent-tinted control: chosen chip, own chat message
         public static let mediaScrim = Color.black.opacity(0.35)           // controls over video
-        public static let hairline = contrastAware(0.08, increased: 0.5)
+        public static let hairline = contrastAware(0.08, light: 0.16, increased: 0.5)
         /// Dim behind a modal panel such as the command palette (HIG: dim to focus).
         public static let modalDim: Double = 0.18
         public static let unloadedOpacity: Double = 1   // FORK: Arc does not dim sleeping tabs (was 0.55)
 
         /// The label color at `normal` opacity, or `increased` when the user turns on Increase
         /// Contrast. Resolved per appearance, so it also flips with light and dark.
-        static func contrastAware(_ normal: Double, increased: Double) -> Color {
+        /// `light` is the stronger value a light appearance needs: dark ink at the same opacity as light ink reads far
+        /// fainter against a pale sidebar.
+        static func contrastAware(_ normal: Double, light: Double? = nil, increased: Double) -> Color {
             #if os(macOS)
             Color(nsColor: NSColor(name: nil) { appearance in
                 let match = appearance.bestMatch(from: [.aqua, .darkAqua, .accessibilityHighContrastAqua, .accessibilityHighContrastDarkAqua])
                 let high = match == .accessibilityHighContrastAqua || match == .accessibilityHighContrastDarkAqua
-                return NSColor.labelColor.withAlphaComponent(NSColor.labelColor.alphaComponent * (high ? increased : normal))
+                let dark = match == .darkAqua || match == .accessibilityHighContrastDarkAqua
+                let base = dark ? normal : (light ?? normal)
+                return NSColor.labelColor.withAlphaComponent(NSColor.labelColor.alphaComponent * (high ? increased : base))
             })
             #else
             Color.primary.opacity(normal)

@@ -211,6 +211,15 @@ final class SidebarPiPController: PictureInPictureHolder {
 
     /// The page is restored when its view next lands outside a crop, in its tab or a split pane;
     /// minimising leaves it isolated off screen until then.
+    /// The close button: the video stops with the window. (Returning to the tab, a hidden sidebar and the like still
+    /// use `exit()`, which lets it carry on.)
+    func closeAndPause() {
+        webView?.evaluateJavaScript(
+            "(() => { const v = window.__vegaPiP?.video(); if (v && !v.paused) v.pause(); })();",
+            in: nil, in: Self.world)
+        exit()
+    }
+
     func exit() {
         guard itemID != nil else { return }
         closeFloat()
@@ -355,6 +364,9 @@ final class SidebarPiPController: PictureInPictureHolder {
                 return
             }
             let mouse = NSEvent.mouseLocation
+            // A press that barely moves is a click or a held edge, not a drag: nothing moves, and the panel never
+            // collapses into the dock box from a held press.
+            if !self.isDragging, hypot(mouse.x - start.x, mouse.y - start.y) < 4 { return }
             if !self.isDragging { self.isDragging = true }
             let zone = self.dockZone
             // The box is drawn a frame after the drag starts; until then the panel stays put.
@@ -709,7 +721,7 @@ struct SidebarPiPView: View {
         PiPControls(controller: controller, corner: ("Pop Out", "pip.exit", { controller.popOut() })) {
             withAnimation(VegaDesign.Motion.quick) {
                 isHovering = false
-                controller.exit()
+                controller.closeAndPause()
             }
         }
         .transition(.opacity)
@@ -954,6 +966,7 @@ private final class SidebarPiPFloatPanel: NSPanel {
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         hidesOnDeactivate = false
+        acceptsMouseMovedEvents = true   // the resize cursors follow the pointer over the edges
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
@@ -993,7 +1006,7 @@ private final class FloatRootView: NSView {
         PiPControls(
             controller: controller,
             corner: ("Return to Sidebar", "pip.enter", { [weak self] in self?.controller?.dock() }),
-            onClose: { [weak self] in self?.controller?.exit() },
+            onClose: { [weak self] in self?.controller?.closeAndPause() },
             onButtonFrames: { [weak self] in self?.buttonFrames = $0 },
             isActive: active
         )
@@ -1010,14 +1023,105 @@ private final class FloatRootView: NSView {
 
     // The panel never becomes key, so every click is a first click.
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    /// The band along each edge, in points, where the panel resizes instead of moving.
+    private static let edgeBand: CGFloat = 8
+
+    private enum Edge { case left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight }
+
+    private func edge(at point: NSPoint) -> Edge? {
+        let band = Self.edgeBand
+        let left = point.x <= band, right = point.x >= bounds.width - band
+        let bottom = point.y <= band, top = point.y >= bounds.height - band
+        switch (left, right, top, bottom) {
+        case (true, _, true, _): return .topLeft
+        case (_, true, true, _): return .topRight
+        case (true, _, _, true): return .bottomLeft
+        case (_, true, _, true): return .bottomRight
+        case (true, _, _, _): return .left
+        case (_, true, _, _): return .right
+        case (_, _, true, _): return .top
+        case (_, _, _, true): return .bottom
+        default: return nil
+        }
+    }
+
+    private func cursor(for edge: Edge?) -> NSCursor? {
+        guard let edge else { return nil }
+        let position: NSCursor.FrameResizePosition
+        switch edge {
+        case .left: position = .left
+        case .right: position = .right
+        case .top: position = .top
+        case .bottom: position = .bottom
+        case .topLeft: position = .topLeft
+        case .topRight: position = .topRight
+        case .bottomLeft: position = .bottomLeft
+        case .bottomRight: position = .bottomRight
+        }
+        return NSCursor.frameResize(position: position, directions: .all)
+    }
+
     override func mouseDown(with event: NSEvent) {
-        if event.clickCount == 2 { controller?.dock() } else { controller?.trackDrag() }
+        if event.clickCount == 2 { controller?.dock(); return }
+        if let edge = edge(at: convert(event.locationInWindow, from: nil)) { resize(from: edge) } else { controller?.trackDrag() }
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        (cursor(for: edge(at: convert(event.locationInWindow, from: nil))) ?? .arrow).set()
+    }
+
+    override func cursorUpdate(with event: NSEvent) { mouseMoved(with: event) }
+
+    /// Resizes with the video's shape kept, the side or corner opposite the one held staying where it is.
+    private func resize(from edge: Edge) {
+        guard let window else { return }
+        let start = NSEvent.mouseLocation
+        let original = window.frame
+        let aspect = original.width / original.height
+        let minWidth = window.contentMinSize.width
+        let maxWidth = (window.screen?.visibleFrame.width ?? 1600)
+        window.trackEvents(matching: [.leftMouseDragged, .leftMouseUp], timeout: NSEvent.foreverDuration,
+                           mode: .eventTracking) { event, stop in
+            guard let event, event.type == .leftMouseDragged else {
+                stop.pointee = true
+                return
+            }
+            let mouse = NSEvent.mouseLocation
+            let dx = mouse.x - start.x, dy = mouse.y - start.y
+            // The width the drag asks for, from whichever axis it moves along.
+            var width: CGFloat
+            switch edge {
+            case .right, .topRight, .bottomRight: width = original.width + dx
+            case .left, .topLeft, .bottomLeft: width = original.width - dx
+            case .top: width = (original.height + dy) * aspect
+            case .bottom: width = (original.height - dy) * aspect
+            }
+            if edge == .topRight || edge == .topLeft { width = max(width, (original.height + dy) * aspect) }
+            if edge == .bottomRight || edge == .bottomLeft { width = max(width, (original.height - dy) * aspect) }
+            width = min(max(width, minWidth), maxWidth)
+            let height = width / aspect
+            var frame = CGRect(x: original.minX, y: original.minY, width: width, height: height)
+            switch edge {
+            case .left, .topLeft, .bottomLeft: frame.origin.x = original.maxX - width
+            case .top, .bottom: frame.origin.x = original.midX - width / 2
+            default: break
+            }
+            switch edge {
+            case .bottom, .bottomLeft, .bottomRight: frame.origin.y = original.maxY - height
+            case .left, .right: frame.origin.y = original.midY - height / 2
+            default: break
+            }
+            window.setFrame(frame, display: true)
+        }
+        controller?.rememberFloat()
     }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         trackingAreas.forEach(removeTrackingArea)
-        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+        addTrackingArea(NSTrackingArea(rect: .zero,
+                                       options: [.mouseEnteredAndExited, .mouseMoved, .cursorUpdate, .activeAlways, .inVisibleRect],
                                        owner: self))
     }
 

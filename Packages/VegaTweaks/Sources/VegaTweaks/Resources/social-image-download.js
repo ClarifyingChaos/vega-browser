@@ -77,9 +77,15 @@
     const isMedia = element => element.tagName === 'VIDEO' || (element.tagName === 'IMG' && mediaURL(element.currentSrc || element.src));
     const contains = (rect, x, y) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 
-    function mediaAt(x, y) {
-        const stack = document.elementsFromPoint(x, y);
-        let element = stack.find(isMedia);
+    function mediaAt(x, y, target) {
+        // Most of the time the image or video is the target itself, or a step above it: no page-wide hit test needed.
+        let element = null;
+        for (let node = target, depth = 0; node && depth < 3 && !element; node = node.parentElement, depth++) {
+            if (node.nodeType === 1 && isMedia(node)) element = node;
+        }
+        // Only an overlay on top of the media needs the hit test, which makes the page lay out.
+        const stack = element ? [] : document.elementsFromPoint(x, y);
+        if (!element) element = stack.find(isMedia);
         // Hit testing skips pointer-events: none, which VSCO sets on every photo. Look inside the topmost
         // element instead; it is the photo's wrapper there and a small overlay on the other sites.
         // ponytail: topmost element only; widen to its parent if another site nests the image beside it.
@@ -93,11 +99,22 @@
 
     // Album grids crop a larger image inside an overflow-hidden tile, so the image's own box runs past
     // the tile. Clip it to every clipping ancestor and the viewport. Runs only when the hovered image changes.
+    const clipCache = new WeakMap();   // the clipping ancestors of an element, found once
+    function clippers(element) {
+        let list = clipCache.get(element);
+        if (list) return list;
+        list = [];
+        // Eight levels is far enough for a tile; a deep page no longer costs a style lookup per ancestor.
+        for (let el = element.parentElement, depth = 0; el && el !== document.body && depth < 8; el = el.parentElement, depth++) {
+            if (getComputedStyle(el).overflow !== 'visible') list.push(el);
+        }
+        clipCache.set(element, list);
+        return list;
+    }
     function visibleRect(element) {
         const r = element.getBoundingClientRect();
         let top = Math.max(r.top, 0), right = Math.min(r.right, innerWidth);
-        for (let el = element.parentElement; el && el !== document.body; el = el.parentElement) {
-            if (getComputedStyle(el).overflow === 'visible') continue;
+        for (const el of clippers(element)) {
             const clip = el.getBoundingClientRect();
             top = Math.max(top, clip.top);
             right = Math.min(right, clip.right);
@@ -117,8 +134,8 @@
         style.textContent = `
             button { position: fixed; z-index: 2147483647; display: none; width: 32px; height: 32px; padding: 0;
                      align-items: center; justify-content: center; border: 0; border-radius: 16px; cursor: pointer;
-                     color: #fff; background: rgba(0,0,0,.55); -webkit-backdrop-filter: blur(12px); }
-            button:hover { background: rgba(0,0,0,.75); }
+                     color: #fff; background: rgba(0,0,0,.62); }
+            button:hover { background: rgba(0,0,0,.8); }
             svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }`;
         button = document.createElement('button');
         button.type = 'button';
@@ -148,8 +165,8 @@
         if (button) button.style.display = 'none';
     }
 
-    function update(x, y) {
-        const element = mediaAt(x, y);
+    function update(x, y, target) {
+        const element = mediaAt(x, y, target);
         if (element === current && element) return;
         if (!element || misses.get(element) === (element.currentSrc || element.src)) return hide();
         if (!sourceFor(element)) {
@@ -165,13 +182,24 @@
         button.style.display = 'flex';
     }
 
-    // mouseover fires only when the element under the pointer changes, so this does no work while
-    // the pointer moves within one element.
-    let pointer = null, settle = 0;
+    // Pointer work is cheap and rare: one look per animation frame at most, none while the page scrolls (infinite
+    // feeds like Pinterest fire mouseover constantly as pins move under a still pointer), and none while the pointer
+    // stays inside the media it already marked.
+    let pointer = null, settle = 0, scrolling = false, frame = 0, lastTarget = null;
+    function schedule(target) {
+        lastTarget = target;
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+            frame = 0;
+            if (pointer && !scrolling) update(pointer.x, pointer.y, lastTarget);
+        });
+    }
     document.addEventListener('mouseover', event => {
         pointer = { x: event.clientX, y: event.clientY };
         if (host && event.target === host) return;
-        update(pointer.x, pointer.y);
+        if (scrolling) return;
+        if (current && (event.target === current || current.contains?.(event.target))) return;
+        schedule(event.target);
     }, { capture: true, passive: true });
     document.addEventListener('mousemove', event => { pointer = { x: event.clientX, y: event.clientY }; }, { capture: true, passive: true });
     document.addEventListener('mouseout', event => { if (!event.relatedTarget) { pointer = null; hide(); } }, { capture: true, passive: true });
@@ -179,8 +207,9 @@
     // WebKit sends no mouseover when content scrolls under a still pointer. Hide while the hovered media
     // moves, then look again once scrolling pauses.
     window.addEventListener('scroll', event => {
+        scrolling = true;
         if (current && (event.target === document || event.target.contains?.(current))) hide();
         clearTimeout(settle);
-        if (pointer) settle = setTimeout(() => pointer && update(pointer.x, pointer.y), 150);
+        settle = setTimeout(() => { scrolling = false; if (pointer) schedule(document.elementFromPoint(pointer.x, pointer.y)); }, 150);
     }, { capture: true, passive: true });
 })();

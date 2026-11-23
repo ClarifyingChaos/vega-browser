@@ -819,6 +819,8 @@ struct TabCompositorWrapper: NSViewRepresentable {
             }
         } else {
             (containerView as? ContainerView)?.showsSplit = false
+            // Scroll-bar gutter and corner show this layer: in the page's colour they stay invisible on dark pages.
+            (containerView as? ContainerView)?.pageColor = selected?.pageBackgroundColor
             containerView.subviews.compactMap { $0 as? SplitDividerView }.forEach { $0.isHidden = true }
             // Single tab (most common path during video playback)
             if let session = selected, !session.isUnloaded {
@@ -1019,6 +1021,9 @@ private final class SplitDividerView: NSView {
 }
 
 private class ContainerView: NSView {
+    var pageColor: NSColor? {
+        didSet { if pageColor != oldValue { updateBackground() } }
+    }
     var showsSplit = false {
         didSet { if showsSplit != oldValue { updateBackground() } }
     }
@@ -1032,7 +1037,7 @@ private class ContainerView: NSView {
 
     private func updateBackground() {
         effectiveAppearance.performAsCurrentDrawingAppearance {
-            layer?.backgroundColor = showsSplit ? NSColor.clear.cgColor : NSColor.windowBackgroundColor.cgColor
+            layer?.backgroundColor = showsSplit ? NSColor.clear.cgColor : (pageColor ?? NSColor.windowBackgroundColor).cgColor
         }
     }
 

@@ -108,6 +108,12 @@ struct WindowView: View {
             FavoritePreviewOverlay(anchor: anchor)
                 .zIndex(7000)
         }
+        .overlayPreferenceValue(TabHoverAnchorKey.self) { anchors in
+            PagePreviewOverlay(anchors: anchors)
+                .environment(browserManager.tabs)
+                .environment(windowState)
+                .zIndex(6900)
+        }
         // System notification toasts - top trailing corner
         .overlay(alignment: .topTrailing) {
             VStack(spacing: 8) {
@@ -121,6 +127,19 @@ struct WindowView: View {
                    windowRegistry.activeWindowId == windowState.id {
                     TidyDownloadToast(download: tidied, downloads: browserManager.downloadManager)
                         .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
+                }
+
+                // A capture just taken
+                if let capture = CaptureLibrary.shared.latest, windowRegistry.activeWindowId == windowState.id {
+                    CaptureToast(
+                        capture: capture,
+                        onViewInLibrary: {
+                            CaptureLibrary.shared.dismissLatest()
+                            browserManager.openLibrary(.media)
+                        },
+                        onSaveAs: { browserManager.saveCaptureAs(capture) }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
                 }
 
                 // Copy URL toast

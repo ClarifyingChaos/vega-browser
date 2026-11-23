@@ -183,6 +183,29 @@ extension Profile: WKHTTPCookieStoreObserver {
         }
     }
 
+    /// Puts back a saved session cookie the store no longer has, before a page loads. WebKit holds these in the network
+    /// process's memory, so one that ended while every tab of the space slept (or under memory pressure) took the
+    /// sign-ins with it, and the tabs came back asking for them. Never replaces a cookie the store still has: a
+    /// newer value (a rotated token) must win over the copy on disk.
+    public func reapplyMissingSessionCookies() {
+        guard !isEphemeral,
+              let data = savedSessionCookies ?? (try? Data(contentsOf: sessionCookiesURL)),
+              let list = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [[String: Any]],
+              !list.isEmpty
+        else { return }
+        let saved: [HTTPCookie] = list.compactMap { properties in
+            let keyed = Dictionary(uniqueKeysWithValues: properties.map { (HTTPCookiePropertyKey($0.key), $0.value) })
+            return HTTPCookie(properties: keyed)
+        }
+        let store = dataStore.httpCookieStore
+        store.getAllCookies { current in
+            let have = Set(current.map { "\($0.domain)|\($0.path)|\($0.name)" })
+            for cookie in saved where !have.contains("\(cookie.domain)|\(cookie.path)|\(cookie.name)") {
+                store.setCookie(cookie)
+            }
+        }
+    }
+
     public func cookiesDidChange(in cookieStore: WKHTTPCookieStore) {
         sessionCookieSave?.cancel()
         sessionCookieSave = Task { [weak self] in

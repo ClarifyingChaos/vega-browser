@@ -108,9 +108,9 @@ public struct SpaceTab: View {
                     Button(action: { session.toggleMute() }) {
                         AnimatedIcon("volume", fallback: session.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
                                      size: 16, ink: .secondary,
-                                     // Reversed on purpose: the icon shows what the button does, so a tab that is
-                                     // playing sound shows the slashed speaker (mute) and a muted tab shows sound.
-                                     toggled: !session.isAudioMuted)
+                                     // The icon shows the state, as the media bar and Safari do: a muted tab shows the
+                                     // slashed speaker, a tab that is making sound shows the speaker with waves.
+                                     toggled: session.isAudioMuted)
                     }
                     .buttonStyle(.plain)
                     .help(session.isAudioMuted ? "Unmute" : "Mute")
@@ -215,9 +215,8 @@ public struct SpaceTab: View {
             }
         }
         .buttonStyle(VegaTabButtonStyle(onPress: selectOnPress))
-        // The row shows a short title; hovering shows the page's full one. An AppKit tooltip:
-        // SwiftUI's `.help` never showed on these rows.
-        .background(RowToolTip(text: isRenaming ? nil : title))
+        // Hovering raises a preview card beside the row (drawn by the window), not a tooltip repeating the name.
+        .anchorPreference(key: TabHoverAnchorKey.self, value: .bounds) { isHovering && !isRenaming ? [item.id: $0] : [:] }
         .padding(.vertical, VegaDesign.Tab.verticalInset)
         .onHoverTracking { hovering in
             withAnimation(VegaDesign.Motion.hover(hovering)) {
