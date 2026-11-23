@@ -87,10 +87,8 @@ private struct EaselRowView: View {
             Divider()
             Button("Delete Easel…", vegaIcon: "trash", role: .destructive) { confirmingDelete = true }
         }
-        .confirmationDialog("Delete \u{201C}\(easel.name.isEmpty ? "Untitled Easel" : easel.name)\u{201D}?", isPresented: $confirmingDelete) {
-            Button("Delete Easel", role: .destructive) { EaselManager.shared.delete(easel.id) }
-            Button("Cancel", role: .cancel) {}
-        } message: { Text("You can't undo this.") }
+        .vegaConfirm("Delete \u{201C}\(easel.name.isEmpty ? "Untitled Easel" : easel.name)\u{201D}?", message: "You can't undo this.",
+                     confirm: "Delete Easel", isPresented: $confirmingDelete) { EaselManager.shared.delete(easel.id) }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }

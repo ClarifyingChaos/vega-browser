@@ -123,20 +123,16 @@ public struct SpacesSettingsView: View {
         }
         .formStyle(.grouped)
         .task { backups = tabs.backupSummaries() }
-        .confirmationDialog(restoring.map { "Restore your spaces and tabs from \(Self.title(for: $0))?" } ?? "",
-                            isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } })) {
-            Button("Restore and Restart Vega") {
-                guard let backup = restoring else { return }
-                do {
-                    try tabs.scheduleRestore(backup.id)
-                    Self.relaunch()
-                } catch {
-                    restoreError = "Couldn't restore that backup: \(error.localizedDescription)"
-                }
+        .vegaConfirm(restoring.map { "Restore your spaces and tabs from \(Self.title(for: $0))?" } ?? "",
+                     message: "Vega quits and opens again with those spaces and tabs. With Sync on, your other Macs get them too. What you have now is saved as a backup, so you can go back.",
+                     confirm: "Restore and Restart Vega", isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } }), destructive: false) {
+            guard let backup = restoring else { return }
+            do {
+                try tabs.scheduleRestore(backup.id)
+                Self.relaunch()
+            } catch {
+                restoreError = "Couldn't restore that backup: \(error.localizedDescription)"
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Vega quits and opens again with those spaces and tabs. With Sync on, your other Macs get them too. What you have now is saved as a backup, so you can go back.")
         }
         .task(id: tabs.profiles.map(\.id)) { await refreshStats() }
         // System Settings' pattern: the ⓘ button opens a sheet with the profile's details and actions.
@@ -563,12 +559,8 @@ private struct ProfileDetailsSheet: View {
             .padding(VegaDesign.Spacing.xl)
             .frame(width: 400)
         }
-        .confirmationDialog("Clear website data for \u{201C}\(profile.name)\u{201D}?", isPresented: $confirmingClear) {
-            Button("Clear Website Data", role: .destructive, action: clearData)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Every space in this profile is signed out of all websites. You can't undo this.")
-        }
+        .vegaConfirm("Clear website data for \u{201C}\(profile.name)\u{201D}?", message: "Every space in this profile is signed out of all websites. You can't undo this.",
+                     confirm: "Clear Website Data", isPresented: $confirmingClear, action: clearData)
     }
 
     private func commit() {

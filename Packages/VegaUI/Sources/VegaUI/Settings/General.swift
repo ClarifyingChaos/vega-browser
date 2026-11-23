@@ -417,18 +417,14 @@ private struct SyncSection: View {
             else if !sync.passwordsEnabled { Text("Turn on Sync Passwords to seal everything Vega syncs (spaces, favorites, settings, open tabs and passwords) with a passphrase only you know, so neither iCloud nor Google can read it.") }
             else { Text("Spaces, favorites, settings, open tabs and passwords are sealed with your sync passphrase: iCloud and Google can't read them. A Mac with an older Vega still gets a readable copy of your spaces until it updates.") }
         }
-        .confirmationDialog("Remove \(removing?.name ?? "this Mac") from sync?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
-            Button("Remove", role: .destructive) {
-                if let device = removing {
-                    sync.removeDevice(device.id)
-                    // A new passphrase means a new key: the removed Mac can't open what is saved from now on.
-                    if sync.passwordsEnabled { lockingOut = device.name }
-                }
-                removing = nil
+        .vegaConfirm("Remove \(removing?.name ?? "this Mac") from sync?",
+                     message: "The next time Vega opens on it, it turns sync off and deletes the spaces, favorites, tabs, passwords, settings, history and website sign-ins it got through sync. Your other Macs keep theirs. It can join again by turning sync on.",
+                     confirm: "Remove", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
+            if let device = removing {
+                sync.removeDevice(device.id)
+                // A new passphrase means a new key: the removed Mac can't open what is saved from now on.
+                if sync.passwordsEnabled { lockingOut = device.name }
             }
-            Button("Cancel", role: .cancel) { removing = nil }
-        } message: {
-            Text("The next time Vega opens on it, it turns sync off and deletes the spaces, favorites, tabs, passwords, settings, history and website sign-ins it got through sync. Your other Macs keep theirs. It can join again by turning sync on.")
         }
         .sheet(isPresented: $askingPassphrase) { SyncPassphraseSheet(sync: sync, changing: false) }
         .sheet(isPresented: $changingPassphrase) { SyncPassphraseSheet(sync: sync, changing: true) }

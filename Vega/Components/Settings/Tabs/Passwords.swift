@@ -250,14 +250,9 @@ private struct PasswordsContent: View {
                         },
                         onDelete: { opened = nil; deleting = login })
         }
-        .confirmationDialog("Delete the password for \u{201C}\(deleting?.username ?? "")\u{201D} on \(deleting?.host ?? "")?",
-                            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
-            Button("Delete Password", role: .destructive) {
-                if let login = deleting { vault.delete(host: login.host, username: login.username); reload() }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("You can't undo this.")
+        .vegaConfirm("Delete the password for \u{201C}\(deleting?.username ?? "")\u{201D} on \(deleting?.host ?? "")?", message: "You can't undo this.",
+                     confirm: "Delete Password", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+            if let login = deleting { vault.delete(host: login.host, username: login.username); reload() }
         }
     }
 

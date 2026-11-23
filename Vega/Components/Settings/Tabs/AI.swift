@@ -96,17 +96,9 @@ struct SettingsAITab: View {
                     providerRow(provider)
                         .padding(.vertical, VegaDesign.Spacing.md)
                 }
-                .confirmationDialog(
-                    "Remove \(providerToRemove?.displayName ?? "provider")?",
-                    isPresented: Binding(get: { providerToRemove != nil }, set: { if !$0 { providerToRemove = nil } }),
-                    titleVisibility: .visible
-                ) {
-                    Button("Remove", role: .destructive) {
-                        if let provider = providerToRemove { configService.removeProvider(provider.id) }
-                        providerToRemove = nil
-                    }
-                } message: {
-                    Text("Its saved key and models are deleted too.")
+                .vegaConfirm("Remove \(providerToRemove?.displayName ?? "provider")?", message: "Its saved key and models are deleted too.",
+                             confirm: "Remove", isPresented: Binding(get: { providerToRemove != nil }, set: { if !$0 { providerToRemove = nil } })) {
+                    if let provider = providerToRemove { configService.removeProvider(provider.id) }
                 }
 
                 if showAddCustomProvider {

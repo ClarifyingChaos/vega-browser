@@ -173,7 +173,10 @@ struct DialogCard<Content: View>: View {
         content
             .padding(VegaDesign.Spacing.xl)
             .frame(maxWidth: VegaDesign.Size.dialogMaxWidth, alignment: .leading)
-            .vegaGlassSurface(in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+            // Solid, not glass: over a busy page the clear surface left the words and buttons unreadable.
+            .background(Color(nsColor: .windowBackgroundColor), in: VegaDesign.Radius.shape(VegaDesign.Radius.xl))
+            .overlay(VegaDesign.Radius.shape(VegaDesign.Radius.xl).strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.75))
+            .shadow(color: .black.opacity(0.28), radius: 24, y: 8)
     }
 }
 
