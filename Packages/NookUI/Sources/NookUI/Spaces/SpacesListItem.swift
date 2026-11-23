@@ -62,6 +62,7 @@ struct SpacesListItem: View {
         .layoutPriority(isActive ? 1 : 0)
         .opacity(isFaded ? 0.3 : 1.0)
         .accessibilityLabel(space.name)
+        .help(space.name)
         .popover(isPresented: $showThemePicker, arrowEdge: .top) {
             SpaceThemeEditor(space: space)
                 .environment(tabs)
@@ -112,8 +113,7 @@ struct SpacesListItem: View {
     private var plainDot: some View {
         let size = dotSize + (activeDotSize - dotSize) * selection
         return Circle()
-            .fill(.tertiary)
-            .overlay(Circle().fill(space.accentColor).opacity(selection))
+            .fill(space.accentColor.opacity(0.45 + 0.55 * selection))
             .frame(width: size, height: size)
             .animation(NookDesign.Motion.standard, value: isActive)
     }
