@@ -138,12 +138,8 @@ struct PrivacySettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .confirmationDialog("Clear your browsing history?", isPresented: $confirmingClearHistory) {
-            Button("Clear History", role: .destructive, action: clearBrowsingHistory)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Every page you visited is removed from history in all spaces. You can't undo this.")
-        }
+        .nookConfirm("Clear your browsing history?", message: "Every page you visited is removed from history in all spaces. You can't undo this.",
+                     confirm: "Clear History", isPresented: $confirmingClearHistory, action: clearBrowsingHistory)
         .onAppear {
             Task {
                 await cookieManager.loadCookies()

@@ -124,15 +124,9 @@ struct MoreMenuView: View {
         }
         .frame(width: 260)
         .onAppear { loadSiteInfo() }
-        .confirmationDialog(
-            confirming?.title ?? "",
-            isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
-            presenting: confirming
-        ) { target in
-            Button("Clear", role: .destructive) { perform(target) }
-            Button("Cancel", role: .cancel) { confirming = nil }
-        } message: { target in
-            Text(target.message)
+        .nookConfirm(confirming?.title ?? "", message: confirming?.message ?? "", confirm: "Clear",
+                     isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } })) {
+            if let target = confirming { perform(target) }
         }
     }
 

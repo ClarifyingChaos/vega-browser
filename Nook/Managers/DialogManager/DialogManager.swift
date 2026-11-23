@@ -173,7 +173,10 @@ struct DialogCard<Content: View>: View {
         content
             .padding(NookDesign.Spacing.xl)
             .frame(maxWidth: NookDesign.Size.dialogMaxWidth, alignment: .leading)
-            .nookGlassSurface(in: NookDesign.Radius.shape(NookDesign.Radius.xl))
+            // Solid, not glass: over a busy page the clear surface left the words and buttons unreadable.
+            .background(Color(nsColor: .windowBackgroundColor), in: NookDesign.Radius.shape(NookDesign.Radius.xl))
+            .overlay(NookDesign.Radius.shape(NookDesign.Radius.xl).strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.75))
+            .shadow(color: .black.opacity(0.28), radius: 24, y: 8)
     }
 }
 

@@ -85,10 +85,8 @@ struct PrivacyReportView: View {
         .contentMargins(.horizontal, 32, for: .scrollContent)
         .contentMargins(.vertical, 20, for: .scrollContent)
         .frame(minWidth: 520, minHeight: 520)
-        .confirmationDialog("Reset the Privacy Report?", isPresented: $confirmingReset) {
-            Button("Reset", role: .destructive) { stats.reset() }
-            Button("Cancel", role: .cancel) {}
-        } message: { Text("The counts start again from zero. Your settings don't change.") }
+        .nookConfirm("Reset the Privacy Report?", message: "The counts start again from zero. Your settings don't change.",
+                     confirm: "Reset", isPresented: $confirmingReset) { stats.reset() }
     }
 
     private func stat(_ value: Int, _ label: String) -> some View {
