@@ -277,6 +277,8 @@ struct EaselCard: View {
     let open: (URL) -> Void
     @State private var drag: CGSize = .zero
     @State private var resize: CGSize = .zero
+    /// True from the first movement of a drag to its end: the pointer is a closed hand while the card is held.
+    @State private var holding = false
 
     private var width: Double { max(140, item.w + resize.width) }
     private var height: Double { max(item.kind == .link ? 150 : 64, item.h + resize.height) }
@@ -289,8 +291,9 @@ struct EaselCard: View {
     /// shrink as it went and the card would stall.
     private var moveGesture: some Gesture {
         DragGesture(minimumDistance: 3, coordinateSpace: .global)
-            .onChanged { drag = $0.translation; select() }
+            .onChanged { holding = true; drag = $0.translation; select() }
             .onEnded { value in
+                holding = false
                 drag = .zero
                 update { $0.x += value.translation.width; $0.y += value.translation.height }
             }
@@ -301,7 +304,7 @@ struct EaselCard: View {
             .frame(maxWidth: .infinity).frame(height: 16)
             .background(Color.clear)
             .contentShape(Rectangle())
-            .pointerStyle(.grabIdle)
+            .pointerStyle(holding ? .grabActive : .grabIdle)
             .gesture(moveGesture)
     }
 
@@ -316,6 +319,7 @@ struct EaselCard: View {
             .overlay(alignment: .bottomTrailing) { resizeHandle }
             .offset(x: item.x + drag.width, y: item.y + drag.height)
             .gesture(moveGesture, isEnabled: movesFromBody)
+            .pointerStyle(holding ? .grabActive : (movesFromBody ? .grabIdle : nil))
             .contextMenu {
                 if let text = item.url, let url = URL(string: text) {
                     Button("Open Page") { open(url) }
