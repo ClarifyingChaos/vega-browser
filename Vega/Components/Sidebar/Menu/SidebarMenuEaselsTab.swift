@@ -42,6 +42,8 @@ struct SidebarMenuEaselsTab: View {
                 ForEach(shown) { easel in EaselRowView(easel: easel) }
             }
             .padding(.horizontal, VegaDesign.Spacing.md)
+            // Room under the search field's soft edge, so the first row is not faded into it.
+            .padding(.top, VegaDesign.Spacing.sm)
             .padding(.bottom, VegaDesign.Spacing.md)
         }
         .vegaScrollHeader {
