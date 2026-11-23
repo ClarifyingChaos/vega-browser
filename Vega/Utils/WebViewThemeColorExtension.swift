@@ -101,6 +101,11 @@ extension WKWebView {
                     if (normalized) { return normalized; }
                 }
 
+                // A page that only declares color-scheme dark paints the system's dark canvas and sets no colour of its own;
+                // without this the window's light background showed through wherever the page does not paint.
+                const scheme = (getComputedStyle(document.documentElement).colorScheme || '').trim();
+                if (/^(only )?dark\\b/.test(scheme)) { return '#1e1e1e'; }
+
                 return null;
             }
 

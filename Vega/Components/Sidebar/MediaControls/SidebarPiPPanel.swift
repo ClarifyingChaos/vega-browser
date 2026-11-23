@@ -975,6 +975,28 @@ private final class SidebarPiPFloatPanel: NSPanel {
     }
 }
 
+/// Sets the cursor over the panel's edges. It takes no clicks; the root view's mouse-down starts the resize.
+private final class PiPEdgeCursorView: NSView {
+    var cursorAt: ((NSPoint) -> NSCursor?)?
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .cursorUpdate, .activeAlways, .inVisibleRect], owner: self))
+    }
+
+    private func update(_ event: NSEvent) {
+        guard let cursor = cursorAt?(convert(event.locationInWindow, from: nil)) else { return }
+        cursor.set()
+    }
+
+    override func mouseMoved(with event: NSEvent) { update(event) }
+    override func mouseEntered(with event: NSEvent) { update(event) }
+    override func cursorUpdate(with event: NSEvent) { update(event) }
+}
+
 /// The panel's content: the cropped video, hover controls, and the mouse-down that starts a drag.
 private final class FloatRootView: NSView {
     weak var controller: SidebarPiPController? { didSet { controls.rootView = makeControls(active: !controls.isHidden) } }
@@ -998,6 +1020,11 @@ private final class FloatRootView: NSView {
             view.autoresizingMask = [.width, .height]
             addSubview(view)
         }
+        // On top: the video's page and the hover controls set their own cursors and covered the resize ones.
+        let edges = PiPEdgeCursorView(frame: bounds)
+        edges.autoresizingMask = [.width, .height]
+        edges.cursorAt = { [weak self] point in self.flatMap { $0.cursor(for: $0.edge(at: point)) } }
+        addSubview(edges)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
