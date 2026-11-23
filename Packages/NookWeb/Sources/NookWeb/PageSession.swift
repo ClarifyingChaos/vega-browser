@@ -862,6 +862,8 @@ public final class PageSession: NSObject, Identifiable {
     private static func fetchFaviconImage(for url: URL) async -> PlatformImage? {
         // FORK: prefer the sharpest icon the site offers (see FaviconCache+Fetch.swift).
         if let best = await FaviconCache.bestIcon(for: url) { return best }
+        // FaviconFinder follows a redirect to another site and would hand back that site's icon.
+        if await FaviconCache.pageDocument(url).leftSite { return nil }
         do {
             let favicon = try await FaviconFinder(url: url)
                 .fetchFaviconURLs()

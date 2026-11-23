@@ -42,6 +42,8 @@ struct SidebarMenuEaselsTab: View {
                 ForEach(shown) { easel in EaselRowView(easel: easel) }
             }
             .padding(.horizontal, NookDesign.Spacing.md)
+            // Room under the search field's soft edge, so the first row is not faded into it.
+            .padding(.top, NookDesign.Spacing.sm)
             .padding(.bottom, NookDesign.Spacing.md)
         }
         .nookScrollHeader {

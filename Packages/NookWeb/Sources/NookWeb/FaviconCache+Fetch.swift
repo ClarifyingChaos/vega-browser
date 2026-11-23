@@ -47,7 +47,10 @@ extension FaviconCache {
     static func bestIcon(for url: URL) async -> PlatformImage? {
         // FaviconFinder ignores its httpHeaders setting and fetches as the app, which sites like Cosmos and Behance
         // refuse with 403. So the page is fetched here as Safari and handed over already parsed.
-        let page = await pageDocument(url)
+        let (page, leftSite) = await pageDocument(url)
+        // A page that sends the request to another site (Behance to Adobe's sign-in) has no icon of its own to give: the other
+        // site's icons were being stored under this one's name.
+        if leftSite { return nil }
         var candidates: [(source: URL, edge: Double, touch: Bool)] = []
         for source in [FaviconSourceType.html, .webApplicationManifestFile] {
             let finder = FaviconFinder(url: url, configuration: .init(preferredSource: source, prefetchedHTML: page))
@@ -78,7 +81,8 @@ extension FaviconCache {
     }
 
     /// The page's HTML, fetched with Safari's user agent. Nil when it can't be read; FaviconFinder then tries itself.
-    private static func pageDocument(_ url: URL) async -> Document? {
+    /// `leftSite` is true when the request ended on a different host than it asked for.
+    static func pageDocument(_ url: URL) async -> (document: Document?, leftSite: Bool) {
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.httpShouldHandleCookies = false
         if let agent = PlatformUserAgent.custom { request.setValue(agent, forHTTPHeaderField: "User-Agent") }
@@ -86,8 +90,10 @@ extension FaviconCache {
         guard let (data, response) = try? await URLSession.shared.data(for: request),
               let status = (response as? HTTPURLResponse)?.statusCode, (200..<500).contains(status),
               (response.mimeType ?? "text/html").contains("html"),
-              let html = String(data: data.prefix(2_000_000), encoding: .utf8) ?? String(data: data.prefix(2_000_000), encoding: .isoLatin1) else { return nil }
-        return try? SwiftSoup.parse(html, response.url?.absoluteString ?? url.absoluteString)
+              let html = String(data: data.prefix(2_000_000), encoding: .utf8) ?? String(data: data.prefix(2_000_000), encoding: .isoLatin1) else { return (nil, false) }
+        if let final = response.url?.host()?.lowercased(), let asked = url.host()?.lowercased(),
+           final != asked, !final.hasSuffix("." + asked), !asked.hasSuffix("." + final) { return (nil, true) }
+        return (try? SwiftSoup.parse(html, response.url?.absoluteString ?? url.absoluteString), false)
     }
 }
 

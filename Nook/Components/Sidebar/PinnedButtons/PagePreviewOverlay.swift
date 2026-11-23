@@ -33,7 +33,8 @@ struct PagePreviewOverlay: View {
 
     var body: some View {
         GeometryReader { proxy in
-            if let id = shownID, let anchor = anchors[id], let item = tabs.item(id) {
+            // The library covers the sidebar the card belongs to, so no card over it.
+            if !windowState.isSidebarMenuVisible, let id = shownID, let anchor = anchors[id], let item = tabs.item(id) {
                 let row = proxy[anchor]
                 let edge = NookDesign.Spacing.md
                 let onLeft = row.midX < proxy.size.width / 2
@@ -48,11 +49,12 @@ struct PagePreviewOverlay: View {
         }
         .animation(NookDesign.Motion.quick, value: shownID)
         .onChange(of: hoveredID) { _, id in schedule(id) }
+        .onChange(of: windowState.isSidebarMenuVisible) { _, open in if open { pending?.cancel(); shownID = nil } }
     }
 
     private func schedule(_ id: UUID?) {
         pending?.cancel()
-        guard let id, id != windowState.selectedItemID else { shownID = nil; return }
+        guard let id, id != windowState.selectedItemID, !windowState.isSidebarMenuVisible else { shownID = nil; return }
         let delay = shownID == nil ? Self.restDelay : Self.switchDelay
         pending = Task {
             try? await Task.sleep(for: delay)
