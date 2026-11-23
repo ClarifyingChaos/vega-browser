@@ -11,7 +11,7 @@ import AppKit
 import SwiftUI
 
 struct EaselItem: Codable, Identifiable, Equatable {
-    enum Kind: String, Codable { case note, link, image }
+    enum Kind: String, Codable { case note, link, image, todo }
     var id = UUID()
     var kind: Kind
     var x: Double
@@ -21,8 +21,16 @@ struct EaselItem: Codable, Identifiable, Equatable {
     /// A note's text, a link's title, an image's caption.
     var text = ""
     var url: String?
-    /// An image's file name in the Easels folder.
+    /// An image's file name in the Easels folder; a page card's picture too.
     var file: String?
+    /// A to-do card's items; its title is `text`.
+    var todos: [EaselTodo]?
+}
+
+struct EaselTodo: Codable, Identifiable, Equatable {
+    var id = UUID()
+    var text = ""
+    var done = false
 }
 
 struct Easel: Codable, Identifiable, Equatable {
@@ -103,6 +111,31 @@ final class EaselStore: ObservableObject {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         if let data = try? encoder.encode(easel) { try? data.write(to: fileURL(easel.id), options: .atomic) }
+    }
+
+    /// Puts a picture on a page card: scaled to 800 px wide, kept as a JPEG. A card removed meanwhile gets nothing.
+    func attachThumbnail(_ image: NSImage, to itemID: UUID, in easelID: UUID) {
+        guard easel(easelID)?.items.contains(where: { $0.id == itemID }) == true else { return }
+        let scale = min(1, 800 / max(image.size.width, 1))
+        let width = max(1, Int(image.size.width * scale)), height = max(1, Int(image.size.height * scale))
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height, bitsPerSample: 8, samplesPerPixel: 4,
+                                         hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+              let context = NSGraphicsContext(bitmapImageRep: rep) else { return }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        NSColor.white.setFill()
+        NSRect(x: 0, y: 0, width: width, height: height).fill()
+        image.draw(in: NSRect(x: 0, y: 0, width: width, height: height))
+        NSGraphicsContext.restoreGraphicsState()
+        guard let data = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.82]) else { return }
+        let name = "\(UUID().uuidString).jpg"
+        guard (try? data.write(to: imageURL(name), options: .atomic)) != nil else { return }
+        mutate(easelID) { easel in
+            if let i = easel.items.firstIndex(where: { $0.id == itemID }) {
+                if let old = easel.items[i].file { try? FileManager.default.removeItem(at: imageURL(old)) }
+                easel.items[i].file = name
+            }
+        }
     }
 
     /// Stores an image in the Easels folder and returns its file name and size on the canvas.

@@ -323,6 +323,7 @@ struct BackgroundWindowModifier: NSViewRepresentable {
 
                 window.minSize = NSSize(width: 470, height: 382)
                 window.contentMinSize = NSSize(width: 470, height: 382)
+                WindowEdgeCursorView.install(in: window)
             }
         }
         return view

@@ -97,10 +97,13 @@ public class BrowserConfiguration {
                         const c = getComputedStyle(el).backgroundColor;
                         if (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') return c;
                     }
-                    return matchMedia('(prefers-color-scheme: dark)').matches ? '#1c1c1e' : '#fff';
+                    // The page's own canvas: dark for a page that sets color-scheme dark, whatever the Mac is in.
+                    return 'Canvas';
                 };
-                const css = () => '::-webkit-scrollbar{width:12px !important;height:12px !important;background:transparent !important}' +
-                            '::-webkit-scrollbar-track{background:transparent !important}' +
+                // The track is painted white the same way when the Mac shows scroll bars all the time, so it gets the colour too.
+                const css = () => '::-webkit-scrollbar{width:12px !important;height:12px !important;background:' + bg() + ' !important}' +
+                            '::-webkit-scrollbar-track,::-webkit-scrollbar-track-piece{background:' + bg() + ' !important}' +
+                            '::-webkit-scrollbar-button{display:none !important;width:0 !important;height:0 !important}' +
                             '::-webkit-scrollbar-corner{background:' + bg() + ' !important}' +
                             '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55) !important;border-radius:6px !important;border:3px solid transparent !important;background-clip:padding-box !important;min-height:34px}' +
                             '::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.8) !important}';
