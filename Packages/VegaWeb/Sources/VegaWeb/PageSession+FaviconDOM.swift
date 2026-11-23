@@ -19,12 +19,19 @@ extension PageSession {
       .map(l => ({href: l.href, rel: l.rel, sizes: l.sizes ? l.sizes.value : '', type: l.type || ''}))
     """
 
+    private static func sameSite(_ current: URL?, _ page: URL) -> Bool {
+        current?.host()?.lowercased() == page.host()?.lowercased()
+    }
+
     /// Stores and shows the best icon the loaded page declares. False when the page has none
     /// we can use (not loaded yet, only SVG, download blocked).
     @MainActor
     func fetchFaviconFromDOM(for pageURL: URL) async -> Bool {
         guard let webView = primaryWebView,
               let raw = try? await webView.evaluateJavaScript(Self.iconLinksScript) as? [[String: String]] else { return false }
+        // The page can move on (Behance sends a visitor to Adobe's sign-in) between the load and this reply: its icon links
+        // are then another site's, and they must not be stored under this address.
+        guard Self.sameSite(webView.url, pageURL) else { return false }
         var seen = Set<URL>()
         let links: [(url: URL, edge: Int, touch: Bool)] = raw.compactMap { entry in
             guard let href = entry["href"], let url = URL(string: href),
@@ -42,7 +49,8 @@ extension PageSession {
             let rank = IconRank(image, touchIcon: link.touch)
             if rank.usable, !image.isBlank, best == nil || rank > best!.rank { best = (image, rank) }
         }
-        guard let icon = best?.image.trimmedToContent().downscaled(toEdge: FaviconCache.maxStoredEdge),
+        guard Self.sameSite(webView.url, pageURL),
+              let icon = best?.image.trimmedToContent().downscaled(toEdge: FaviconCache.maxStoredEdge),
               let key = FaviconCache.key(for: pageURL) else { return false }
         // A private page's host must not reach ~/Library/Caches/FaviconCache.
         FaviconCache.shared.store(icon, for: key, toDisk: !isPrivate)
