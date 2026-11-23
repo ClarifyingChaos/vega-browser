@@ -70,10 +70,10 @@ struct EaselView: View {
                     handleDrop(providers, at: location)
                 }
             }
+            // No scroll bars: the canvas is bigger than the window both ways, and old-style scrollers leave a white square
+            // in the corner. Trackpad, wheel and shift-wheel still pan it.
+            .scrollIndicators(.hidden)
             .background(EaselPalette.desk)
-            // The canvas is bigger than the window both ways, which gives the old-style scrollers a white square in the
-            // corner; overlay scrollers have none.
-            .background(EaselOverlayScrollers())
     }
 
     // MARK: - Chrome
@@ -252,28 +252,6 @@ private struct RailButton: View {
     }
 }
 
-/// Puts the canvas's scroll view on overlay scrollers whatever the system setting.
-private struct EaselOverlayScrollers: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView { NSView() }
-    func updateNSView(_ view: NSView, context: Context) {
-        // The scroll view is built after this view appears, so look again as the window settles.
-        for delay in [0.0, 0.2, 0.8] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak view] in
-                guard let root = view?.window?.contentView else { return }
-                Self.apply(in: root)
-            }
-        }
-    }
-
-    private static func apply(in view: NSView) {
-        if let scroll = view as? NSScrollView, scroll.hasHorizontalScroller, scroll.hasVerticalScroller {
-            scroll.scrollerStyle = .overlay
-            scroll.autohidesScrollers = true
-        }
-        for child in view.subviews { apply(in: child) }
-    }
-}
-
 /// A faint dot grid, so the canvas reads as a surface you can place things on.
 private struct DotGrid: View {
     var body: some View {
@@ -304,6 +282,29 @@ struct EaselCard: View {
     private var height: Double { max(item.kind == .link ? 150 : 64, item.h + resize.height) }
     private let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
 
+    /// Page and picture cards move by any part of them; notes and lists hold text, so they move by the strip along the top.
+    private var movesFromBody: Bool { item.kind == .link || item.kind == .image }
+
+    /// In the window's space: the card moves under the pointer, so a gesture measured in the card's own space would
+    /// shrink as it went and the card would stall.
+    private var moveGesture: some Gesture {
+        DragGesture(minimumDistance: 3, coordinateSpace: .global)
+            .onChanged { drag = $0.translation; select() }
+            .onEnded { value in
+                drag = .zero
+                update { $0.x += value.translation.width; $0.y += value.translation.height }
+            }
+    }
+
+    private var gripStrip: some View {
+        Capsule().fill(Color.primary.opacity(selected ? 0.28 : 0.12)).frame(width: 30, height: 4)
+            .frame(maxWidth: .infinity).frame(height: 16)
+            .background(Color.clear)
+            .contentShape(Rectangle())
+            .pointerStyle(.grabIdle)
+            .gesture(moveGesture)
+    }
+
     var body: some View {
         content
             .frame(width: width, height: height)
@@ -311,12 +312,10 @@ struct EaselCard: View {
             .clipShape(shape)
             .overlay(shape.strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: selected ? 2 : 0.75))
             .shadow(color: .black.opacity(selected ? 0.22 : 0.10), radius: selected ? 10 : 5, y: 2)
+            .overlay(alignment: .top) { if !movesFromBody { gripStrip } }
             .overlay(alignment: .bottomTrailing) { resizeHandle }
             .offset(x: item.x + drag.width, y: item.y + drag.height)
-            .gesture(DragGesture().onChanged { drag = $0.translation; select() }.onEnded { value in
-                drag = .zero
-                update { $0.x += value.translation.width; $0.y += value.translation.height }
-            })
+            .gesture(moveGesture, isEnabled: movesFromBody)
             .contextMenu {
                 if let text = item.url, let url = URL(string: text) {
                     Button("Open Page") { open(url) }
@@ -331,12 +330,12 @@ struct EaselCard: View {
         switch item.kind {
         case .note:
             ZStack(alignment: .topLeading) {
-                if item.text.isEmpty { Text("Write something…").foregroundStyle(.tertiary).padding(.top, 8).padding(.leading, 12).allowsHitTesting(false) }
+                if item.text.isEmpty { Text("Write something…").foregroundStyle(.tertiary).padding(.top, 22).padding(.leading, 12).allowsHitTesting(false) }
                 TextEditor(text: Binding(get: { item.text }, set: { text in update { $0.text = text } }))
                     .font(.system(size: 14))
                     .scrollContentBackground(.hidden)
                     .scrollIndicators(.never)
-                    .padding(8)
+                    .padding(.horizontal, 8).padding(.bottom, 8).padding(.top, 14)
             }
         case .todo:
             todoList
@@ -353,29 +352,30 @@ struct EaselCard: View {
 
     private var pageHost: String { URL(string: item.url ?? "")?.host()?.replacingOccurrences(of: "www.", with: "") ?? "" }
 
+    // Not a Button: a button takes the press, and the card could not be dragged by its body.
     private var linkCard: some View {
-        Button {
-            if let text = item.url, let url = URL(string: text) { open(url) }
-        } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                thumbnail
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.text.isEmpty ? (pageHost.isEmpty ? "Page" : pageHost) : item.text)
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary).lineLimit(2)
-                    HStack(spacing: 4) {
-                        Image(systemName: "link").font(.system(size: 9, weight: .semibold))
-                        Text(pageHost).lineLimit(1)
-                    }
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(Color.accentColor)
+        VStack(alignment: .leading, spacing: 0) {
+            thumbnail
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.text.isEmpty ? (pageHost.isEmpty ? "Page" : pageHost) : item.text)
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary).lineLimit(2)
+                HStack(spacing: 4) {
+                    Image(systemName: "link").font(.system(size: 9, weight: .semibold))
+                    Text(pageHost).lineLimit(1)
                 }
-                .padding(.horizontal, 12).padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.system(size: 11, weight: .medium)).foregroundStyle(Color.accentColor)
             }
-            .contentShape(Rectangle())
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            select()
+            if let text = item.url, let url = URL(string: text) { open(url) }
+        }
+        .accessibilityAddTraits(.isLink)
     }
 
     @ViewBuilder private var thumbnail: some View {
@@ -433,7 +433,7 @@ struct EaselCard: View {
             }
             .scrollIndicators(.never)
         }
-        .padding(12)
+        .padding(.horizontal, 12).padding(.bottom, 12).padding(.top, 18)
     }
 
     private func addTodo(after id: UUID?) {
@@ -451,7 +451,7 @@ struct EaselCard: View {
         Image(systemName: "arrow.down.right").font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
             .frame(width: 22, height: 22).contentShape(Rectangle())
             .pointerStyle(.frameResize(position: .bottomTrailing))
-            .gesture(DragGesture().onChanged { resize = $0.translation }.onEnded { value in
+            .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .global).onChanged { resize = $0.translation }.onEnded { value in
                 resize = .zero
                 update { $0.w = max(140, $0.w + value.translation.width); $0.h = max($0.kind == .link ? 150 : 64, $0.h + value.translation.height) }
             })
