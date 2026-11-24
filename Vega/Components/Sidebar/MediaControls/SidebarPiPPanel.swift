@@ -179,7 +179,7 @@ final class SidebarPiPController: PictureInPictureHolder {
         videoRect = rect
         guard let floatWindow, let root = floatWindow.contentView as? FloatRootView else { return }
         root.container.crop = rect
-        floatWindow.contentAspectRatio = rect.size
+        floatWindow.keepShape(of: aspect)
         var frame = floatWindow.frame
         frame.size.height = frame.width / aspect
         floatWindow.setFrame(frame, display: true)
@@ -277,6 +277,7 @@ final class SidebarPiPController: PictureInPictureHolder {
         } ?? free
         let dragging = NSEvent.pressedMouseButtons & 1 == 1
         let panel = SidebarPiPFloatPanel(contentRect: docked)
+        panel.keepShape(of: aspect)
         let root = FloatRootView(controller: self, frame: CGRect(origin: .zero, size: docked.size))
         root.container.crop = videoRect
         panel.contentView = root
@@ -970,8 +971,15 @@ private final class SidebarPiPFloatPanel: NSPanel {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
-        contentAspectRatio = contentRect.size
-        contentMinSize = CGSize(width: 240, height: 240 * contentRect.height / contentRect.width)
+    }
+}
+
+private extension NSPanel {
+    /// The shape the system's own edge resize keeps. Not taken from the panel's first rect: that is the docked slot, which can
+    /// be the slim media bar, and shrinking from an edge then pulled the panel into a thin horizontal pill.
+    func keepShape(of aspect: CGFloat) {
+        contentAspectRatio = CGSize(width: aspect, height: 1)
+        contentMinSize = CGSize(width: 240, height: 240 / aspect)
     }
 }
 
