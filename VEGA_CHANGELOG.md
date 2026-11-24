@@ -2,6 +2,34 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.7 (2026-11-24)
+
+### New
+- **Look It Up:** in the Cmd-T command bar, Shift-Return (or the new Look It Up row under what you typed) searches DuckDuckGo, reads the top pages and writes one page answering your question, with booking cards for flights and hotels. It uses your AI provider, or Apple's on-device model when you have none. Turn it off in Settings › AI. (From Vega.)
+- **Link hints:** press Option-F on any page and every link, button and field gets a letter; type the letter to click it. (From the satyasaibhushan Vega fork.)
+- **Command bar:** open tabs that match what you type come first, and Return switches to the tab instead of opening the page again. With nothing typed, your open tabs are listed most recent first.
+- **Auto-Play per site:** Allow All, Stop Media with Sound, or Never, in Site Permissions and the address bar's site panel.
+- **Error page:** a page that can't load shows a clear page with Go Back and Try Again instead of a blank tab, in split view too.
+- **Local devices:** a NAS or router reached by name (tower.local, nas.lan, router.home.arpa) can now be opened after accepting its own certificate, as addresses already could.
+
+### Fixes
+- **Cmd-click** on a link now always opens it in a new tab (Shift-Cmd-click brings it forward), including on sites that stop the click and on target=_blank links.
+- **Closing a tab keeps the tabs opened from it.** The close button on a tab row used to close its children too; they now move up as normal tabs, as Cmd-W already did.
+- **Sync between Macs:** a Mac whose Google sign-in had expired fell back to iCloud Drive without saying so, and stopped seeing your other Macs. Vega now notices the expired sign-in and asks you to sign in again, Settings says why the Vega Sync server failed, and the server is retried every minute. Google sign-ins also no longer expire after 7 days. **Sign in with Google again once on each Mac** (Settings › Account).
+- **Address bar:** the selected address now shows a clear highlight.
+- **YouTube:** with Shorts hidden, a Shorts link opens as the regular video.
+- Sites with a bad certificate on their upgraded https address fall back to http instead of leaving the tab stuck; ad-block fixes from Vega (a rule for some sites no longer hides buttons everywhere, lists with Windows line endings, rules scoped to sites); Translate reads the whole page to detect its language; several speed fixes for background tabs, media and the sidebar.
+
+### Privacy and security
+Reviewed before release; one problem found and fixed.
+- **Ad-block removals list:** the new list that can switch off a bad ad-block rule without an app update was fetched from Vega's repository, which would have let a third party weaken Vega's blocker. It is now fetched from Vega's own repository. It can only remove rules, and a bundled copy is used until it downloads.
+- **New network destination:** Look It Up contacts DuckDuckGo with your query, and your AI provider with what it read, only when you press Shift-Return. Never in private windows.
+- **Link hints** run in their own isolated script world: a page can't see, fake or trigger them.
+- **Local-device certificates:** only names that can't be on the public internet (.local, .lan, .home.arpa, .internal, single-word names) get the accept prompt, and you decide each time. Public sites never do.
+- **Google sign-in:** an expired sign-in is deleted from the Keychain rather than retried. Sync failures are logged with their reason only, no addresses or content.
+- **Website:** Vega now has a home page and privacy policy at clarifyingchaos.github.io/vega-browser.
+- Checked and unchanged: the assistant's new fill tool asks before acting like its other actions; Cmd-click reacts only to real clicks; no new permissions or entitlements.
+
 ## Vega 1.8.6 (2026-11-24)
 
 ### Fixes
