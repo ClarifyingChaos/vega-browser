@@ -143,6 +143,7 @@ extension BrowserManager: TabEventObserver {
     }
 
     func tabClosed(itemID: UUID) {
+        lookupManager.tabClosed(itemID)
         ExtensionManager.shared.notifyTabClosed(itemID: itemID)
         exitSidebarPiP(showing: itemID)
     }

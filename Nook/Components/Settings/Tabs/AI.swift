@@ -44,10 +44,10 @@ struct SettingsAITab: View {
         @Bindable var settings = nookSettings
         Form {
             SettingsHero(symbol: "sparkles", title: "AI", detail: "Tab organizer, providers and the assistant\u{2019}s tools.")
-
             // MARK: - Assistant
             Section {
                 toggleRow("AI Assistant", "Shows the chat button in the sidebar and toolbar", isOn: $settings.showAIAssistant)
+                toggleRow("Look It Up", "Shift-Return in the address bar searches DuckDuckGo, reads the top pages and writes one page from them", isOn: $settings.lookupEnabled)
 
                 // FORK: where the chat opens. Either way it stays on the right and leaves the tab sidebar alone.
                 // A pull-down, not a pop-up: a pop-up opens its list over the selected item, covering the control.
