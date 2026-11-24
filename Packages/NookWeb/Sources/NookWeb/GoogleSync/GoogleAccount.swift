@@ -61,6 +61,8 @@ public final class GoogleAccount {
 
     public private(set) var email: String?
     public private(set) var isSigningIn = false
+    /// Google stopped honouring this Mac's sign-in: it has to sign in again.
+    public private(set) var signInExpired = false
     public var isSignedIn: Bool { email != nil && loadRefreshToken() != nil }
     /// False in a build without a Google client: the sign-in button says so instead of failing.
     public var isAvailable: Bool { GoogleOAuthConfig.load() != nil }
@@ -82,6 +84,7 @@ public final class GoogleAccount {
         let tokens = try await GoogleOAuth.exchange(code: code, config: config, port: port, verifier: pkce.verifier)
         guard let refresh = tokens.refresh else { throw GoogleOAuth.OAuthError.badResponse }
         saveRefreshToken(refresh)
+        signInExpired = false
         access = tokens
         email = tokens.email
         UserDefaults.standard.set(tokens.email, forKey: emailKey)
@@ -112,7 +115,7 @@ public final class GoogleAccount {
     public func idToken() async throws -> String {
         if let access, access.expires > Date(), let id = access.idToken { return id }
         guard let config = GoogleOAuthConfig.load(), let refresh = loadRefreshToken() else { throw GoogleOAuth.OAuthError.notConfigured }
-        let fresh = try await GoogleOAuth.refresh(refresh, config: config)
+        let fresh = try await refreshed(refresh, config: config)
         access = fresh
         guard let id = fresh.idToken else { throw GoogleOAuth.OAuthError.badResponse }
         return id
@@ -121,9 +124,19 @@ public final class GoogleAccount {
     private func accessToken() async throws -> String {
         if let access, access.expires > Date() { return access.access }
         guard let config = GoogleOAuthConfig.load(), let refresh = loadRefreshToken() else { throw GoogleOAuth.OAuthError.notConfigured }
-        let fresh = try await GoogleOAuth.refresh(refresh, config: config)
+        let fresh = try await refreshed(refresh, config: config)
         access = fresh
         return fresh.access
+    }
+
+    /// A refresh Google refuses for good drops the token, so Settings asks to sign in again and sync stops using it.
+    private func refreshed(_ refresh: String, config: GoogleOAuthConfig) async throws -> GoogleOAuth.Tokens {
+        do { return try await GoogleOAuth.refresh(refresh, config: config) } catch GoogleOAuth.OAuthError.expired {
+            deleteRefreshToken()
+            access = nil
+            signInExpired = true
+            throw GoogleOAuth.OAuthError.expired
+        }
     }
 
     private func loadRefreshToken() -> String? {

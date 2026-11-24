@@ -328,11 +328,21 @@ private struct SyncSection: View {
                     ForEach(SyncCoordinator.Backend.available) { Text($0.title).tag($0) }
                 }
                 if sync.backend == .automatic && sync.status != .off {
-                    Text("Syncing through \(sync.active.title). If it can't be reached, Vega moves to the next place and tries the first again every few minutes.")
+                    Text("Syncing through \(sync.active.title). If it can't be reached, Vega moves to the next place and tries the first again every minute.")
                         .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                    // FORK: a Mac on the fallback can't see Macs still on the server, so say why it left.
+                    if sync.active != .server, let problem = sync.serverProblem {
+                        Text("The Vega Sync server failed: \(problem) Your other Macs may not see this one until it works again.")
+                            .font(NookDesign.Font.secondary).foregroundStyle(.orange)
+                    }
                 }
                 if (sync.backend == .google || sync.backend == .server || sync.backend == .automatic) && !GoogleAccount.forProfile(profileID).isSignedIn {
-                    Text("Sign in under Account above to sync with Google.").font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                    if GoogleAccount.forProfile(profileID).signInExpired {
+                        Text("Your Google sign-in expired. Sign in again under Account above to sync through the Vega Sync server.")
+                            .font(NookDesign.Font.secondary).foregroundStyle(.orange)
+                    } else {
+                        Text("Sign in under Account above to sync with Google.").font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                    }
                 }
                 Toggle("Keep open tabs the same on my Macs", isOn: Binding(get: { sync.mirrorsTabs }, set: { sync.mirrorsTabs = $0 }))
                 Text("Tabs you open or close on one Mac open or close on the others. Each Mac keeps its own selected tab.")

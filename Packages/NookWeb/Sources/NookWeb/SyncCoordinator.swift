@@ -202,7 +202,10 @@ public final class SyncCoordinator {
     public private(set) var active: Backend
     /// Places that just failed, and when Automatic may try them again.
     @ObservationIgnored private var coolingDown: [Backend: Date] = [:]
-    private static let retryAfter: TimeInterval = 300
+    /// A failed server round costs one quick request, so the server is tried again soon: the other Macs are there.
+    private static let retryAfter: TimeInterval = 60
+    /// Why the Vega Sync server's last round failed, while Automatic syncs somewhere else. Nil once it works.
+    public private(set) var serverProblem: String?
 
     /// The first place in order that can be used and hasn't just failed; failing that, the first that can be used.
     private func resolve() -> Backend {
@@ -731,9 +734,12 @@ public final class SyncCoordinator {
             let present = (try? await store.list("devices").names) ?? []
             Self.logger.notice("synced via \(self.active.rawValue, privacy: .public): \(present.count) device file(s) in the store, \(snapshots.count) from other Macs")
             status = .idle(lastSync: Date(), otherMacs: snapshots.count, waitingForDownload: pending)
+            if active == .server { serverProblem = nil }
         } catch {
             progress = nil
             status = .failed(error.localizedDescription)
+            Self.logger.error("sync via \(self.active.rawValue, privacy: .public) failed: \(String(describing: error), privacy: .public)")
+            if active == .server { serverProblem = error.localizedDescription }
             // Automatic: rest this place for a few minutes and try the next one now.
             if backend == .automatic {
                 coolingDown[active] = Date().addingTimeInterval(Self.retryAfter)

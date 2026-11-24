@@ -107,6 +107,11 @@ private struct SiteSettingsPopover: View {
 
             policyPicker("Camera", .camera, $camera)
             policyPicker("Microphone", .microphone, $microphone)
+            // From upstream Nook #384, kept in Vega's own per-site store. Applies from the next load.
+            Picker("Auto-Play", selection: Binding(get: { SitePreferences.shared.prefs(for: host).autoplay ?? .allowAll },
+                                                    set: { v in SitePreferences.shared.update(host) { $0.autoplay = v == .allowAll ? nil : v } })) {
+                ForEach(SiteAutoplay.allCases, id: \.self) { Text($0.label).tag($0) }
+            }
 
             Button("Clear Cookies and Site Data", role: .destructive, action: onClear)
         }

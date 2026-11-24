@@ -49,3 +49,13 @@ extension WKUserContentController {
         }
     }
 }
+
+extension NSString {
+    /// Exact equality without Swift's normalizing compare: identity, then length, then contents.
+    func isSameSource(as source: String) -> Bool {
+        let other = source as NSString
+        if self === other { return true }
+        guard length == other.length else { return false }
+        return isEqual(to: source)
+    }
+}

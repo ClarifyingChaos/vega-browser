@@ -21,6 +21,9 @@ extension PageSession: WKNavigationDelegate {
     ) {
         loadingState = .didStartProvisionalNavigation
         blockedURL = nil
+        // A refresh or redirect the page under the error page starts leaves it up until that commits.
+        if nookBeganNavigation { loadError = nil }
+        nookBeganNavigation = false
         controller?.tabEvents?.tabPropertiesChanged(self, properties: [.loading])
 
         if let newURL = webView.url {
@@ -49,6 +52,8 @@ extension PageSession: WKNavigationDelegate {
         loadingState = .didCommit
         // Tells the page guard whether this site may open pop-ups (see BrowserConfig).
         webView.evaluateJavaScript("window.__vegaAllowPopups = \(!blocksPopups)", completionHandler: nil)
+        loadError = nil
+        nookBeganNavigation = false
         navigationRewrites = 0
         linkPreview = nil
         pdfLoadStateChanged(webView)
@@ -298,8 +303,21 @@ extension PageSession: WKNavigationDelegate {
             controller?.tabEvents?.tabPropertiesChanged(self, properties: [.URL])
             controller?.pageCommitted(itemID: itemID, url: committed)
         }
+        // A newer load (WebKit's HTTP fallback, a typed address) still running owns the page.
+        // A failure with no error page (a cancel) leaves one that is already up.
+        if !webView.isLoading {
+            if let failure = PageLoadError(error: error, attempted: attempted) { loadError = failure }
+            nookBeganNavigation = false
+        }
 
         updateNavigationStateEnhanced(source: "didFailProvisional")
+    }
+
+    /// A rewrite stands in for the navigation it cancelled, so it begins from the same side.
+    private func loadRewrite(_ url: URL, in webView: WKWebView) {
+        let nookBegan = nookBeganNavigation
+        webView.load(URLRequest(url: url))
+        nookBeganNavigation = nookBegan
     }
 
     /// WebKitErrorFrameLoadBlockedByContentBlocker, which WebKit keeps private.
@@ -413,14 +431,14 @@ extension PageSession: WKNavigationDelegate {
                 }
                 navigationRewrites += 1
                 decisionHandler(.cancel)
-                webView.load(URLRequest(url: replacement))
+                loadRewrite(replacement, in: webView)
                 return
             }
 
             if mayRewrite, let settings = controller?.settings, let hot = RedditTweaks.hotURL(for: url, settings: settings) {
                 navigationRewrites += 1
                 decisionHandler(.cancel)
-                webView.load(URLRequest(url: hot))
+                loadRewrite(hot, in: webView)
                 return
             }
 
@@ -457,6 +475,18 @@ extension PageSession: WKNavigationDelegate {
                     guard let self else { return }
                     self.controller?.sessionDelegate?.presentPeek(url: url, from: self)
                 }
+            }
+            return
+        }
+
+        // Command-click the page script missed (the page stopped the click's propagation, or no script in that frame):
+        // WebKit would load it here, so open it as a new tab instead, Shift bringing it forward.
+        if let url = navigationAction.request.url, navigationAction.navigationType == .linkActivated,
+           navigationAction.modifierFlags.contains(.command) {
+            decisionHandler(.cancel)
+            let foreground = navigationAction.modifierFlags.contains(.shift)
+            RunLoop.current.perform { [weak self] in
+                MainActor.assumeIsolated { self?.openInNewTab(url, foreground: foreground) }
             }
             return
         }
