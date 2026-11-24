@@ -2,6 +2,23 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.6 (2026-11-24)
+
+### Fixes
+- **Site icons now work the way Arc and Dia do it:** each page keeps the icon it declares, read from the loaded page itself. Pages on one site can have different icons (Google Docs and Sheets), and a site's own icon stands in for pages you haven't visited yet. Google no longer shows Google Meet's icon: an icon fetched for a page you had already left is never shown, a tab that moves to another site shows the globe until the new icon arrives, and a pinned tab keeps a redirect's icon (gmail.com to mail.google.com) only for a real redirect. History and link previews use the same rules, and history no longer takes an icon from a site a page redirected to. The old icon cache is cleared once, so icons that were wrong before are fetched again.
+- **Icons that change while a page is open** (Gmail's unread count) are followed. The changing icon is shown, not saved, so an old count never comes back on your next visit.
+- **Pop-ups you allow for a site now also work inside frames embedded in its pages** (a video player, a widget). Blocking is unchanged: with it on, those frames still can't open pop-ups.
+
+### Privacy and security
+Reviewed before release; four problems found and fixed.
+- **Saved passwords no longer cross sites on shared hosting.** Vega now decides which addresses are one site with the Public Suffix List (bundled, the same list Safari and Chrome use), not a short hand-made list. A login saved on one github.io, vercel.app, netlify.app, pages.dev or blogspot site was offered, with its user names, on every other site under the same host. The password still needed Touch ID. If the list can't be read, every address counts as its own site.
+- **A sign-out could be undone.** Vega keeps a copy of your sign-in cookies to put back ones the system loses while tabs sleep. For a second after a sign-out, or after you cleared website data, that copy could put the old sign-in back. It is now left alone while cookie changes are still being saved, and its folder is readable by you only.
+- **Browser Control** (off by default): its access token is created readable by you only from the start, and checked in constant time.
+- **System log:** the site name of every page the content blocker handled, addresses of tabs opened by extensions, a tab title, routing rules, and SponsorBlock and image hosts were written to the macOS log as readable text. They are now redacted.
+- Icons: a changing icon is read from the page by Vega, never taken from a message the page sends, and a picture embedded in an icon is size-limited.
+- Checked and unchanged: AI assistant tools still ask before acting and always ask before running code; saved-password filling still needs Touch ID, a secure page and the site you are on; downloads keep the quarantine flag; shared space files import web addresses only; password sync is still encrypted before it leaves your Mac.
+- No new network destinations, permissions or entitlements.
+
 ## Vega 1.8.5 (2026-11-24)
 
 ### Fixes
