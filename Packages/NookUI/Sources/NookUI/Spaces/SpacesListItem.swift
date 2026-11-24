@@ -25,6 +25,8 @@ struct SpacesListItem: View {
 
     @State private var showThemePicker = false
     @State private var showsIconPicker = false
+    @State private var showsName = false
+    @State private var nameTask: Task<Void, Never>?
     @Environment(\.tabActions) private var actions
 
     private let dotSize: CGFloat = NookDesign.Spacing.sm
@@ -49,6 +51,7 @@ struct SpacesListItem: View {
 
     var body: some View {
         Button {
+            showsName = false
             guard windowState.spaceID != space.id else { return }
             Haptics.alignment()
             withAnimation(NookDesign.Motion.standard) {
@@ -62,7 +65,21 @@ struct SpacesListItem: View {
         .layoutPriority(isActive ? 1 : 0)
         .opacity(isFaded ? 0.3 : 1.0)
         .accessibilityLabel(space.name)
-        .help(space.name)
+        // The system tooltip waits about a second; a dot with no label should name its space almost at once.
+        .onHover { inside in
+            nameTask?.cancel()
+            guard inside else { showsName = false; return }
+            nameTask = Task {
+                try? await Task.sleep(for: .milliseconds(120))
+                if !Task.isCancelled { showsName = true }
+            }
+        }
+        .popover(isPresented: $showsName, arrowEdge: .top) {
+            Text(space.name)
+                .font(.callout)
+                .padding(.horizontal, NookDesign.Spacing.md)
+                .padding(.vertical, NookDesign.Spacing.sm)
+        }
         .popover(isPresented: $showThemePicker, arrowEdge: .top) {
             SpaceThemeEditor(space: space)
                 .environment(tabs)
