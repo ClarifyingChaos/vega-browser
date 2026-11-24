@@ -6,6 +6,33 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.4 (2026-11-24)
+
+### New
+- **Spaces:** each space dot is tinted with its space's colour, and hovering one names the space after a fraction of a second instead of the slow system tooltip.
+- **Pop-ups, per site.** Settings › Privacy keeps pop-up blocking on by default; Site Controls and Site Permissions now let you allow or block pop-ups for one site. Pop-ups a page opens without a click are still blocked; a site you allow is left alone.
+- **Easel redesign:** page cards show a picture of the page, to-do cards, and cards move and resize with the right hand cursors.
+- **Captures:** Capture Visible Area and Capture Full Page are kept in the Library's Media view, next to the screenshots macOS took.
+- **Solid confirmations:** delete and discard questions are clear system alerts instead of see-through glass; Vega's own dialogs have an opaque card and a darker backdrop.
+- **Resize cursors** on the window edges and on Picture in Picture.
+
+### Fixes
+- **Scroll-bar corner:** the dark, white or orange square where a vertical and a horizontal scroll bar meet is gone. The corner, the track and the layer behind the page now take the colour the page really paints, not the site's theme colour.
+- **Links that did not open:** a site's own "leaving this site" page (Behance, for one) now opens the address it carries.
+- **Wrong site icon:** Behance no longer shows Adobe's icon; an icon is kept only while the page is still on the site it came from.
+- A round of fixes to captures, Picture in Picture, hover previews, drag and select, the accent colour, refresh and recovering your session.
+
+### Privacy and security
+Reviewed before release.
+- **Pop-ups:** the per-site choice is saved on your Mac with your other site settings. It changes only whether a page may open a window; nothing is sent anywhere.
+- **Captures** are saved in Vega's own folder on your Mac with the site's name in the file name, and copied to the clipboard. They are not kept from private windows: a private window now says so instead of saving.
+- **Screenshots from macOS** now appear in the Library. Vega lists the screenshot folder, the Desktop and what Spotlight marks as a screenshot, only on your Mac, and shows them in the grid; it does not read their contents beyond a preview, upload them or send them to the assistant. macOS may ask once to let Vega see the Desktop.
+- **Easel page pictures:** a card for a public https page makes one request to that page for its share picture, with no cookies and no sign-in, and never to a local name or a raw IP address. The picture is stored on your Mac.
+- **Scroll-bar colour:** Vega reads one pixel of the page it is showing to colour the scroll bar. The pixel stays in the app; the page is only given a colour value.
+- **Site icons:** an icon is no longer taken from a site the request was redirected to.
+- **Sign-ins:** a session cookie that the system lost while your tabs slept is put back from Vega's saved copy, never over a newer one, and never in private windows.
+- No new permissions or entitlements.
+
 ## Vega 1.8.3 (2026-11-19)
 
 ### New
