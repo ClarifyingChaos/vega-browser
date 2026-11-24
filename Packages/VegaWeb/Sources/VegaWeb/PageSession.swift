@@ -189,6 +189,9 @@ public final class PageSession: NSObject, Identifiable {
 
     public var pageBackgroundColor: PlatformColor? = nil
     public var topBarBackgroundColor: PlatformColor? = nil
+    /// What the page really paints just inside its bottom-right corner, for the scroll-bar gutter and corner. `pageBackgroundColor`
+    /// is the site's theme-color, which can differ from the page (Crunchyroll's is orange on a black page).
+    public var gutterColor: PlatformColor? = nil
     /// Option key state for Peek on link click.
     @ObservationIgnored public var isOptionKeyDown: Bool = false
     @ObservationIgnored public var onLinkHover: ((String?) -> Void)? = nil
