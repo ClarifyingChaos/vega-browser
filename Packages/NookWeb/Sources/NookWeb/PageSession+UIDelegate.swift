@@ -69,6 +69,20 @@ extension PageSession {
 
 }
 
+/// FORK: answers the pop-up guard (BrowserConfig) in every frame of a tab with the tab's choice for the site it shows.
+/// Frames embedded in a page cannot read the flag the main frame gets, so an allowed site's embedded player stayed blocked.
+/// A page can ask too; it only learns its own tab's setting.
+final class PopupPolicyReply: NSObject, WKScriptMessageHandlerWithReply {
+    static let name = "vegaPopupPolicy"
+    private weak var session: PageSession?
+    init(_ session: PageSession) { self.session = session }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage,
+                               replyHandler: @escaping @MainActor @Sendable (Any?, String?) -> Void) {
+        replyHandler(session.map { !$0.blocksPopups } ?? false, nil)
+    }
+}
+
 // MARK: - WKUIDelegate
 extension PageSession: WKUIDelegate {
     /// This site's own choice, else the global Block pop-up ads setting (on by default).

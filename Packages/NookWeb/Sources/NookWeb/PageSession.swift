@@ -238,6 +238,9 @@ public final class PageSession: NSObject, Identifiable {
     @ObservationIgnored var faviconFetchAttempts: Int = 0
     /// FORK: the site the icon on show belongs to, so a tab that moved to another site never keeps the last one's.
     @ObservationIgnored var faviconSite: String?
+    /// FORK: the bitmap behind `favicon`, for rows that draw it pixel-exact. It can differ from the cached icon: a page
+    /// that swaps its icon while open (an unread count) shows the new one here and nowhere on disk.
+    public private(set) var liveFaviconImage: PlatformImage?
     static let maxFaviconRetries = 3
 
     @ObservationIgnored var lastSampledDomain: String? = nil
@@ -460,6 +463,8 @@ public final class PageSession: NSObject, Identifiable {
         }
         controller.removeScriptMessageHandler(forName: "pipStateChange", contentWorld: Self.pipStateWorld)
         controller.add(self, contentWorld: Self.pipStateWorld, name: "pipStateChange")
+        controller.removeScriptMessageHandler(forName: PopupPolicyReply.name, contentWorld: .page)
+        controller.addScriptMessageHandler(PopupPolicyReply(self), contentWorld: .page, name: PopupPolicyReply.name)
         for name in Self.linkHoverHandlerNames {
             controller.removeScriptMessageHandler(forName: name, contentWorld: Self.linkHoverWorld)
             controller.add(self, contentWorld: Self.linkHoverWorld, name: name)
@@ -562,6 +567,7 @@ public final class PageSession: NSObject, Identifiable {
             controller.removeScriptMessageHandler(forName: handlerName)
         }
         controller.removeScriptMessageHandler(forName: "pipStateChange", contentWorld: Self.pipStateWorld)
+        controller.removeScriptMessageHandler(forName: PopupPolicyReply.name, contentWorld: .page)
         for name in Self.linkHoverHandlerNames {
             controller.removeScriptMessageHandler(forName: name, contentWorld: Self.linkHoverWorld)
         }
@@ -829,6 +835,7 @@ public final class PageSession: NSObject, Identifiable {
 
     func show(_ image: PlatformImage, for url: URL) {
         guard stillShows(url) else { return }
+        liveFaviconImage = image
         favicon = SwiftUI.Image(platformImage: image)
         faviconSite = FaviconCache.key(for: url)
         hasFavicon = true
@@ -841,7 +848,7 @@ public final class PageSession: NSObject, Identifiable {
     func fetchAndSetFavicon(for url: URL) async {
         let defaultFavicon = SwiftUI.Image(systemName: "globe")
         guard url.scheme == "http" || url.scheme == "https", url.host != nil else {
-            if stillShows(url) { favicon = defaultFavicon }
+            if stillShows(url) { favicon = defaultFavicon; liveFaviconImage = nil }
             return
         }
 
@@ -854,6 +861,7 @@ public final class PageSession: NSObject, Identifiable {
         } else if stillShows(url), faviconSite != FaviconCache.key(for: url) {
             // Another site's icon is on show and this one has none yet: the globe until the page gives its own.
             favicon = defaultFavicon
+            liveFaviconImage = nil
             faviconSite = nil
             hasFavicon = false
         }
@@ -884,7 +892,7 @@ public final class PageSession: NSObject, Identifiable {
 
         // A failed refresh keeps the cached icon; otherwise hasFavicon stays false so
         // ensureFaviconLoaded() can retry.
-        if cached == nil, stillShows(url) { favicon = defaultFavicon }
+        if cached == nil, stillShows(url) { favicon = defaultFavicon; liveFaviconImage = nil }
     }
 
     private static func fetchFaviconImage(for url: URL) async -> PlatformImage? {
