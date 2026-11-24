@@ -2,6 +2,15 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.5 (2026-11-24)
+
+### Fixes
+- **Picture in Picture:** shrinking the floating video by one of its edges no longer squeezes it into a thin horizontal pill. The panel now keeps the video's own shape and a sensible minimum size, including after you pop it out from the sidebar's media bar.
+
+### Privacy and security
+Reviewed before release.
+- Only the size and shape of the floating video panel changed. No new network destinations, files, permissions or entitlements, and nothing is read from or sent about the video.
+
 ## Vega 1.8.4 (2026-11-24)
 
 ### New
