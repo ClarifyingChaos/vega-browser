@@ -219,6 +219,8 @@ extension BrowserManager {
         let fail: (String?) -> Void = { message in
             SystemAlert.present(SystemAlert.make("Couldn't capture the page", message ?? "The page has nothing to capture.", style: .warning, buttons: ["OK"])) { _ in }
         }
+        // A capture is kept on disk, with the site's name in its file name, and on the clipboard: not from a private window.
+        if page.isPrivate { return fail("Captures are not kept from private windows.") }
         let finish: (NSImage?, String?) -> Void = { image, message in
             guard let image, let tiff = image.tiffRepresentation,
                   let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { return fail(message) }
