@@ -50,12 +50,11 @@ extension PageSession {
             if rank.usable, !image.isBlank, best == nil || rank > best!.rank { best = (image, rank) }
         }
         guard Self.sameSite(webView.url, pageURL),
-              let icon = best?.image.trimmedToContent().downscaled(toEdge: FaviconCache.maxStoredEdge),
-              let key = FaviconCache.key(for: pageURL) else { return false }
-        // A private page's host must not reach ~/Library/Caches/FaviconCache.
-        FaviconCache.shared.store(icon, for: key, toDisk: !isPrivate)
-        favicon = SwiftUI.Image(platformImage: FaviconCache.shared.image(for: key) ?? icon)
-        hasFavicon = true
+              let icon = best?.image.trimmedToContent().downscaled(toEdge: FaviconCache.maxStoredEdge) else { return false }
+        // Kept for this page (and its site, when it is the site's first or its root). A private page's host must not
+        // reach ~/Library/Caches/FaviconCache.
+        let key = FaviconCache.shared.store(icon, forPage: pageURL, toDisk: !isPrivate)
+        show(key.flatMap { FaviconCache.shared.image(for: $0) } ?? icon, for: pageURL)
         return true
     }
 }

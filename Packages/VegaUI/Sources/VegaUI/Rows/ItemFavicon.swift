@@ -59,16 +59,18 @@ public struct ItemFavicon: View {
         }
             // Keyed on the session too: closing a pinned tab or favorite ends its page but keeps
             // the row, and the cached icon must be loaded then.
-            .task(id: "\(item.url.flatMap(FaviconCache.key) ?? "")|\(session == nil)|\(session?.hasLoadedFavicon == true)") {
+            .task(id: "\(item.url.flatMap(FaviconCache.pageKey) ?? "")|\(session == nil)|\(session?.hasLoadedFavicon == true)") {
                 session?.ensureFaviconLoaded()
-                guard let url = item.url, let host = FaviconCache.key(for: url) else { return }
-                // FORK: a pin whose address redirects (gmail.com to mail.google.com) keeps the icon its page loaded.
-                // Only the first page it loaded: one it navigated to since is another site, whose icon is not this item's.
-                if let session, !session.isPrivate, session.hasLoadedFavicon, !session.canGoBack, FaviconCache.shared.image(for: host) == nil,
-                   let live = FaviconCache.key(for: session.url).flatMap({ FaviconCache.shared.image(for: $0) }) {
-                    FaviconCache.shared.store(live, for: host)
+                guard let url = item.url, FaviconCache.pageKey(for: url) != nil else { return }
+                // FORK: a pin whose address redirects (gmail.com to mail.google.com) keeps the icon its page loaded, as Chromium
+                // gives an icon to every address in a redirect chain. Only for a real redirect from the item's own address: a
+                // page the tab went on to by a link, a sign-in or Peek is another page, whose icon is not this item's.
+                if let session, !session.isPrivate, session.hasLoadedFavicon, FaviconCache.shared.image(forPage: url) == nil,
+                   session.redirectedFrom.flatMap(FaviconCache.pageKey) == FaviconCache.pageKey(for: url),
+                   let live = FaviconCache.shared.image(forPage: session.url) {
+                    FaviconCache.shared.store(live, forPage: url)
                 }
-                if let image = await FaviconCache.shared.cachedImage(for: host) { cached = Image(platformImage: image); cachedPlatform = image }
+                if let image = await FaviconCache.shared.cachedImage(forPage: url) { cached = Image(platformImage: image); cachedPlatform = image }
                 // FORK: an unloaded favorite or pinned tab has no page to fetch its icon, so fetch it here.
                 // Never for a private tab: it would reach the network and the disk cache.
                 guard !(session?.hasLoadedFavicon == true && onOwnSite), session?.isPrivate != true,
@@ -88,7 +90,7 @@ public struct ItemFavicon: View {
     private var crispSource: PlatformImage? {
         #if os(macOS)
         if let session, session.hasLoadedFavicon, onOwnSite || cachedPlatform == nil,
-           let image = FaviconCache.key(for: session.url).flatMap({ FaviconCache.shared.image(for: $0) }) { return image }
+           let image = FaviconCache.shared.image(forPage: session.url) { return image }
         return cachedPlatform
         #else
         return nil

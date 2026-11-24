@@ -94,10 +94,10 @@ final class LinkPreviewService {
                     if let image = await Self.image(at: imageURL) { images[url] = image }
                 }
             }
-            if let landed = page.landedURL, let host = FaviconCache.key(for: landed) {
+            if let landed = page.landedURL, FaviconCache.pageKey(for: landed) != nil {
                 let iconURL = page.iconURL ?? URL(string: "/favicon.ico", relativeTo: landed)?.absoluteURL
                 Task {
-                    if let icon = await Self.icon(at: iconURL, host: host) { icons[url] = icon }
+                    if let icon = await Self.icon(at: iconURL, page: landed) { icons[url] = icon }
                 }
             }
             guard canSummarize else { return }
@@ -164,12 +164,15 @@ final class LinkPreviewService {
         return page
     }
 
-    /// The site's favicon: the shared cache first, else fetched through the gate and stored there like a tab's.
-    private static func icon(at url: URL?, host: String) async -> NSImage? {
-        if let cached = await FaviconCache.shared.cachedImage(for: host) { return cached }
-        guard let url, let (data, _) = await gatedData(url), data.count < 1_000_000, let found = NSImage(data: data) else { return nil }
-        FaviconCache.shared.store(found, for: host)
-        return FaviconCache.shared.image(for: host) ?? found
+    /// The page's favicon: the shared cache first (the page's own, else its site's), else fetched through the gate and
+    /// kept for that page like a tab's.
+    private static func icon(at url: URL?, page: URL) async -> NSImage? {
+        if let entry = await FaviconCache.shared.cachedEntry(forPage: page), FaviconCache.shared.isSettled(entry.key, for: page) { return entry.image }
+        guard let url, let (data, _) = await gatedData(url), data.count < 1_000_000, let found = NSImage(data: data) else {
+            return await FaviconCache.shared.cachedImage(forPage: page)
+        }
+        let key = FaviconCache.shared.store(found, forPage: page)
+        return key.flatMap { FaviconCache.shared.image(for: $0) } ?? found
     }
 
     private nonisolated static func image(at url: URL) async -> NSImage? {

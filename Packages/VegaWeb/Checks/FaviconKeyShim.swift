@@ -12,6 +12,6 @@ import SwiftUI
 public typealias PlatformImage = NSImage
 extension Image { public init(platformImage: PlatformImage) { self.init(nsImage: platformImage) } }
 extension NSImage {
-    func pngData() -> Data? { nil }
+    func pngData() -> Data? { tiffRepresentation }
     convenience init?(data: Data, _ x: Int = 0) { self.init(data: data) }
 }

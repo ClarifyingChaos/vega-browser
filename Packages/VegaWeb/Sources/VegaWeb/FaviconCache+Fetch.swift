@@ -18,12 +18,13 @@ extension FaviconCache {
     /// a 2x display, and 200 of them stay small in memory.
     static let maxStoredEdge: CGFloat = 128
 
-    /// The cached icon for `url`'s host, fetched and stored when missing or older than `maxAge`.
-    /// Nil when the site offers none. Concurrent calls for one host share one request.
+    /// The cached icon for the page at `url` (its own, else its site's), fetched and stored when missing, older than
+    /// `maxAge`, or only borrowed from the site. Nil when the site offers none. Concurrent calls for one page share one request.
     public func loadOrFetch(for url: URL) async -> PlatformImage? {
-        guard let key = Self.key(for: url) else { return nil }
-        let cached = await cachedImage(for: key)
-        if cached != nil, !(await isStale(key)) { return cached }
+        guard let key = Self.pageKey(for: url) else { return nil }
+        let entry = await cachedEntry(forPage: url)
+        let cached = entry?.image
+        if let entry, isSettled(entry.key, for: url), !(await isStale(entry.key)) { return cached }
         // A background fetch for a row nobody opened: public https hosts only, so launching never
         // contacts a router page or a dev server, and a site with no icon is not retried for a day.
         // A favorite saved as http:// asks for its icon over https: the icon is the same, and the request stays private.
@@ -39,8 +40,8 @@ extension FaviconCache {
             await FaviconFetches.shared.markFailed(key)
             return cached
         }
-        store(fresh, for: key)
-        return image(for: key) ?? fresh
+        let stored = store(fresh, forPage: url)
+        return stored.flatMap { image(for: $0) } ?? fresh
     }
 
     /// The best roughly square icon among the page's `<link>` tags, its web manifest and /favicon.ico.
