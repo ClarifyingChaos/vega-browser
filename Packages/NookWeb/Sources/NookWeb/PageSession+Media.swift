@@ -291,6 +291,26 @@ extension PageSession {
         return CGRect(x: sampleX, y: sampleY, width: 1, height: 1)
     }
     
+    /// Samples one pixel just inside the bottom-right corner, clear of the scroll bar, and hands it to the page's scroll-bar
+    /// styling (`--vega-gutter`, see BrowserConfig) and to the layer behind the page.
+    func sampleGutterColor(from webView: WKWebView) {
+        let bounds = webView.bounds
+        guard bounds.width > 40, bounds.height > 40 else { return }
+        let configuration = WKSnapshotConfiguration()
+        configuration.rect = CGRect(x: bounds.maxX - 20, y: webView.isFlipped ? bounds.maxY - 20 : bounds.minY + 20, width: 1, height: 1)
+        configuration.afterScreenUpdates = true
+        configuration.snapshotWidth = 1
+        webView.takeSnapshot(with: configuration) { [weak self, weak webView] image, _ in
+            guard let self, let webView, let color = image?.singlePixelColor else { return }
+            self.gutterColor = color
+            // The ends of the scroll bar show the layer under the page, and the theme-color it had would be orange on Crunchyroll.
+            webView.underPageBackgroundColor = color
+            guard let c = color.usingColorSpace(.sRGB) else { return }
+            let css = "rgb(\(Int(c.redComponent * 255)),\(Int(c.greenComponent * 255)),\(Int(c.blueComponent * 255)))"
+            webView.evaluateJavaScript("document.documentElement.style.setProperty('--vega-gutter','\(css)')", completionHandler: nil)
+        }
+    }
+
     func extractTopBarColor(from webView: WKWebView) {
         // Only sample once per domain
         if let currentURL = webView.url,

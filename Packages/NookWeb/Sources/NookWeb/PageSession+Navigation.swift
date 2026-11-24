@@ -178,6 +178,13 @@ extension PageSession: WKNavigationDelegate {
                 self.extractTopBarColor(from: webView)
             }
         }
+        // A single-page site settles its colours after load, so sample again once it has.
+        for delay in [0.6, 2.5] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak webView] in
+                guard let self, let webView, self.loadingState == .didFinish else { return }
+                self.sampleGutterColor(from: webView)
+            }
+        }
 
         // Apply mute state using MuteableWKWebView if the tab was previously muted
         if isAudioMuted {

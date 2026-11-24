@@ -101,10 +101,12 @@ public class BrowserConfiguration {
                     return 'Canvas';
                 };
                 // The track is painted white the same way when the Mac shows scroll bars all the time, so it gets the colour too.
-                const css = () => '::-webkit-scrollbar{width:12px !important;height:12px !important;background:' + bg() + ' !important}' +
-                            '::-webkit-scrollbar-track,::-webkit-scrollbar-track-piece{background:' + bg() + ' !important}' +
+                // The page session samples what the page really paints and sets --vega-gutter; bg() is the guess until then.
+                const col = () => 'var(--vega-gutter,' + bg() + ')';
+                const css = () => '::-webkit-scrollbar{width:12px !important;height:12px !important;background:' + col() + ' !important}' +
+                            '::-webkit-scrollbar-track,::-webkit-scrollbar-track-piece{background:' + col() + ' !important}' +
                             '::-webkit-scrollbar-button{display:none !important;width:0 !important;height:0 !important}' +
-                            '::-webkit-scrollbar-corner{background:' + bg() + ' !important}' +
+                            '::-webkit-scrollbar-corner{background:' + col() + ' !important}' +
                             '::-webkit-scrollbar-thumb{background:rgba(128,128,128,.55) !important;border-radius:6px !important;border:3px solid transparent !important;background-clip:padding-box !important;min-height:34px}' +
                             '::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.8) !important}';
                 let sheet = null, style = null;
