@@ -46,7 +46,7 @@ extension SyncCoordinator {
 
         do {
             // Sealed copies (".enc") open with the sync passphrase's key; plain ones (".plist") are read as before.
-            let key = passwordsEnabled ? loadKey() : nil
+            let key = loadKey()
             let names = try await store.list("settings").names.filter { name in
                 (name.hasSuffix(".plist") || (key != nil && name.hasSuffix(".enc"))) && !name.hasPrefix(own.uuidString) && !removedIDs.contains { name.hasPrefix($0.uuidString) }
             }

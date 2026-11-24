@@ -24,6 +24,8 @@ struct AccountStage: View {
     @State private var sync = SyncCoordinator.shared
     @State private var error: String?
     @State private var askingPassphrase = false
+    /// Choosing the passphrase that starts sync, asked as soon as sync is on and this Mac has none.
+    @State private var settingUpPassphrase = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -61,6 +63,15 @@ struct AccountStage: View {
                 .padding(16)
                 .frame(width: 380)
                 .background(.white.opacity(0.08), in: NookDesign.Radius.shape(NookDesign.Radius.lg))
+                // FORK: sync sends nothing until this Mac has the passphrase that seals it.
+                if sync.isEnabled && sync.status == .needsPassphrase {
+                    VStack(spacing: 8) {
+                        Text("Choose a sync passphrase. Your spaces, favorites and tabs are sealed with it before they leave this Mac.")
+                            .font(.system(size: 12)).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center)
+                        Button("Set Sync Passphrase\u{2026}") { settingUpPassphrase = true }
+                    }
+                    .frame(width: 380)
+                }
             } else if google.isSigningIn {
                 HStack(spacing: 10) {
                     ProgressView().controlSize(.small)
@@ -113,5 +124,10 @@ struct AccountStage: View {
             }
         }
         .sheet(isPresented: $askingPassphrase) { SyncPassphraseSheet(sync: sync, changing: false).environment(\.colorScheme, .dark) }
+        .sheet(isPresented: $settingUpPassphrase) { SyncPassphraseSheet(sync: sync, changing: false, sealOnly: true).environment(\.colorScheme, .dark) }
+        // Asked once, as soon as sync is on and a passphrase is missing; the button above brings it back.
+        .onChange(of: sync.status) { _, status in
+            if status == .needsPassphrase { settingUpPassphrase = true }
+        }
     }
 }

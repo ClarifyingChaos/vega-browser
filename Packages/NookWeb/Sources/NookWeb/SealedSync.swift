@@ -4,7 +4,7 @@
 //  NookWeb
 //
 //  FORK: spaces, favorites and settings sealed with the sync passphrase, as passwords and open tabs already are, so
-//  iCloud Drive or Google Drive holds nothing it can read. A Mac writes "devices/<id>.enc" and "settings/<id>.enc"
+//  iCloud Drive or Google Drive holds nothing it can read. Sync does not start without the key. A Mac writes "devices/<id>.enc" and "settings/<id>.enc"
 //  when it has the key. While a Mac that only reads plain files (an older Vega, or one without the passphrase) has
 //  written in the last 30 days, the plain copy is written too; after that the plain copy is replaced with an empty one.
 //
@@ -47,12 +47,9 @@ public enum SealedSync {
         return (out, pending, plainOnly)
     }
 
-    /// This Mac's snapshot: sealed when there is a key, plain while some Mac still reads only plain files.
-    public static func write(_ snapshot: SyncSnapshot, to store: any SyncBlobStore, key: SymmetricKey?, plainNeeded: Bool) async throws {
-        guard let key else {
-            try await store.writeSnapshot(snapshot)
-            return
-        }
+    /// This Mac's snapshot, always sealed: a key is required, so no readable copy can be written without one. The plain
+    /// copy is written too only while some Mac still reads only plain files.
+    public static func write(_ snapshot: SyncSnapshot, to store: any SyncBlobStore, key: SymmetricKey, plainNeeded: Bool) async throws {
         try await store.put("devices/\(snapshot.deviceID.uuidString).enc", PasswordCrypto.seal(snapshot.encoded(), with: key))
         if plainNeeded {
             try await store.writeSnapshot(snapshot)

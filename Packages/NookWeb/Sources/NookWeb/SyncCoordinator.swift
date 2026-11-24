@@ -81,6 +81,9 @@ public final class SyncCoordinator {
         /// No place to sync to yet: iCloud Drive is off, or nobody is signed in to Google.
         case unavailable(String)
         case syncing
+        /// FORK: nothing is read or written until this Mac has the sync passphrase, so no space, favorite, tab or
+        /// setting ever sits in iCloud, Google or the server in a form they can read.
+        case needsPassphrase
         case idle(lastSync: Date, otherMacs: Int, waitingForDownload: Int)
         case failed(String)
     }
@@ -303,9 +306,9 @@ public final class SyncCoordinator {
 
     // MARK: - Password sync
 
-    /// Sets up password sync on this Mac: the first Mac creates the passphrase's salt in the shared
-    /// folder, the others must enter the same passphrase. The derived key stays in this Mac's Keychain.
-    public func enablePasswords(passphrase: String) async throws {
+    /// Opens or creates the sync passphrase on this Mac: the first Mac creates its salt in the shared folder, the
+    /// others must enter the same passphrase. The derived key stays in this Mac's Keychain.
+    private func unlockKey(passphrase: String) async throws {
         guard isEnabled else { throw PasswordSyncError.syncOff }
         guard let place = currentStore() else { throw PasswordSyncError.noFolder }
         guard passphrase.count >= 8 else { throw PasswordSyncError.emptyPassphrase }
@@ -320,6 +323,20 @@ public final class SyncCoordinator {
             key = made.key
         }
         saveKey(key)
+    }
+
+    /// FORK: whether this Mac has the sync passphrase's key. Without it sync is paused (`needsPassphrase`).
+    public var hasPassphrase: Bool { loadKey() != nil }
+
+    /// Sets the sync passphrase on this Mac, which starts sync. Passwords are a separate switch.
+    public func setUpPassphrase(_ passphrase: String) async throws {
+        try await unlockKey(passphrase: passphrase)
+        await tick()
+    }
+
+    /// Sets up password sync on this Mac: the passphrase (if this Mac has none yet) and the passwords switch.
+    public func enablePasswords(passphrase: String) async throws {
+        try await unlockKey(passphrase: passphrase)
         UserDefaults.standard.set(true, forKey: passwordsKey)
         passwordsEnabled = true
         forgetPasswordFingerprint()
@@ -695,6 +712,12 @@ public final class SyncCoordinator {
         guard let place = currentStore() else { status = .unavailable(missingMessage); return }
         let store = place.store
         let own = deviceID
+        // FORK: no key, no sync. Reading or writing now would leave a readable copy in the sync place.
+        guard let key = loadKey() else {
+            status = .needsPassphrase
+            Self.logger.notice("sync paused: this Mac has no sync passphrase")
+            return
+        }
         do {
             if rejoining { try await store.setRemoved(own, false); rejoining = false }
             removedIDs = await store.removedDevices()
@@ -705,9 +728,8 @@ public final class SyncCoordinator {
                 return
             }
             step(1, "Reading your other Macs")
-            let key = passwordsEnabled ? loadKey() : nil
             let (all, pending, plainOnly) = try await SealedSync.readOthers(store, excluding: own, key: key)
-            plainNeeded = key == nil || !plainOnly.subtracting(removedIDs).isEmpty
+            plainNeeded = !plainOnly.subtracting(removedIDs).isEmpty
             // iCloud still bringing a file down: look again soon instead of backing off.
             if pending > 0 { found("files still downloading") }
             let snapshots = all.filter { !removedIDs.contains($0.deviceID) }
@@ -821,7 +843,7 @@ public final class SyncCoordinator {
     /// Writes only when something other than the timestamp changed.
     @discardableResult
     private func writeOwn(store: any SyncBlobStore) async throws -> Bool {
-        guard let tabs else { return false }
+        guard let tabs, let key = loadKey() else { return false }
         // Built and compared off the main thread: the tree is a value, so this works on a copy.
         let tree = tabs.tree, id = deviceID, name = deviceName, profile = scopeProfile, mirror = mirrorsTabs
         let placeholder = placeholderID, last = lastWritten
@@ -834,8 +856,7 @@ public final class SyncCoordinator {
             if let last, last.spaces == snapshot.spaces, last.items == snapshot.items { return nil }
             return snapshot
         }.value
-        let key = passwordsEnabled ? loadKey() : nil
-        let mode = (sealed: key != nil, plain: key == nil || plainNeeded)
+        let mode = (sealed: true, plain: plainNeeded)
         // The same snapshot written the same way is not news; a new way of writing it is.
         let snapshot: SyncSnapshot
         if let built { snapshot = built } else if let last, let previous = lastWrittenMode, previous != mode { snapshot = last } else { return false }

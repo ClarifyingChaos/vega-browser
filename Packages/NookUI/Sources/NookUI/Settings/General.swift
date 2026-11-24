@@ -300,6 +300,8 @@ private struct SyncSection: View {
     }
 
     @State private var askingPassphrase = false
+    /// Choosing the sync passphrase that starts sync (passwords are a separate switch).
+    @State private var settingUpPassphrase = false
     @State private var changingPassphrase = false
     @State private var removing: SyncDevice?
     @State private var lockingOut: String?
@@ -309,6 +311,7 @@ private struct SyncSection: View {
         case .off: return "Keeps spaces, favorites, pinned tabs, open tabs, passwords and settings the same on your Macs."
         case .unavailable(let why): return why
         case .syncing: return "Syncing…"
+        case .needsPassphrase: return "Paused until you choose a sync passphrase."
         case .idle(let last, let others, let waiting):
             let found = others == 0 ? "No other Mac found yet" : "\(others) other \(others == 1 ? "Mac" : "Macs")"
             return "\(found) · synced \(last.formatted(.relative(presentation: .named)))"
@@ -322,6 +325,15 @@ private struct SyncSection: View {
             Toggle("Sync my Macs", isOn: Binding(get: { sync.isEnabled }, set: { sync.isEnabled = $0 }))
             if let line = sync.removedMessage {
                 Text(line).font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+            }
+            // FORK: sync sends nothing until this Mac has the passphrase that seals it.
+            if sync.isEnabled && sync.status == .needsPassphrase {
+                HStack {
+                    Text("Sync is paused. Choose a sync passphrase first: your spaces, favorites, tabs and settings are sealed with it before they leave this Mac, so iCloud, Google and the server can't read them.")
+                        .font(NookDesign.Font.secondary).foregroundStyle(.orange)
+                    Spacer()
+                    Button("Set Passphrase\u{2026}") { settingUpPassphrase = true }
+                }
             }
             if sync.isEnabled {
                 Picker("Sync with", selection: Binding(get: { sync.backend }, set: { sync.backend = $0 })) {
@@ -348,9 +360,7 @@ private struct SyncSection: View {
                 Text("Tabs you open or close on one Mac open or close on the others. Each Mac keeps its own selected tab.")
                     .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
                 Toggle("Also list open tabs under Spaces \u{203A} Tabs from Other Macs", isOn: Binding(get: { sync.sharesOpenTabs }, set: { sync.sharesOpenTabs = $0 }))
-                Text(sync.passwordsEnabled
-                     ? "Lists this Mac's open tabs, sealed with your sync passphrase so neither iCloud nor Google can read them. Your other Macs show them under Spaces › Tabs from Other Macs."
-                     : "Lists this Mac's open tabs in your sync folder as plain text, without anything after the page address. Turn on password sync to seal them and keep full addresses. Your other Macs show them under Spaces › Tabs from Other Macs.")
+                Text("Lists this Mac's open tabs, sealed with your sync passphrase so neither iCloud nor Google can read them. Your other Macs show them under Spaces › Tabs from Other Macs.")
                     .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
             }
             if sync.isEnabled {
@@ -365,6 +375,13 @@ private struct SyncSection: View {
                 if sync.passwordsEnabled {
                     HStack {
                         Text(sync.passwordStatus ?? "Sealed with your sync passphrase before it leaves this Mac.")
+                            .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Change Passphrase\u{2026}") { changingPassphrase = true }
+                    }
+                } else if sync.hasPassphrase {
+                    HStack {
+                        Text("Your spaces, favorites, tabs and settings are sealed with your sync passphrase before they leave this Mac.")
                             .font(NookDesign.Font.secondary).foregroundStyle(.secondary)
                         Spacer()
                         Button("Change Passphrase\u{2026}") { changingPassphrase = true }
@@ -424,8 +441,7 @@ private struct SyncSection: View {
             Text("Sync")
         } footer: {
             if !sync.isEnabled { Text(detail) }
-            else if !sync.passwordsEnabled { Text("Turn on Sync Passwords to seal everything Vega syncs (spaces, favorites, settings, open tabs and passwords) with a passphrase only you know, so neither iCloud nor Google can read it.") }
-            else { Text("Spaces, favorites, settings, open tabs and passwords are sealed with your sync passphrase: iCloud and Google can't read them. A Mac with an older Vega still gets a readable copy of your spaces until it updates.") }
+            else { Text("Spaces, favorites, settings and open tabs are sealed with your sync passphrase, and so are passwords when you sync them: iCloud, Google and the Vega Sync server can't read them; only the names of your Macs and profile stay readable. A Mac with an older Vega still gets a readable copy of your spaces until it updates.") }
         }
         .nookConfirm("Remove \(removing?.name ?? "this Mac") from sync?",
                      message: "The next time Vega opens on it, it turns sync off and deletes the spaces, favorites, tabs, passwords, settings, history and website sign-ins it got through sync. Your other Macs keep theirs. It can join again by turning sync on.",
@@ -433,13 +449,14 @@ private struct SyncSection: View {
             if let device = removing {
                 sync.removeDevice(device.id)
                 // A new passphrase means a new key: the removed Mac can't open what is saved from now on.
-                if sync.passwordsEnabled { lockingOut = device.name }
+                if sync.hasPassphrase { lockingOut = device.name }
             }
         }
         .sheet(isPresented: $askingPassphrase) { SyncPassphraseSheet(sync: sync, changing: false) }
+        .sheet(isPresented: $settingUpPassphrase) { SyncPassphraseSheet(sync: sync, changing: false, sealOnly: true) }
         .sheet(isPresented: $changingPassphrase) { SyncPassphraseSheet(sync: sync, changing: true) }
         .sheet(isPresented: Binding(get: { lockingOut != nil }, set: { if !$0 { lockingOut = nil } })) {
-            SyncPassphraseSheet(sync: sync, changing: true, reason: "Set a new passphrase so \(lockingOut ?? "the removed Mac") can't read passwords from your sync folder, even before it deletes its own copy.")
+            SyncPassphraseSheet(sync: sync, changing: true, reason: "Set a new passphrase so \(lockingOut ?? "the removed Mac") can't read what you sync from now on, even before it deletes its own copy.")
         }
     }
 }
@@ -505,11 +522,14 @@ public struct SyncPassphraseSheet: View {
     let changing: Bool
     /// Why it is asked, said before the usual words (a Mac was just removed).
     let reason: String?
+    /// Sets only the passphrase that seals sync; passwords stay a separate switch.
+    let sealOnly: Bool
 
-    public init(sync: SyncCoordinator, changing: Bool, reason: String? = nil) {
+    public init(sync: SyncCoordinator, changing: Bool, reason: String? = nil, sealOnly: Bool = false) {
         self.sync = sync
         self.changing = changing
         self.reason = reason
+        self.sealOnly = sealOnly
     }
     @Environment(\.dismiss) private var dismiss
     @State private var passphrase = ""
@@ -531,7 +551,7 @@ public struct SyncPassphraseSheet: View {
         if changing { return (reason.map { $0 + " " } ?? "") + "Your other Macs will ask for the new passphrase. Vega can't show it again, so keep it somewhere safe, like your Passwords app." }
         if entering { return "Enter the passphrase you chose on your other Mac. On that Mac, Change Passphrase\u{2026} sets a new one if you don't have it." }
         if checked && exists == nil { return "Vega couldn't reach your sync folder to see whether another Mac has a passphrase. If one does, enter the same one here." }
-        return "Enter this passphrase on your other Macs to sync passwords with them. Vega can't show it again, so keep it somewhere safe, like your Passwords app."
+        return "Enter this passphrase on your other Macs to sync with them. Vega can't show it again, so keep it somewhere safe, like your Passwords app."
     }
 
     public var body: some View {
@@ -563,11 +583,12 @@ public struct SyncPassphraseSheet: View {
                 if working || (!checked && !changing) { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
-                Button(changing ? "Change" : "Turn On") {
+                Button(changing ? "Change" : sealOnly ? "Set Passphrase" : "Turn On") {
                     working = true
                     Task {
                         do {
                             if changing { try await sync.changePassphrase(to: passphrase) }
+                            else if sealOnly { try await sync.setUpPassphrase(passphrase) }
                             else { try await sync.enablePasswords(passphrase: passphrase) }
                             dismiss()
                         } catch { self.error = error.localizedDescription }
