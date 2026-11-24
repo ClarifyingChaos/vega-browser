@@ -4,14 +4,161 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vega Browser</title>
-<style>
-  body { font: 16px/1.6 -apple-system, system-ui, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 16px; color: #1d1d1f; background: #fff; }
-  @media (prefers-color-scheme: dark) { body { color: #f5f5f7; background: #111; } a { color: #6cb4ff; } }
-</style>
+<meta name="description" content="Vega is a calm, open-source web browser for the Mac: spaces, a vertical sidebar, built-in ad blocking and private sync between your Macs.">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
 </head>
 <body>
-<h1>Vega</h1>
-<p>A calm, Arc-style web browser for the Mac, with spaces, a vertical sidebar, ad blocking and sync between your own Macs.</p>
-<p><a href="https://github.com/ClarifyingChaos/vega-browser/releases/latest">Download the latest release</a> · <a href="https://github.com/ClarifyingChaos/vega-browser">Source code</a> · <a href="privacy.html">Privacy policy</a></p>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="icon.png" alt="">Vega</a>
+    <nav class="pill" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#pledge">Privacy</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="actions">
+      <a class="btn ghost" href="https://github.com/ClarifyingChaos/vega-browser">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        GitHub
+      </a>
+      <a class="btn light" href="https://github.com/ClarifyingChaos/vega-browser/releases/latest">Download</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <span class="eyebrow">Free · Open source · macOS 15.5+</span>
+      <h1>The browser that stays out of your way.</h1>
+      <p class="lede">Vega keeps your tabs in a quiet sidebar, sorts your work into spaces, blocks ads before they load, and keeps your Macs in step without selling a single click.</p>
+      <a class="btn light big" href="https://github.com/ClarifyingChaos/vega-browser/releases/latest">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5 12 7.5M3 14h10"/></svg>
+        Download for Mac
+      </a>
+      <p class="note">Updates itself in the background. Every release is on GitHub.</p>
+
+      <div class="shot" aria-hidden="true">
+        <div class="window">
+          <div class="side">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="url">Search or enter address</div>
+            <div class="favs">
+              <b><span style="--c:#ea4335"></span></b><b><span style="--c:#ffffff"></span></b><b><span style="--c:#5b8def"></span></b>
+              <b><span style="--c:#1db954"></span></b><b><span style="--c:#f5a623"></span></b><b><span style="--c:#9aa0ff"></span></b>
+            </div>
+            <div class="label">Work</div>
+            <div class="row"><i style="--c:#2f6bff"></i>Roadmap</div>
+            <div class="row"><i style="--c:#fff"></i>Design review</div>
+            <div class="label">Today</div>
+            <div class="row on"><i style="--c:#ff6b6b"></i>Reading list</div>
+            <div class="row child"><i style="--c:#9aa0ff"></i>Opened from a link</div>
+            <div class="row"><i style="--c:#ffd166"></i>Flights to Lisbon</div>
+            <div class="dots"><i></i><i class="on"></i><i></i><i></i></div>
+          </div>
+          <div class="page">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="body">
+              <div class="lines"><i class="h"></i><i></i><i></i><i style="width:80%"></i><i></i><i style="width:60%"></i></div>
+              <div class="card"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="features">
+      <h2>Everything in its place.</h2>
+      <p class="sub">The parts of browsing you do every day, made calmer.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></div>
+          <h3>A sidebar, not a tab strip</h3>
+          <p>Favorites, pinned tabs and today's tabs in one tidy column. Links you open nest under the page they came from.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg></div>
+          <h3>Spaces for each part of life</h3>
+          <p>Work, home and side projects each keep their own tabs, colours and sign-ins. Swipe between them.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3Z"/></svg></div>
+          <h3>Ads blocked before they load</h3>
+          <p>A built-in blocker stops ads and trackers, cleans tracking from links, and can be turned off per site.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><rect x="11" y="9" width="7" height="6" rx="1.5"/></svg></div>
+          <h3>Peek, split and picture in picture</h3>
+          <p>Glance at a link without leaving your page, put two pages side by side, and keep a video playing in the corner.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></div>
+          <h3>Your Macs, in step</h3>
+          <p>Spaces, tabs, settings and passwords follow you between Macs. Passwords are sealed with your own passphrase first.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></svg></div>
+          <h3>Bring everything with you</h3>
+          <p>Move over from Arc, Safari or Dia in a minute: spaces, pinned tabs and history.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="pledge">
+      <div class="pledge">
+        <h2>Our pledge.</h2>
+        <p class="sub" style="margin-bottom:0">Vega is a browser, not an ad business. That will not change.</p>
+        <ul>
+          <li>No ads, no analytics, no data for sale.</li>
+          <li>Your history and website data stay on your Mac.</li>
+          <li>Sync is opt-in, and passwords are encrypted before they leave.</li>
+          <li>AI features are optional and off until you turn them on.</li>
+          <li>Crash reports only if you ask for them.</li>
+          <li>Open source under the GPL, forever.</li>
+        </ul>
+        <p style="margin:28px 0 0"><a class="btn ghost" href="privacy.html">Read the privacy policy</a></p>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>Questions.</h2>
+      <details>
+        <summary>Is Vega free?</summary>
+        <p>Yes. Vega is free and open source. The code is on GitHub for anyone to read and build.</p>
+      </details>
+      <details>
+        <summary>Which Macs does it run on?</summary>
+        <p>Any Mac with macOS 15.5 or later.</p>
+      </details>
+      <details>
+        <summary>What is it built on?</summary>
+        <p>Vega uses Apple's WebKit, the engine behind Safari, so pages are fast and battery-friendly. It began as a fork of the open-source Nook browser.</p>
+      </details>
+      <details>
+        <summary>Why sign in with Google?</summary>
+        <p>Only to sync between your own Macs. The sign-in tells the Vega Sync server which files are yours. Vega can reach only its own hidden folder in your Google Drive, and nothing else in your account.</p>
+      </details>
+      <details>
+        <summary>Do my Chrome extensions work?</summary>
+        <p>Many do. Vega runs Safari-style web extensions and supports a growing number of Chrome Web Store extensions.</p>
+      </details>
+      <details>
+        <summary>How do updates work?</summary>
+        <p>Vega checks for new versions and updates itself. You can also check from Settings › Updates.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <span>© 2026 Vega. Open source under the GPL-3.0 license.</span>
+    <nav>
+      <a href="privacy.html">Privacy</a>
+      <a href="https://github.com/ClarifyingChaos/vega-browser">GitHub</a>
+      <a href="https://github.com/ClarifyingChaos/vega-browser/releases">Releases</a>
+    </nav>
+  </footer>
+</div>
 </body>
 </html>
