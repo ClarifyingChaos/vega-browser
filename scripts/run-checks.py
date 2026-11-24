@@ -17,12 +17,22 @@ def command(path):
         if not raw.startswith("//"):
             break
         lines.append(raw[2:].strip())
+    # Upstream headers name folders once, "L=Packages/...; M=Vega/...", and use $L/$M on the swiftc line.
+    names = {}
+    for line in lines:
+        if line.startswith("swiftc "):
+            break
+        for part in line.split(";"):
+            m = re.fullmatch(r"\s*([A-Z][A-Z0-9_]*)=(\S+)\s*", part)
+            if m:
+                names[m.group(1)] = m.group(2)
     for i, line in enumerate(lines):
         if line.startswith("swiftc "):
             parts = [line]
             while parts[-1].endswith("\\") and i + len(parts) < len(lines):
                 parts.append(lines[i + len(parts)])
-            return " ".join(p.rstrip("\\").strip() for p in parts)
+            cmd = " ".join(p.rstrip("\\").strip() for p in parts)
+            return re.sub(r"\$([A-Z][A-Z0-9_]*)", lambda m: names.get(m.group(1), m.group(0)), cmd)
     return None
 
 def main():
