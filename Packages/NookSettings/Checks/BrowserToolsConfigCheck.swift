@@ -19,6 +19,7 @@ struct BrowserToolsConfigCheck {
         let twelve = [
             "navigateToURL", "readPageContent", "clickElement", "getInteractiveElements", "extractStructuredData", "summarizePage",
             "searchInPage", "getTabList", "switchTab", "createTab", "getSelectedText", "executeJavaScript",
+            "readOpenTabs", "showPage", // FORK: Vega's own chat tools
         ]
         precondition(BrowserToolsConfig.allToolNames == Set(twelve + ["fillField"]))
         precondition(BrowserToolsConfig().enabledTools == BrowserToolsConfig.allToolNames)
