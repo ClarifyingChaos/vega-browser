@@ -175,7 +175,8 @@ public struct SpaceTab: View {
                         // tabs section: "x" closes.
                         let useUnload = tabs.isSynced(item.id) && !isUnloaded
                         Button(action: {
-                            if useUnload { tabs.unload(item.id) } else { tabs.remove(item.id) }
+                            // FORK: a tab's own children stay as tabs when it closes; remove only an unloaded synced item.
+                            if useUnload { tabs.unload(item.id) } else if tabs.isSynced(item.id) { tabs.remove(item.id) } else { tabs.close(item.id) }
                             // The next row slides under the pointer; let it show its close button.
                             HoverResync.request(after: VegaDesign.Motion.tabCloseDuration)
                         }) {

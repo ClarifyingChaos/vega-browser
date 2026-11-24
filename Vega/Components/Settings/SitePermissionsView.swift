@@ -62,6 +62,10 @@ struct SitePermissionsView: View {
                         triPicker("JavaScript", value: prefs.prefs(for: host).javaScript, on: "On", off: "Off") { v in prefs.update(host) { $0.javaScript = v } }
                         triPicker("Version", value: prefs.prefs(for: host).mobileSite, on: "Mobile", off: "Desktop") { v in prefs.update(host) { $0.mobileSite = v } }
                         triPicker("Pop-ups", value: prefs.prefs(for: host).allowsPopups, on: "Allowed", off: "Blocked") { v in prefs.update(host) { $0.allowsPopups = v } }
+                        Picker("Auto-Play", selection: Binding(get: { prefs.prefs(for: host).autoplay ?? .allowAll },
+                                                                set: { v in prefs.update(host) { $0.autoplay = v == .allowAll ? nil : v } })) {
+                            ForEach(SiteAutoplay.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
                         triPicker("Picture in Picture on leaving", value: prefs.prefs(for: host).autoPiP, on: "On", off: "Off") { v in prefs.update(host) { $0.autoPiP = v } }
                         Toggle("Block ads and trackers", isOn: Binding(
                             get: { !isAllowListed(host) },
@@ -96,6 +100,7 @@ struct SitePermissionsView: View {
         if let js = site.javaScript { parts.append("JavaScript \(js ? "on" : "off")") }
         if let mobile = site.mobileSite { parts.append(mobile ? "Mobile site" : "Desktop site") }
         if let popups = site.allowsPopups { parts.append("Pop-ups \(popups ? "allowed" : "blocked")") }
+        if let play = site.autoplay { parts.append(play.label) }
         if let pip = site.autoPiP { parts.append("PiP \(pip ? "on" : "off")") }
         if isAllowListed(host) { parts.append("Ads allowed") }
         return parts.joined(separator: " · ")

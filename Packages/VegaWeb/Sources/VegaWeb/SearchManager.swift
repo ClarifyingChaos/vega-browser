@@ -134,7 +134,7 @@ public class SearchManager {
             self.autofillHost = host
         }
 
-        let tabs = Array(searchTabs(for: query).prefix(2))
+        let tabs = Array(searchTabs(for: query).prefix(3))
         // Paint what is already known for this keystroke, carrying each leg's last rows. The
         // palette puts its own row for the typed text above these.
         compose(tabs: tabs)
@@ -258,6 +258,27 @@ public class SearchManager {
                 ?? SwiftUI.Image(systemName: "globe")
             let other = tabs.spaceID(of: item.id).flatMap { $0 == spaceID ? nil : tabs.space($0)?.name }
             return TabMatch(itemID: item.id, title: title, url: url, favicon: favicon, otherSpaceName: other)
+        }
+        // Nothing typed: most recently used first, like Cmd-Tab, so the top row is the tab you
+        // were on before this one. This window's own recent list decides first (it also covers
+        // private windows, which are not stamped), then the device's last-active times; tabs
+        // never selected keep sidebar order at the end.
+        guard !words.isEmpty else {
+            let recent = Dictionary(tabs.recentItems(in: window).enumerated().map { ($1, $0) }, uniquingKeysWith: min)
+            let stamps = tabs.device.lastActive ?? [:]
+            let ranked = matches.enumerated().sorted { lhs, rhs in
+                let l = lhs.element.itemID, r = rhs.element.itemID
+                switch (recent[l], recent[r]) {
+                case let (li?, ri?): return li < ri
+                case (.some, nil): return true
+                case (nil, .some): return false
+                case (nil, nil): break
+                }
+                let ld = stamps[l] ?? .distantPast, rd = stamps[r] ?? .distantPast
+                if ld != rd { return ld > rd }
+                return lhs.offset < rhs.offset
+            }
+            return ranked.prefix(limit).map { SearchSuggestion(text: $0.element.title, type: .tab($0.element)) }
         }
         // Title matches first, then shorter titles.
         let sorted = matches.sorted { lhs, rhs in

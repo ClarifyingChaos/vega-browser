@@ -114,6 +114,12 @@ extension PageSession: WKUIDelegate {
             return nil
         }
 
+        // Command-click on a target=_blank link: a tab, behind this one unless Shift is held, as in other browsers.
+        if let url, navigationAction.navigationType == .linkActivated, navigationAction.modifierFlags.contains(.command) {
+            openInNewTab(url, foreground: navigationAction.modifierFlags.contains(.shift))
+            return nil
+        }
+
         // WebKit's configuration shares the opener's userContentController. Handlers are keyed
         // by name, so registering the popup's on it would reroute the opener's messages to the
         // popup, and closing the popup would strip them from the opener. Give the popup its own

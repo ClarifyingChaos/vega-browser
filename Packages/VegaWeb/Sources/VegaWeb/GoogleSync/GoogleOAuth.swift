@@ -76,7 +76,7 @@ public enum GoogleOAuth {
     }
 
     public enum OAuthError: LocalizedError {
-        case notConfigured, cancelled, denied(String), network(String), badResponse
+        case notConfigured, cancelled, denied(String), network(String), badResponse, expired
         public var errorDescription: String? {
             switch self {
             case .notConfigured: return "Google sign-in isn't set up in this build."
@@ -84,6 +84,7 @@ public enum GoogleOAuth {
             case .denied(let why): return "Google said no: \(why)."
             case .network(let why): return "Couldn't reach Google: \(why)"
             case .badResponse: return "Google's answer wasn't understood."
+            case .expired: return "Your Google sign-in has expired. Sign in again under Account in Settings."
             }
         }
     }
@@ -97,6 +98,8 @@ public enum GoogleOAuth {
         let data: Data, response: URLResponse
         do { (data, response) = try await URLSession.shared.data(for: request) } catch { throw OAuthError.network(error.localizedDescription) }
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw OAuthError.badResponse }
+        // A refresh token Google no longer honours (revoked, or a week old while the app is in Testing): sign in again.
+        if json["error"] as? String == "invalid_grant", form["grant_type"] == "refresh_token" { throw OAuthError.expired }
         if let error = json["error"] as? String { throw OAuthError.denied((json["error_description"] as? String) ?? error) }
         guard (response as? HTTPURLResponse)?.statusCode == 200, let access = json["access_token"] as? String else { throw OAuthError.badResponse }
         let seconds = (json["expires_in"] as? Double) ?? 3600

@@ -104,6 +104,14 @@ fn widen_domains_to_subdomains(rule: &mut CbRule) {
     }
 }
 
+/// True for a cosmetic rule that names the sites it applies to. The crate drops the ones it
+/// cannot express (`vipbox.*`); with only a negation left the rule hides on the whole web.
+fn names_sites(parsed: &ParsedLine) -> bool {
+    let ParsedLine::Cosmetic(c) = parsed else { return false };
+    let sites = c.raw_line.as_deref().and_then(|l| l.split('#').next()).unwrap_or("");
+    sites.split(',').any(|s| !s.is_empty() && !s.starts_with('~'))
+}
+
 #[derive(Default)]
 pub(crate) struct Conversion {
     pub rules: Vec<CbRule>,
@@ -121,7 +129,7 @@ pub(crate) struct Conversion {
 /// no need to match on the variant beyond the cancellation check. A network
 /// filter can yield more than one content blocking rule, which is what
 /// CbRuleEquivalent's iterator is for.
-fn convert_text(text: &str) -> Conversion {
+pub(crate) fn convert_text(text: &str) -> Conversion {
     let opts = ParseOptions::default();
     let mut c = Conversion::default();
     let mut parsed_lines = Vec::new();
@@ -153,8 +161,10 @@ fn convert_text(text: &str) -> Conversion {
             c.skipped += 1;
             continue;
         }
-        match CbRuleEquivalent::try_from(parsed) {
-            Ok(equivalent) => c.rules.extend(equivalent.into_iter().map(|mut r| {
+        let scoped = names_sites(&parsed);
+        match CbRuleEquivalent::try_from(parsed).map(|e| e.into_iter().collect::<Vec<_>>()) {
+            Ok(rules) if scoped && rules.iter().any(|r| r.trigger.if_domain.is_none()) => c.unconverted += 1,
+            Ok(rules) => c.rules.extend(rules.into_iter().map(|mut r| {
                 widen_domains_to_subdomains(&mut r);
                 r
             })),
@@ -210,6 +220,27 @@ mod tests {
 
         let out = convert("~old.reddit.com##.x");
         assert_eq!(out[0]["trigger"]["unless-domain"][0], "*old.reddit.com");
+    }
+
+    /// uBlock's vipbox rule hid `.position-absolute` on every site, GitHub's
+    /// notification buttons included: only the negation survived conversion.
+    #[test]
+    fn rule_that_loses_its_sites_is_not_converted() {
+        for line in [
+            "~vipbox.pl,vipbox.*,vipboxtv.*##.position-absolute",
+            "oxy.*,~oxy.edu##[href*=\".info\"]",
+        ] {
+            let c = convert_text(line);
+            assert!(c.rules.is_empty(), "got {}", serde_json::to_string(&c.rules).unwrap());
+            assert_eq!(c.unconverted, 1);
+        }
+    }
+
+    #[test]
+    fn rule_that_keeps_a_site_still_converts() {
+        let out = convert("softonic.com,softonic.*##.x");
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0]["trigger"]["if-domain"][0], "*softonic.com");
     }
 
     /// Network rules already arrive prefixed; widening must not double it.

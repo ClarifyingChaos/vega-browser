@@ -20,15 +20,31 @@ public struct SitePrefs: Codable, Equatable, Sendable {
     public var autoPiP: Bool?
     /// True lets the site open pop-up windows, false blocks them; unset follows Settings > Privacy > Block pop-up ads (on).
     public var allowsPopups: Bool?
+    /// Safari's Auto-Play choice for the site; unset allows all, as before.
+    public var autoplay: SiteAutoplay?
 
-    public init(javaScript: Bool? = nil, mobileSite: Bool? = nil, autoPiP: Bool? = nil, allowsPopups: Bool? = nil) {
+    public init(javaScript: Bool? = nil, mobileSite: Bool? = nil, autoPiP: Bool? = nil, allowsPopups: Bool? = nil, autoplay: SiteAutoplay? = nil) {
         self.javaScript = javaScript
         self.mobileSite = mobileSite
         self.autoPiP = autoPiP
         self.allowsPopups = allowsPopups
+        self.autoplay = autoplay
     }
 
-    public var isDefault: Bool { javaScript == nil && mobileSite == nil && autoPiP == nil && allowsPopups == nil }
+    public var isDefault: Bool { javaScript == nil && mobileSite == nil && autoPiP == nil && allowsPopups == nil && autoplay == nil }
+}
+
+/// Safari's three Auto-Play choices for a site (from upstream Vega #384).
+public enum SiteAutoplay: String, Codable, CaseIterable, Sendable {
+    case allowAll, stopMediaWithSound, never
+
+    public var label: String {
+        switch self {
+        case .allowAll: return "Allow All Auto-Play"
+        case .stopMediaWithSound: return "Stop Media with Sound"
+        case .never: return "Never Auto-Play"
+        }
+    }
 }
 
 @MainActor

@@ -340,6 +340,7 @@ struct URLBarView: View {
                     DispatchQueue.main.async {
                         guard isEditing, addressFocused,
                               let editor = NSApp.keyWindow?.firstResponder as? NSTextView else { return }
+                        editor.vegaShowsSelection()
                         editor.selectAll(nil)
                     }
                 }
@@ -776,6 +777,7 @@ private struct SplitAddressSearchField: NSViewRepresentable {
             DispatchQueue.main.async { [weak self] in
                 guard let self, let window = self.window else { return }
                 if window.makeFirstResponder(self) {
+                    (self.currentEditor() as? NSTextView)?.vegaShowsSelection()
                     self.currentEditor()?.selectAll(nil)
                 }
             }
@@ -828,6 +830,15 @@ private struct SplitAddressSearchField: NSViewRepresentable {
     func updateNSView(_ nsView: Field, context: Context) {
         context.coordinator.parent = self
         if nsView.stringValue != text { nsView.stringValue = text }
+    }
+}
+
+extension NSTextView {
+    /// FORK: the address bar sits on translucent glass, where the system's selection colour is blended into the
+    /// material and selected text showed no highlight. A solid accent tint reads on every space colour.
+    func vegaShowsSelection() {
+        let tint = NSColor.controlAccentColor.usingColorSpace(.sRGB) ?? .systemBlue
+        selectedTextAttributes = [.backgroundColor: tint.withAlphaComponent(0.35), .foregroundColor: NSColor.labelColor]
     }
 }
 

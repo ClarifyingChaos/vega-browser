@@ -69,6 +69,13 @@ public final class FilterListManager {
     /// Lists shipped only in the app bundle (no remote source). Resource name without extension.
     nonisolated static let bundledOnlyLists: [String] = ["vega-filters-default"]
 
+    /// Lines taken out of every list at load (`FilterRemovals`). Fetched from the repo so one bad
+    /// upstream rule can be dropped without an app update; the bundled copy stands in until then.
+    nonisolated static let removals = FilterList(
+        name: "Vega Removals",
+        url: URL(string: "https://raw.githubusercontent.com/nook-browser/Nook/main/Packages/VegaBlocker/Sources/VegaBlocker/Resources/vega-filter-removals.list")!,
+        filename: "vega-filter-removals.list", knownSizeRange: 0...100_000)
+
     nonisolated public static let optionalLists: [FilterList] = [
         // Annoyances
         // FORK: optional. its ~108,000 rules made every request slower; uBlock Badware covers the same ground.
@@ -158,7 +165,7 @@ public final class FilterListManager {
     func downloadAllLists(force: Bool = false) async -> Bool {
         var anyUpdated = false
 
-        let allLists = (Self.defaultLists + enabledOptionalLists).filter { force || isDue($0) }
+        let allLists = (Self.defaultLists + enabledOptionalLists + [Self.removals]).filter { force || isDue($0) }
         guard !allLists.isEmpty else { return false }
         Self.log.info("Checking \(allLists.count) filter list(s) for updates")
 
@@ -190,13 +197,16 @@ public final class FilterListManager {
     nonisolated func loadFilterSources(enabledFilenames: Set<String>) -> [Source] {
         let optional = Self.optionalLists.filter { enabledFilenames.contains($0.filename) }
         // Launch waits on this, and the lists are a few large files: one per core.
+        let removed = FilterRemovals.lines(in: loadCachedList(Self.removals) ?? "")
         var sources = (Self.defaultLists + optional).concurrentMap { list in
-            loadCachedList(list).map { Source(rules: FilterPreprocessor.apply($0), isTrusted: list.isTrusted) }
+            loadCachedList(list).map {
+                Source(rules: FilterRemovals.apply(FilterPreprocessor.apply($0), removing: removed), isTrusted: list.isTrusted)
+            }
         }.compactMap { $0 }
         for name in Self.bundledOnlyLists {
             if let url = Bundle.module.url(forResource: name, withExtension: "txt", subdirectory: "Resources"),
                let content = try? String(contentsOf: url, encoding: .utf8) {
-                sources.append(Source(rules: content, isTrusted: true))
+                sources.append(Source(rules: FilterRemovals.apply(content, removing: removed), isTrusted: true))
             }
         }
         return sources
@@ -235,7 +245,9 @@ public final class FilterListManager {
     private func checkedFile(for list: FilterList) -> URL { etagDir.appendingPathComponent(list.filename + ".checked") }
 
     private func isDue(_ list: FilterList) -> Bool {
-        guard FileManager.default.fileExists(atPath: cacheDir.appendingPathComponent(list.filename).path) else { return true }
+        // The removals list may not exist upstream yet, so its bundled copy counts as cached.
+        guard list.filename == Self.removals.filename
+                || FileManager.default.fileExists(atPath: cacheDir.appendingPathComponent(list.filename).path) else { return true }
         guard let stamp = try? String(contentsOf: checkedFile(for: list), encoding: .utf8), let t = TimeInterval(stamp) else { return true }
         return Date().timeIntervalSince1970 - t >= updateInterval(for: list)
     }
@@ -307,6 +319,7 @@ public final class FilterListManager {
 
             guard httpResponse.statusCode == 200 else {
                 Self.log.warning("\(list.name): HTTP \(httpResponse.statusCode)")
+                if list.filename == Self.removals.filename { markChecked(list) }
                 return false
             }
 
@@ -360,6 +373,8 @@ public final class FilterListManager {
     private func validateFilterListContent(_ content: String, for list: FilterList) -> Bool {
         // Basic structural validation
         guard !content.isEmpty else { return false }
+        // A few lines by design, and it can only remove rules. Its size was checked before this.
+        if list.filename == Self.removals.filename { return content.hasPrefix("!") }
 
         // Filter lists should be text-based with recognizable patterns
         let lines = content.components(separatedBy: "\n")

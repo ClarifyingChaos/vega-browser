@@ -44,6 +44,8 @@ extension PageSession {
         let site = MainActor.assumeIsolated { SitePreferences.shared.prefs(for: url.host) }
         if let javaScript = site.javaScript { preferences.allowsContentJavaScript = javaScript }
         if let mobile = site.mobileSite { preferences.preferredContentMode = mobile ? .mobile : .desktop }
+        // Auto-Play: a site with no choice keeps the configuration's rule, which limits nothing.
+        if let policy = site.autoplay?.webKitPolicy { preferences.vegaSetAutoplayPolicy(policy) }
         // preferredContentMode is iOS-only in effect, so on the Mac the mobile site is an iPhone
         // User-Agent, set before this navigation's request goes out and restored for other sites.
         #if os(macOS)
@@ -76,6 +78,27 @@ extension WKWebpagePreferences {
         policy &= ~(enhancedFingerprintingBits | sanitizeLookalikeCharacters)
         if enhancedFingerprinting { policy |= enhancedFingerprintingBits }
         if linkFiltering { policy |= sanitizeLookalikeCharacters }
+        unsafeBitCast(method(for: setter), to: Setter.self)(self, setter, policy)
+    }
+}
+
+extension SiteAutoplay {
+    /// `_WKWebsiteAutoplayPolicy`: 2 lets only silent media start, 3 lets none.
+    fileprivate var webKitPolicy: Int? {
+        switch self {
+        case .allowAll: return nil
+        case .stopMediaWithSound: return 2
+        case .never: return 3
+        }
+    }
+}
+
+extension WKWebpagePreferences {
+    /// Private WebKit setter (as Safari uses); skipped where it does not exist.
+    fileprivate func vegaSetAutoplayPolicy(_ policy: Int) {
+        let setter = NSSelectorFromString("_setAutoplayPolicy:")
+        guard responds(to: setter) else { return }
+        typealias Setter = @convention(c) (AnyObject, Selector, Int) -> Void
         unsafeBitCast(method(for: setter), to: Setter.self)(self, setter, policy)
     }
 }
