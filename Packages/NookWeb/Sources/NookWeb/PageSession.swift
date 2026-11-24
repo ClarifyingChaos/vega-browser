@@ -236,6 +236,8 @@ public final class PageSession: NSObject, Identifiable {
     @ObservationIgnored var hasFavicon: Bool = false
     @ObservationIgnored var faviconFetchInFlight: Bool = false
     @ObservationIgnored var faviconFetchAttempts: Int = 0
+    /// FORK: the site the icon on show belongs to, so a tab that moved to another site never keeps the last one's.
+    @ObservationIgnored var faviconSite: String?
     static let maxFaviconRetries = 3
 
     @ObservationIgnored var lastSampledDomain: String? = nil
@@ -809,38 +811,65 @@ public final class PageSession: NSObject, Identifiable {
 
     /// Memory then disk cache, synchronously. Gives restored rows their favicon at once.
     func restoreFaviconFromCache() {
-        guard url.scheme == "http" || url.scheme == "https", let host = FaviconCache.key(for: url) else { return }
-        if let cached = FaviconCache.shared.image(for: host) ?? FaviconCache.shared.imageFromDiskSync(for: host) {
-            favicon = SwiftUI.Image(platformImage: cached)
-            hasFavicon = true
-        }
+        guard url.scheme == "http" || url.scheme == "https",
+              let cached = FaviconCache.shared.imageFromDiskSync(forPage: url) else { return }
+        show(cached, for: url)
     }
 
+    /// FORK: the address a redirect started from, when the page showing was reached by one (gmail.com for mail.google.com).
+    public var redirectedFrom: URL? {
+        guard let item = primaryWebView?.backForwardList.currentItem, item.initialURL != item.url else { return nil }
+        return item.initialURL
+    }
+
+    /// True while this tab still shows the page `url` names, so an icon fetched for it may be shown.
+    func stillShows(_ url: URL) -> Bool {
+        FaviconCache.pageKey(for: self.url) == FaviconCache.pageKey(for: url)
+    }
+
+    func show(_ image: PlatformImage, for url: URL) {
+        guard stillShows(url) else { return }
+        favicon = SwiftUI.Image(platformImage: image)
+        faviconSite = FaviconCache.key(for: url)
+        hasFavicon = true
+    }
+
+    /// FORK: as Arc and Dia do, a page's icon is the one the loaded page itself declares; the cache only shows it sooner.
+    /// While the page is still loading only the cache is used, and the page's own links are read once it has loaded.
+    /// Fetching the address separately (no cookies, a sign-in or region redirect) is the fallback for a page whose links
+    /// give nothing, and for a page with no live view.
     func fetchAndSetFavicon(for url: URL) async {
         let defaultFavicon = SwiftUI.Image(systemName: "globe")
         guard url.scheme == "http" || url.scheme == "https", url.host != nil else {
-            favicon = defaultFavicon
+            if stillShows(url) { favicon = defaultFavicon }
             return
         }
-        let cacheKey = FaviconCache.key(for: url) ?? url.absoluteString
 
-        // Show the cached icon at once, and refetch it once a day so a site's new icon replaces the old one.
-        let cached = await FaviconCache.shared.cachedImage(for: cacheKey)
+        // Show the cached icon at once. Trust it when it is this page's own (or the site's, seen to be the same) and
+        // under a day old; a site's new icon then replaces the old one within a day.
+        let cached = await FaviconCache.shared.cachedEntry(forPage: url)
         if let cached {
-            favicon = SwiftUI.Image(platformImage: cached)
-            hasFavicon = true
-            guard await FaviconCache.shared.isStale(cacheKey) else { return }
+            show(cached.image, for: url)
+            if FaviconCache.shared.isSettled(cached.key, for: url), !(await FaviconCache.shared.isStale(cached.key)) { return }
+        } else if stillShows(url), faviconSite != FaviconCache.key(for: url) {
+            // Another site's icon is on show and this one has none yet: the globe until the page gives its own.
+            favicon = defaultFavicon
+            faviconSite = nil
+            hasFavicon = false
         }
+        if let webView = primaryWebView, webView.isLoading { return }
 
         faviconFetchAttempts += 1
+
+        // The loaded page's own icon links.
+        if let webView = primaryWebView, webView.url.map(stillShows) == true, await fetchFaviconFromDOM(for: url) { return }
 
         // FaviconFinder parses HTML <link> tags, then falls back to /favicon.ico. It only
         // fetches through URLSession.shared (shared cookies, disk URLCache), so a private
         // page skips it and takes the root icon below.
         if !isPrivate, let nsImage = await Self.fetchFaviconImage(for: url) {
-            FaviconCache.shared.store(nsImage, for: cacheKey)
-            favicon = SwiftUI.Image(platformImage: FaviconCache.shared.image(for: cacheKey) ?? nsImage)
-            hasFavicon = true
+            let key = FaviconCache.shared.store(nsImage, forPage: url)
+            show(key.flatMap { FaviconCache.shared.image(for: $0) } ?? nsImage, for: url)
             return
         }
 
@@ -848,18 +877,14 @@ public final class PageSession: NSObject, Identifiable {
         if let rootFaviconURL = URL(string: "/favicon.ico", relativeTo: url)?.absoluteURL,
            let nsImage = await Self.downloadImage(from: rootFaviconURL, isPrivate: isPrivate) {
             // A private page's host must not reach ~/Library/Caches/FaviconCache.
-            FaviconCache.shared.store(nsImage, for: cacheKey, toDisk: !isPrivate)
-            favicon = SwiftUI.Image(platformImage: FaviconCache.shared.image(for: cacheKey) ?? nsImage)
-            hasFavicon = true
+            let key = FaviconCache.shared.store(nsImage, forPage: url, toDisk: !isPrivate)
+            show(key.flatMap { FaviconCache.shared.image(for: $0) } ?? nsImage, for: url)
             return
         }
 
-        // FORK: the loaded page's own <link> tags, for sites that block the requests above.
-        if await fetchFaviconFromDOM(for: url) { return }
-
         // A failed refresh keeps the cached icon; otherwise hasFavicon stays false so
         // ensureFaviconLoaded() can retry.
-        if cached == nil { favicon = defaultFavicon }
+        if cached == nil, stillShows(url) { favicon = defaultFavicon }
     }
 
     private static func fetchFaviconImage(for url: URL) async -> PlatformImage? {
