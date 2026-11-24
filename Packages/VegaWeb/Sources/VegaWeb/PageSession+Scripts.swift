@@ -160,6 +160,22 @@ extension PageSession {
                 document.addEventListener('keydown', e => reportHover(currentHoveredLink, e.metaKey));
                 document.addEventListener('keyup', e => reportHover(currentHoveredLink, e.metaKey));
                 window.addEventListener('blur', () => reportHover(null, false));
+
+                // FORK: a page that swaps its icon while open (Gmail's unread count) says so, and the tab redraws it.
+                const iconLinks = () => Array.from(document.querySelectorAll('link[rel~="icon"]'))
+                    .map(l => l.rel + ' ' + l.href).join('|');
+                let lastIcons = iconLinks(), iconTimer = null;
+                const iconCheck = () => {
+                    clearTimeout(iconTimer);
+                    iconTimer = setTimeout(() => {
+                        const now = iconLinks();
+                        if (now === lastIcons) return;
+                        lastIcons = now;
+                        window.webkit?.messageHandlers?.iconChange?.postMessage(null);
+                    }, 300);
+                };
+                new MutationObserver(iconCheck).observe(document.head || document.documentElement,
+                    {subtree: true, childList: true, attributes: true, attributeFilter: ['href', 'rel']});
             })();
             """
 
@@ -168,7 +184,7 @@ extension PageSession {
 
     /// The status bar shows these URLs as trusted chrome, so a page must not be able to post them.
     public static let linkHoverWorld = WKContentWorld.world(name: "VegaLinkHover")
-    public static let linkHoverHandlerNames = ["linkHover", "commandHover"]
+    public static let linkHoverHandlerNames = ["linkHover", "commandHover", "iconChange"]
 
     /// The page's address changed without a load (pushState, the Navigation API, a fragment, Back
     /// within a page). Takes the address from WebKit and tells everything that follows it.
@@ -312,6 +328,11 @@ extension PageSession: WKScriptMessageHandler {
         case "commandHover":
             let href = message.body as? String
             self.onCommandHover?(href)
+
+        case "iconChange" where message.world == Self.linkHoverWorld:
+            // Only a signal; the icon is read from the page again, never taken from the message.
+            let pageURL = url
+            Task { @MainActor [weak self] in _ = await self?.fetchFaviconFromDOM(for: pageURL, live: true) }
 
         case Self.translateHandlerName where message.world == Self.translateWorld:
             if let body = message.body as? [String: Any], let nodes = body["nodes"] as? [[String: Any]] {

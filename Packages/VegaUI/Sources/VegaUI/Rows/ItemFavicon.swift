@@ -89,8 +89,9 @@ public struct ItemFavicon: View {
     /// FORK: the stored bitmap behind the icon, when there is one to resample for the tile.
     private var crispSource: PlatformImage? {
         #if os(macOS)
+        // The icon the page shows now (an unread count included), else its cached one.
         if let session, session.hasLoadedFavicon, onOwnSite || cachedPlatform == nil,
-           let image = FaviconCache.shared.image(forPage: session.url) { return image }
+           let image = session.liveFaviconImage ?? FaviconCache.shared.image(forPage: session.url) { return image }
         return cachedPlatform
         #else
         return nil

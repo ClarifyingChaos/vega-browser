@@ -128,8 +128,9 @@ public class BrowserConfiguration {
 
         // FORK: pop-up ads. Ad scripts open their window on any click by making a link and clicking it from script,
         // or by calling window.open. Neither is a link you clicked: a window to another site opens only when the click
-        // you made landed on a link or a button. Runs in every frame and always; the page session sets `__vegaAllowPopups`
-        // when it commits a site the person allowed (or when blocking is off), and the guard then steps aside.
+        // you made landed on a link or a button. Runs in every frame and always; on a site the person allowed (or with blocking
+        // off) it steps aside: every frame asks the tab through `vegaPopupPolicy` (PopupPolicyReply), and the page session also
+        // sets `__vegaAllowPopups` in the main frame as it commits.
         do {
             config.userContentController.addUserScript(WKUserScript(
                 source: """
@@ -137,6 +138,11 @@ public class BrowserConfiguration {
                 (function() {
                     if (window.__vegaPopupGuard) return;
                     Object.defineProperty(window, '__vegaPopupGuard', { value: true });
+                    // The tab's own choice for its site. A frame inside the page cannot see the main frame's flag, so each frame
+                    // asks the tab once as it starts; the answer is about the page the tab shows, not the frame's own site.
+                    let siteAllows = false;
+                    try { const ask = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.vegaPopupPolicy;
+                          if (ask) ask.postMessage(null).then(v => { siteAllows = v === true; }, () => {}); } catch (e) {}
                     const bare = h => h.replace(/^www\\./, '');
                     const sameSite = url => {
                         try { const a = bare(new URL(url, location.href).hostname), b = bare(location.hostname);
@@ -171,7 +177,7 @@ public class BrowserConfiguration {
                     // A site's own link-out page (behance.net/…?url=https://their.site) carries the real address in its query.
                     const carriedBy = (href, url) => { try { const h = new URL(url, location.href).hostname;
                         return [...new URL(href, location.href).searchParams.values()].some(v => { try { return new URL(v).hostname === h; } catch (e) { return false; } }); } catch (e) { return false; } };
-                    const mayOpen = url => window.__vegaAllowPopups === true || sameSite(url) || signIn(url) || share(url) || (Date.now() - trusted.at < 1500 && trusted.href && (sameHost(url, trusted.href) || carriedBy(trusted.href, url)));
+                    const mayOpen = url => siteAllows || window.__vegaAllowPopups === true || sameSite(url) || signIn(url) || share(url) || (Date.now() - trusted.at < 1500 && trusted.href && (sameHost(url, trusted.href) || carriedBy(trusted.href, url)));
                     const opensNewWindow = a => { const t = (a.target || '').toLowerCase(); return t && t !== '_self' && t !== '_top' && t !== '_parent'; };
 
                     // A link clicked or "dispatched" by script, to another site, in a new window.
