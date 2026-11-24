@@ -67,6 +67,8 @@ struct CommandPaletteView: View {
     /// Shift held a beat, which moves the highlight to the Look It Up row.
     @State private var shiftHeld: Bool = false
     @State private var shiftHold: Task<Void, Never>?
+    /// Read when the palette opens: the answer can reach the Keychain, and rows ask it on every render.
+    @State private var lookupAvailable = false
 
     private var siteSearchMatch: SiteSearchEntry? {
         guard activeSiteSearch == nil else { return nil }
@@ -126,7 +128,7 @@ struct CommandPaletteView: View {
     /// What Shift-Return looks up: the highlighted search row, else the typed text when Return
     /// would search it. Nil for an address, a site search, or with Look It Up unavailable.
     private var lookupText: String? {
-        guard activeSiteSearch == nil, siteSearchMatch == nil, browserManager.lookupManager.isAvailable(in: windowState) else { return nil }
+        guard activeSiteSearch == nil, siteSearchMatch == nil, lookupAvailable else { return nil }
         let row = selectedSuggestionIndex >= 0 && selectedSuggestionIndex < visibleSuggestions.count
             ? visibleSuggestions[selectedSuggestionIndex] : primarySuggestion
         guard let row, case .search = row.type else { return nil }
@@ -139,7 +141,7 @@ struct CommandPaletteView: View {
     private var lookupRowIndex: Int? {
         guard activeSiteSearch == nil,
               SiteSearchEntry.match(for: userTypedText, in: nookSettings.siteSearchEntries) == nil,
-              browserManager.lookupManager.isAvailable(in: windowState),
+              lookupAvailable,
               !userTypedText.trimmingCharacters(in: .whitespaces).hasPrefix(">"),
               let primary = primarySuggestion, case .search = primary.type else { return nil }
         // Right under the typed row, which sits below up to three matching open tabs.
@@ -148,7 +150,8 @@ struct CommandPaletteView: View {
 
     /// The row drawn selected. With Shift down on the Return row, that is the Look It Up row.
     private var highlightedIndex: Int {
-        if shiftHeld, selectedSuggestionIndex <= 0, let lookupRowIndex { return lookupRowIndex }
+        // Shift on the top row or the typed row, which sits right above Look It Up.
+        if shiftHeld, let lookupRowIndex, selectedSuggestionIndex <= lookupRowIndex - 1 { return lookupRowIndex }
         return max(selectedSuggestionIndex, 0)
     }
 
@@ -404,6 +407,7 @@ struct CommandPaletteView: View {
         .opacity(isVisible ? 1.0 : 0.0)
         .onChange(of: commandPalette.isVisible) { _, newVisible in
             if newVisible {
+                lookupAvailable = browserManager.lookupManager.isAvailable(in: windowState)
                 searchManager.setTabs(browserManager.tabs, window: windowState)
                 searchManager.setHistoryManager(browserManager.historyManager)
                 searchManager.updateSpaceContext()
