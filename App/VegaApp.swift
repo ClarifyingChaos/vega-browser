@@ -209,6 +209,8 @@ struct VegaApp: App {
         browserManager.tabs.setDeveloperMode(settingsManager.developerModeEnabled)
         browserManager.installDevPickHandler()
         browserManager.installAgentPageHost()
+        browserManager.tabs.lookupSupport = browserManager.tabs.directory.deletingLastPathComponent()
+        browserManager.lookupManager.sweep()
 
         // A fresh install has no stored version and shows nothing.
         if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
