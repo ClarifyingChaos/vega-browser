@@ -7,7 +7,7 @@
 //  files hold no plaintext, and a wrong passphrase reads nothing. Compiles the shipped sources:
 //
 //    swiftc Packages/VegaTabsCore/Sources/VegaTabsCore/*.swift \
-//           Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordLogic.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/TOTP.swift \
+//           Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordLogic.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/PublicSuffix.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/TOTP.swift \
 //           Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordSync.swift \
 //           Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordSyncStore.swift \
 //           Packages/VegaWeb/Checks/PasswordSyncCheck.swift -o /tmp/password-sync-check && /tmp/password-sync-check

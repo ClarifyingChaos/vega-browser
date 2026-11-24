@@ -103,8 +103,10 @@ final class DevMCPServer {
         }
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let fresh = UUID().uuidString + UUID().uuidString
-        try Data(fresh.utf8).write(to: file, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        // Created owner-only: written first and chmodded after, another account on the Mac could read it in between.
+        try? FileManager.default.removeItem(at: file)
+        guard FileManager.default.createFile(atPath: file.path, contents: Data(fresh.utf8),
+                                             attributes: [.posixPermissions: 0o600]) else { throw CocoaError(.fileWriteUnknown) }
         return fresh
     }
 
@@ -198,7 +200,10 @@ final class DevMCPServer {
             let host = URL(string: origin)?.host
             guard host == "127.0.0.1" || host == "localhost" || host == "::1" else { return 403 }
         }
-        guard req.headers["authorization"] == "Bearer \(token)" else { return 401 }
+        // Compared in constant time, so how long a refusal takes says nothing about how much of the token was right.
+        let given = Array((req.headers["authorization"] ?? "").utf8), expected = Array("Bearer \(token)".utf8)
+        guard !token.isEmpty, given.count == expected.count,
+              zip(given, expected).reduce(0, { $0 | ($1.0 ^ $1.1) }) == 0 else { return 401 }
         guard req.path.hasPrefix("/mcp") else { return 404 }
         return nil
     }

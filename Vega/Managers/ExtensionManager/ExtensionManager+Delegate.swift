@@ -61,7 +61,7 @@ extension ExtensionManager {
             // polyfill navigator.clipboard.writeText() via a native message handler.
             PopupClipboardHandler.install(on: webView, retainedBy: self)
 
-            Self.logger.debug("Popup webView: URL=\(webView.url?.absoluteString ?? "nil", privacy: .public), isLoading=\(webView.isLoading)")
+            Self.logger.debug("Popup webView: URL=\(webView.url?.absoluteString ?? "nil", privacy: .private), isLoading=\(webView.isLoading)")
 
             // No reload here. WebKit calls this delegate after the popup has finished loading, in a
             // fresh webview on every open (verified in a WKWebExtensionController harness), so the
@@ -345,7 +345,7 @@ extension ExtensionManager {
         }
         let url = configuration.url ?? TabsController.homeURL
         if Self.extensionTabIsUpdateNoise() {
-            Self.logger.info("Held back a tab from '\(extensionContext.webExtension.displayName ?? "an extension", privacy: .public)' right after an update: \(url.absoluteString, privacy: .public)")
+            Self.logger.info("Held back a tab from '\(extensionContext.webExtension.displayName ?? "an extension", privacy: .public)' right after an update: \(url.absoluteString, privacy: .private)")
             completionHandler(nil, NSError(domain: "ExtensionManager", code: 4, userInfo: [NSLocalizedDescriptionKey: "Not opened: the browser has just updated"]))
             return
         }
@@ -361,7 +361,7 @@ extension ExtensionManager {
             return
         }
         if configuration.shouldBeMuted { bm.tabs.session(for: itemID)?.setMuted(true) }
-        Self.logger.info("Extension opened tab \(url.absoluteString, privacy: .public)")
+        Self.logger.info("Extension opened tab \(url.absoluteString, privacy: .private)")
         completionHandler(adapter(for: itemID), nil)
     }
 

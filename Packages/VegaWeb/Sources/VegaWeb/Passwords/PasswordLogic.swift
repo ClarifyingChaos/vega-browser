@@ -77,13 +77,6 @@ public extension PasswordVault {
 }
 
 public enum PasswordHosts {
-    /// Second-level labels under which the registrable domain has three labels (example.co.uk).
-    /// shortcut: a short list instead of the public suffix list; add to it when a site is missed.
-    private static let twoPartSuffixes: Set<String> = [
-        "co.uk", "org.uk", "ac.uk", "gov.uk", "com.au", "net.au", "org.au", "co.nz", "co.jp", "co.in",
-        "co.za", "com.br", "com.mx", "com.ar", "com.tr", "com.cn", "com.hk", "com.sg", "com.tw", "co.kr",
-    ]
-
     /// Lower case, no "www.", no port, no trailing dot.
     public static func normalized(_ host: String) -> String {
         var h = host.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ". "))
@@ -91,14 +84,10 @@ public enum PasswordHosts {
         return h
     }
 
-    /// example.com for login.example.com; an IP address or single label is its own.
+    /// example.com for login.example.com, by the Public Suffix List: alice.github.io is its own site, not github.io's.
+    /// An IP address or single label is its own.
     public static func registrable(_ host: String) -> String {
-        let h = normalized(host)
-        if h.allSatisfy({ $0.isNumber || $0 == "." || $0 == ":" }) { return h }
-        let labels = h.split(separator: ".").map(String.init)
-        guard labels.count > 2 else { return h }
-        let lastTwo = labels.suffix(2).joined(separator: ".")
-        return labels.suffix(twoPartSuffixes.contains(lastTwo) ? 3 : 2).joined(separator: ".")
+        PublicSuffixList.shared.registrable(normalized(host))
     }
 
     /// A page may use a login saved for its own site or a sibling subdomain, never another site.

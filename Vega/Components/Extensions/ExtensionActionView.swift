@@ -145,7 +145,7 @@ struct ExtensionActionButton: View {
         // follows the extension's approved patterns, and activeTab is granted by WebKit on click.
 
         let perform = {
-            Self.logger.notice("Calling performAction (tab=\(session?.title ?? "nil", privacy: .public), adapter=\(adapter != nil ? "yes" : "nil", privacy: .public))")
+            Self.logger.notice("Calling performAction (tab=\(session?.title ?? "nil", privacy: .private), adapter=\(adapter != nil ? "yes" : "nil", privacy: .public))")
             ExtensionManager.shared.performAction(extensionContext, for: adapter)
         }
         guard extensionContext.webExtension.hasBackgroundContent else { return perform() }

@@ -182,7 +182,7 @@ public final class BlockerEngine {
 
         let scriptlets = object["injected_script"] as? String ?? ""
         if !scriptlets.isEmpty {
-            log.info("Scriptlets for \(pageUrl.host ?? "?", privacy: .public): \(scriptlets.count, privacy: .public) bytes")
+            log.info("Scriptlets for \(pageUrl.host ?? "?", privacy: .private): \(scriptlets.count, privacy: .public) bytes")
         }
 
         if procedural.isEmpty && scriptlets.isEmpty { return nil }

@@ -6,7 +6,7 @@
 //  Host matching, the in-memory vault and CSV import of the password manager. VegaWeb has no
 //  test target, so this compiles the shipped source directly:
 //
-//    swiftc Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordLogic.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/TOTP.swift \
+//    swiftc Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordLogic.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/PublicSuffix.swift Packages/VegaWeb/Sources/VegaWeb/Passwords/TOTP.swift \
 //           Packages/VegaWeb/Sources/VegaWeb/Passwords/PasswordSync.swift \
 //           Packages/VegaWeb/Checks/PasswordLogicCheck.swift -o /tmp/password-check && /tmp/password-check
 //
@@ -26,6 +26,18 @@ struct PasswordLogicCheck {
         precondition(!PasswordHosts.matches(saved: "example.com", page: "example.com.evil.io"), "lookalike is another site")
         precondition(!PasswordHosts.matches(saved: "example.com", page: "notexample.com"))
         precondition(!PasswordHosts.matches(saved: "a.co.uk", page: "b.co.uk"), "co.uk is a suffix, not a site")
+        // The Public Suffix List, not a short guess: shared hosting gives every customer a site of their own.
+        precondition(PublicSuffixList.shared.isLoaded, "the list ships with the sources")
+        for (saved, page) in [("alice.github.io", "mallory.github.io"), ("me.vercel.app", "evil.vercel.app"),
+                              ("shop.myshopify.com", "scam.myshopify.com"), ("a.blogspot.com", "b.blogspot.com"),
+                              ("x.pages.dev", "y.pages.dev"), ("site.com.pk", "other.com.pk")] {
+            precondition(!PasswordHosts.matches(saved: saved, page: page), "\(saved) must not fill on \(page)")
+        }
+        precondition(PasswordHosts.matches(saved: "alice.github.io", page: "www.alice.github.io"))
+        precondition(PasswordHosts.registrable("github.io") == "github.io", "a public suffix is its own")
+        precondition(PasswordHosts.registrable("a.b.c.kawasaki.jp") == "b.c.kawasaki.jp", "wildcard rule")
+        precondition(PasswordHosts.registrable("a.city.kawasaki.jp") == "city.kawasaki.jp", "exception rule")
+        precondition(PublicSuffixList(text: "").registrable("a.b.example.com") == "a.b.example.com", "no list: nothing shared")
         precondition(PasswordHosts.isUsable(scheme: "https", host: "x.com"))
         precondition(!PasswordHosts.isUsable(scheme: "http", host: "x.com"))
         precondition(PasswordHosts.isUsable(scheme: "http", host: "localhost"))
