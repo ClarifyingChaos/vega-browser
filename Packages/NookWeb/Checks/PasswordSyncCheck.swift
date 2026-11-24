@@ -7,7 +7,7 @@
 //  files hold no plaintext, and a wrong passphrase reads nothing. Compiles the shipped sources:
 //
 //    swiftc Packages/NookTabsCore/Sources/NookTabsCore/*.swift \
-//           Packages/NookWeb/Sources/NookWeb/Passwords/PasswordLogic.swift Packages/NookWeb/Sources/NookWeb/Passwords/TOTP.swift \
+//           Packages/NookWeb/Sources/NookWeb/Passwords/PasswordLogic.swift Packages/NookWeb/Sources/NookWeb/Passwords/PublicSuffix.swift Packages/NookWeb/Sources/NookWeb/Passwords/TOTP.swift \
 //           Packages/NookWeb/Sources/NookWeb/Passwords/PasswordSync.swift \
 //           Packages/NookWeb/Sources/NookWeb/Passwords/PasswordSyncStore.swift \
 //           Packages/NookWeb/Checks/PasswordSyncCheck.swift -o /tmp/password-sync-check && /tmp/password-sync-check

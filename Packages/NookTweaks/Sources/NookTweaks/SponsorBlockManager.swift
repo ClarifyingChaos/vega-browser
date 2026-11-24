@@ -91,7 +91,7 @@ public final class SponsorBlockManager {
         )
         ucc.addUserScript(userScript)
 
-        sbLog.info("Injected SponsorBlock script for \(url.host ?? "unknown", privacy: .public)")
+        sbLog.info("Injected SponsorBlock script for \(url.host ?? "unknown", privacy: .private)")
     }
 
     // MARK: - API

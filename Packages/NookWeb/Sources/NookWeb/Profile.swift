@@ -38,6 +38,9 @@ public final class Profile: NSObject, Identifiable {
 
     @ObservationIgnored private var sessionCookieSave: Task<Void, Never>?
     @ObservationIgnored private var savedSessionCookies: Data?
+    /// True from a change in the cookie store until the saved copy has caught up with it. A cookie missing then was
+    /// deleted on purpose (a sign-out, cleared website data), not lost, and must not be put back.
+    @ObservationIgnored private var sessionCookiesChanging = false
 
     public init(
         id: UUID = UUID(),
@@ -188,7 +191,7 @@ extension Profile: WKHTTPCookieStoreObserver {
     /// sign-ins with it, and the tabs came back asking for them. Never replaces a cookie the store still has: a
     /// newer value (a rotated token) must win over the copy on disk.
     public func reapplyMissingSessionCookies() {
-        guard !isEphemeral,
+        guard !isEphemeral, !sessionCookiesChanging,
               let data = savedSessionCookies ?? (try? Data(contentsOf: sessionCookiesURL)),
               let list = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [[String: Any]],
               !list.isEmpty
@@ -207,6 +210,8 @@ extension Profile: WKHTTPCookieStoreObserver {
     }
 
     public func cookiesDidChange(in cookieStore: WKHTTPCookieStore) {
+        // Set at once: a sign-out deletes its cookie and loads the next page well inside the second the save waits.
+        sessionCookiesChanging = true
         sessionCookieSave?.cancel()
         sessionCookieSave = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1))
@@ -214,14 +219,16 @@ extension Profile: WKHTTPCookieStoreObserver {
             let cookies = await self.dataStore.httpCookieStore.allCookies()
             guard !Task.isCancelled else { return }
             self.writeSessionCookies(cookies.filter(\.isSessionOnly))
+            self.sessionCookiesChanging = false
         }
     }
 
     private func writeSessionCookies(_ cookies: [HTTPCookie]) {
         let url = sessionCookiesURL
         guard !cookies.isEmpty else {
-            if savedSessionCookies != nil { try? FileManager.default.removeItem(at: url) }
-            savedSessionCookies = nil
+            try? FileManager.default.removeItem(at: url)
+            // Known empty, not unknown: a file the removal could not delete must not be read back and put in again.
+            savedSessionCookies = Data()
             return
         }
         let list = cookies.compactMap { cookie in
@@ -230,12 +237,15 @@ extension Profile: WKHTTPCookieStoreObserver {
         guard let data = try? PropertyListSerialization.data(fromPropertyList: list, format: .binary, options: 0),
               data != savedSessionCookies
         else { return }
+        // What is put back follows the store even if the disk write fails.
+        savedSessionCookies = data
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            // Login tokens: the folder is owner-only, so the moment between the atomic write and the chmod exposes nothing.
+            let folder = url.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path)
             try data.write(to: url, options: [.atomic])
-            // Login tokens: owner only.
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
-            savedSessionCookies = data
         } catch {
             Logger(subsystem: Bundle.main.bundleIdentifier ?? "Nook", category: "Tabs")
                 .error("Saving session cookies failed: \(String(describing: error), privacy: .public)")

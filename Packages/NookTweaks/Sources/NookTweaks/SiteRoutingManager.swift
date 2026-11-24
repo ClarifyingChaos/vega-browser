@@ -33,7 +33,7 @@ public final class SiteRoutingManager {
         if page != nil, OAuthDetector.isLikelyOAuthURL(url) { return false }
         guard let host, let rule = resolve(url: url) else { return false }
         guard host.route(url: url, toSpace: rule.targetSpaceId, from: page) else { return false }
-        logger.info("Route matched: \(url.host ?? "", privacy: .public) → space \(rule.targetSpaceId, privacy: .public)")
+        logger.info("Route matched: \(url.host ?? "", privacy: .private) → space \(rule.targetSpaceId, privacy: .public)")
         return true
     }
 
@@ -69,7 +69,7 @@ public final class SiteRoutingManager {
         let updated = settings.siteRoutingRules.compactMap { rule -> SiteRoutingRule? in
             guard !live.contains(rule.targetSpaceId) else { return rule }
             guard let heir = rule.legacyProfileId, live.contains(heir) else {
-                logger.info("Dropping routing rule for \(rule.domain, privacy: .public): its space is gone")
+                logger.info("Dropping routing rule for \(rule.domain, privacy: .private): its space is gone")
                 changed = true
                 return nil
             }
