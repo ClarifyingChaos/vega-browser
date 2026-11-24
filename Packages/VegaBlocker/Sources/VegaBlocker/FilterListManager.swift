@@ -73,7 +73,7 @@ public final class FilterListManager {
     /// upstream rule can be dropped without an app update; the bundled copy stands in until then.
     nonisolated static let removals = FilterList(
         name: "Vega Removals",
-        url: URL(string: "https://raw.githubusercontent.com/nook-browser/Nook/main/Packages/VegaBlocker/Sources/VegaBlocker/Resources/vega-filter-removals.list")!,
+        url: URL(string: "https://raw.githubusercontent.com/ClarifyingChaos/vega-browser/main/Packages/VegaBlocker/Sources/VegaBlocker/Resources/vega-filter-removals.list")!,
         filename: "vega-filter-removals.list", knownSizeRange: 0...100_000)
 
     nonisolated public static let optionalLists: [FilterList] = [
