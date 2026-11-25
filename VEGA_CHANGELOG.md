@@ -1,6 +1,17 @@
 # Vega changelog
 
-What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
+What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
+
+## Vega 1.8.9 (2026-11-25)
+
+### Fixes
+- **Settings and extension data kept as before 1.8.8:** 1.8.8 read some settings under new names, so it could start extensions with empty storage and lose a few choices. 1.8.9 goes back to the names every earlier version used, so everything set before 1.8.8 is back. Choices made only in 1.8.8 may need to be set again.
+- **Settings › Extensions** has Vega's own design again (the larger icons, the row menu), now with Settings…, Update and Switch to the Safari version in each row's menu and a confirmation before removing.
+- The app's menus build with the Xcode used for releases.
+
+### Privacy and security
+Reviewed before release; nothing needed fixing.
+- No new network destinations, Keychain items or files. Extension storage and settings are read from the same places 1.8.7 used.
 
 ## Vega 1.8.8 (2026-11-25)
 
