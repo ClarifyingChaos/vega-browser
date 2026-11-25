@@ -40,4 +40,4 @@ The next `scripts/release.sh` picks all of this up: the app is notarized (no Ope
 
 ## Upstream
 
-`develop` mirrors [nook-browser/Nook](https://github.com/nook-browser/Nook). The *Sync upstream* workflow fast-forwards it daily and opens a pull request into `main`. Review it, fix conflicts like any merge (keep `com.vega.browser`, keep `// FORK:` code), merge, then release.
+Upstream ([nook-browser/Nook](https://github.com/nook-browser/Nook)) is ported by hand; there is no `develop` branch and no sync workflow. `git fetch upstream`, list its commits since the last port, and merge or cherry-pick them (upstream's paths and names differ from ours, so rename its history first with git-filter-repo into a local scratch clone). Keep `com.vega.browser` and `// FORK:` code, then build, run `python3 scripts/run-checks.py`, `swift test` in `Packages/NookTabsCore` and `node --test server/test/`, and release with `scripts/release.sh`.

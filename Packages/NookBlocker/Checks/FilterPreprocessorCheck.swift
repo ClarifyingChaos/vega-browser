@@ -3,8 +3,8 @@
 //  FilterPreprocessorCheck.swift
 //  Nook
 //
-//  uBO's `!#if` blocks load only for the environment Nook reports.
-//  swiftc Sources/NookBlocker/FilterPreprocessor.swift Checks/FilterPreprocessorCheck.swift -o /tmp/pp && /tmp/pp
+//  uBO's `!#if` blocks load only for the environment Vega reports.
+//  swiftc Packages/NookBlocker/Sources/NookBlocker/FilterPreprocessor.swift Packages/NookBlocker/Checks/FilterPreprocessorCheck.swift -o /tmp/pp && /tmp/pp
 //
 
 import Foundation

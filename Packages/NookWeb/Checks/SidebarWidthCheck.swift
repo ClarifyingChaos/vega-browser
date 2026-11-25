@@ -41,7 +41,7 @@ struct SidebarWidthCheck {
         let size = SpaceSwitcher.itemSize(available: 148, count: 8)
         let gap = SpaceSwitcher.gap(available: 148, count: 8, size: size)
         precondition(size * 8 + gap * 7 <= 148 && gap >= 0)
-        precondition(SpaceSwitcher.gap(available: 400, count: 3, size: 34) == SpaceSwitcher.gap, "roomy rows keep the full gap")
+        precondition(SpaceSwitcher.gap(available: 400, count: 3, size: 24) == SpaceSwitcher.gap, "roomy rows keep the full gap")
 
         var v = DragVelocity(startTime: 0)
         _ = v.add(dx: 1, time: 0.01)

@@ -256,7 +256,7 @@ struct URLBarView: View {
                 // Pinned extension buttons + library button
                 // FORK: as in Arc, extensions and site controls show while the pointer is over the field
                 // (or while the library panel they open is up), not at rest.
-                if !isEditing, isHovering || windowState.isExtensionLibraryVisible, let extensionManager = browserManager.extensionManager {
+                if !isEditing, isHovering || windowState.isExtensionLibraryVisible, let extensionManager = browserManager.extensionManager(for: windowState) {
                     let pinnedIDs = browserManager.nookSettings?.pinnedExtensionIDs ?? []
                     let pinnedExtensions = extensionManager.installedExtensions.filter { pinnedIDs.contains($0.id) }
 

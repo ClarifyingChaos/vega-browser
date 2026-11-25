@@ -10,29 +10,44 @@ import AppKit
 import SwiftUI
 import NookUI
 import NookDesign
+import NookWeb
+import NookSettings
 
 struct ExtensionsSettingsView: View {
     @EnvironmentObject var browserManager: BrowserManager
+    @Environment(TabsController.self) private var tabs
     @ObservedObject var extensionManager: ExtensionManager
-    @State private var showingInstallDialog = false
-    @State private var safariExtensions: [ExtensionManager.SafariExtensionInfo] = []
-    @State private var isScanningSafari = false
-    @State private var showSafariSection = false
+    /// The extension sets in use and the one shown, for the picker once there is more than one.
+    var sets: [ExtensionSetChoice] = []
+    var shownSet: Binding<UUID>?
+    @State private var pendingRemoval: InstalledExtension?
+    @State private var consent: PendingConsent?
 
     var body: some View {
         Form {
             SettingsHero(symbol: "puzzlepiece.extension", title: "Extensions", detail: "Add, turn off or remove browser extensions.")
 
+            if sets.count > 1, let shownSet {
+                Section {
+                    Picker("Profiles", selection: shownSet) {
+                        ForEach(sets, id: \.set) { choice in
+                            Text(choice.members.compactMap { id in tabs.profiles.first { $0.id == id }?.name }.joined(separator: ", "))
+                                .tag(choice.set)
+                        }
+                    }
+                }
+            }
+
             Section {
                 Button("Install Extension…", nookIcon: "plus") {
-                    browserManager.showExtensionInstallDialog()
+                    extensionManager.showExtensionInstallDialog(presenter: presentConsent)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .padding(.vertical, NookDesign.Spacing.sm)
             }
 
-            if extensionManager.installedExtensions.isEmpty && !showSafariSection {
+            if extensionManager.installedExtensions.isEmpty && extensionManager.uninstalledSafariExtensions.isEmpty {
                 Section {
                     VStack(spacing: NookDesign.Spacing.lg) {
                         NookSymbol("puzzlepiece.extension", size: 60)
@@ -46,92 +61,96 @@ struct ExtensionsSettingsView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-            } else {
+            } else if !extensionManager.installedExtensions.isEmpty {
                 Section("Installed Extensions") {
-                    ForEach(extensionManager.installedExtensions, id: \.id) { ext in
-                        ExtensionRowView(extension: ext)
-                            .environmentObject(browserManager)
-                            .padding(.vertical, NookDesign.Spacing.md)
+                    ForEach(installed, id: \.id) { ext in
+                        ExtensionRowView(
+                            extension: ext,
+                            extensionManager: extensionManager,
+                            hasOptionsPage: extensionManager.hasOptionsPage(ext.id),
+                            update: extensionManager.safariUpdate(for: ext),
+                            alternative: extensionManager.safariAlternative(to: ext),
+                            onInstall: install,
+                            onRemove: { pendingRemoval = ext }
+                        )
+                        .padding(.vertical, NookDesign.Spacing.md)
                     }
                 }
             }
 
             Section {
-                if isScanningSafari {
+                if extensionManager.safariExtensions == nil {
                     HStack(spacing: NookDesign.Spacing.md) {
                         ProgressView()
                             .controlSize(.small)
                         Text("Scanning...")
                             .foregroundStyle(.secondary)
                     }
-                } else {
-                    Button("Scan for Safari Extensions") {
-                        scanForSafariExtensions()
-                    }
+                } else if extensionManager.uninstalledSafariExtensions.isEmpty {
+                    Text("No Safari Web Extensions found on this Mac.")
+                        .font(NookDesign.Font.caption)
+                        .foregroundStyle(.secondary)
                 }
-
-                if showSafariSection {
-                    if safariExtensions.isEmpty {
-                        Text("No Safari Web Extensions found on this Mac.")
-                            .font(NookDesign.Font.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(safariExtensions) { ext in
-                            SafariExtensionRowView(
-                                info: ext,
-                                // A copy from before stable IDs can be installed again from here, which moves it to its real id.
-                                isAlreadyInstalled: extensionManager.installedExtensions.contains(where: {
-                                    $0.id == ext.id || ($0.name == ext.name && UUID(uuidString: $0.id) == nil)
-                                }),
-                                onInstall: {
-                                    installSafariExtension(ext)
-                                }
-                            )
-                        }
-                    }
+                ForEach(extensionManager.uninstalledSafariExtensions) { ext in
+                    SafariExtensionRowView(info: ext, isAlreadyInstalled: false, onInstall: { install(ext) })
                 }
             } header: {
                 Text("Safari Extensions")
             }
         }
         .formStyle(.grouped)
-        .onAppear {
-            if safariExtensions.isEmpty && !isScanningSafari {
-                scanForSafariExtensions()
+        .alert(
+            Text("Remove \(pendingRemoval?.name ?? "")?"),
+            isPresented: Binding(get: { pendingRemoval != nil }, set: { if !$0 { pendingRemoval = nil } }),
+            presenting: pendingRemoval
+        ) { ext in
+            Button("Remove", role: .destructive) {
+                extensionManager.uninstallExtension(ext.id)
             }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("Its data in Vega, such as sign-ins and settings, is deleted.")
+        }
+        .sheet(item: $consent) { pending in
+            ExtensionPermissionView(
+                consent: pending.request,
+                onGrant: { answer(pending, granted: true) },
+                onDeny: { answer(pending, granted: false) }
+            )
+            .frame(width: NookDesign.Size.dialogMaxWidth)
+        }
+        .task { await extensionManager.refreshSafariExtensions() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await extensionManager.refreshSafariExtensions() }
         }
     }
 
-    private func scanForSafariExtensions() {
-        isScanningSafari = true
-        showSafariSection = true
-        Task {
-            let found = await extensionManager.discoverSafariExtensions()
-            await MainActor.run {
-                safariExtensions = found
-                isScanningSafari = false
-            }
+    private var installed: [InstalledExtension] {
+        extensionManager.installedExtensions.sorted {
+            $0.name.localizedStandardCompare($1.name) == .orderedAscending
         }
     }
 
-    private func installSafariExtension(_ info: ExtensionManager.SafariExtensionInfo) {
-        extensionManager.installSafariExtension(info) { result in
-            switch result {
-            case .success(let ext):
-                // Remove from available list since it's now installed
-                safariExtensions.removeAll { $0.id == info.id }
-                _ = ext // suppress unused warning
-            case .failure(.cancelled):
-                break
-            case .failure(let error):
-                let alert = NSAlert()
-                alert.messageText = "Failed to Install Safari Extension"
-                alert.informativeText = error.localizedDescription
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "OK")
-                alert.runModal()
-            }
+    private func install(_ info: ExtensionManager.SafariExtensionInfo) {
+        extensionManager.installSafariExtension(info, presenter: presentConsent) { result in
+            guard case .failure(let error) = result else { return }
+            if case .cancelled = error { return }
+            extensionManager.showErrorAlert(error)
         }
+    }
+
+    private func presentConsent(_ request: InstallConsent) async -> Bool {
+        await withCheckedContinuation { continuation in
+            consent = PendingConsent(
+                request: request,
+                decide: ResumeOnce(fallback: false) { continuation.resume(returning: $0) }
+            )
+        }
+    }
+
+    private func answer(_ pending: PendingConsent, granted: Bool) {
+        pending.decide(granted)
+        consent = nil
     }
 }
 
@@ -182,7 +201,13 @@ private struct SafariExtensionRowView: View {
 
 private struct ExtensionRowView: View {
     let `extension`: InstalledExtension
-    @EnvironmentObject var browserManager: BrowserManager
+    /// The extension set this row's extension is installed in.
+    let extensionManager: ExtensionManager
+    let hasOptionsPage: Bool
+    let update: ExtensionManager.SafariExtensionInfo?
+    let alternative: ExtensionManager.SafariExtensionInfo?
+    let onInstall: (ExtensionManager.SafariExtensionInfo) -> Void
+    let onRemove: () -> Void
 
     var body: some View {
         HStack(spacing: NookDesign.Spacing.xl) {
@@ -231,9 +256,9 @@ private struct ExtensionRowView: View {
                         get: { `extension`.isEnabled },
                         set: { isEnabled in
                             if isEnabled {
-                                browserManager.enableExtension(`extension`.id)
+                                extensionManager.enableExtension(`extension`.id)
                             } else {
-                                browserManager.disableExtension(`extension`.id)
+                                extensionManager.disableExtension(`extension`.id)
                             }
                         }
                     )
@@ -246,13 +271,20 @@ private struct ExtensionRowView: View {
                         "Allow in Private Browsing",
                         isOn: Binding(
                             get: { `extension`.allowsPrivateBrowsing },
-                            set: { browserManager.extensionManager?.setAllowsPrivateBrowsing(`extension`.id, allowed: $0) }
+                            set: { extensionManager.setAllowsPrivateBrowsing(`extension`.id, allowed: $0) }
                         )
                     )
-                    Divider()
-                    Button("Remove", nookIcon: "trash", role: .destructive) {
-                        browserManager.uninstallExtension(`extension`.id)
+                    if hasOptionsPage {
+                        Button("Settings…", nookIcon: "gearshape") { extensionManager.openOptionsPage(`extension`.id) }
                     }
+                    if let update {
+                        Button("Update from \(update.appPath.lastPathComponent)", nookIcon: "arrow.triangle.2.circlepath") { onInstall(update) }
+                    }
+                    if let alternative {
+                        Button("Switch to the Safari version", nookIcon: "safari") { onInstall(alternative) }
+                    }
+                    Divider()
+                    Button("Remove…", nookIcon: "trash", role: .destructive, action: onRemove)
                 } label: {
                     Image(systemName: "ellipsis")
                 }
@@ -265,5 +297,35 @@ private struct ExtensionRowView: View {
                 .accessibilityLabel("More options for \(`extension`.name)")
             }
         }
+    }
+}
+
+private struct PendingConsent: Identifiable {
+    let request: InstallConsent
+    let decide: ResumeOnce<Bool>
+
+    var id: UUID { request.id }
+}
+
+/// Settings > Extensions for one extension set, the active window's until another is picked.
+struct ExtensionSetsSettingsView: View {
+    @EnvironmentObject var browserManager: BrowserManager
+    @Environment(TabsController.self) private var tabs
+    @Environment(\.nookSettings) private var settings
+    @State private var picked: UUID?
+
+    var body: some View {
+        let registry = ExtensionSetRegistry.shared
+        let sets = settings.extensionSets.choices(profiles: tabs.profiles.map(\.id), defaultSet: registry.defaultSetID)
+        let active = browserManager.windowRegistry?.activeWindow.map(registry.setID(for:))
+        // Only a set a profile uses is shown: asking for any other id would create it.
+        let set = [picked, active].compactMap { $0 }.first { id in sets.contains { $0.set == id } }
+            ?? sets.first?.set ?? registry.defaultSetID
+        ExtensionsSettingsView(
+            extensionManager: registry.manager(forSet: set),
+            sets: sets,
+            shownSet: Binding(get: { set }, set: { picked = $0 })
+        )
+        .id(set)
     }
 }

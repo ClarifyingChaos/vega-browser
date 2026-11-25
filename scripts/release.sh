@@ -173,4 +173,15 @@ xmllint --noout "$PAGES/appcast.xml"
 git -C "$PAGES" add -A && git -C "$PAGES" commit -qm "Appcast: Vega $VERSION" && git -C "$PAGES" push -q origin gh-pages
 gh api -X POST "repos/$REPO/pages" -f "source[branch]=gh-pages" -f "source[path]=/" >/dev/null 2>&1 || true
 
+
+# Local backup of this release, so any of the last three can be restored: the DMG, the update-feed entry, the notes, and
+# a git bundle of every branch and tag. Set RELEASE_BACKUPS to move them; they are kept off GitHub on purpose.
+BACKUPS="${RELEASE_BACKUPS:-/Volumes/Data_Drive/Browser/backups/releases}"
+mkdir -p "$BACKUPS/$TAG"
+cp "$OUT/$DMG_NAME" "$OUT/appcast.xml" "$BACKUPS/$TAG/" 2>/dev/null || true
+[[ -s "$NOTES" ]] && cp "$NOTES" "$BACKUPS/$TAG/notes.md"
+git bundle create "$BACKUPS/$TAG/vega-browser-$VERSION.bundle" --all >/dev/null 2>&1 || echo "▸ warning: the git bundle backup failed"
+# Keep the three newest (by modification time), delete the rest.
+ls -1dt "$BACKUPS"/vega-v*/ 2>/dev/null | tail -n +4 | while read -r old; do rm -rf "$old"; done
+echo "▸ backup: $BACKUPS/$TAG (keeping the last three)"
 echo "▸ released: https://github.com/$REPO/releases/tag/$TAG"

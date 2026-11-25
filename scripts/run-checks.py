@@ -36,6 +36,7 @@ def command(path):
     return None
 
 def main():
+    os.makedirs("/tmp/x-lib", exist_ok=True)   # SpaceIconCheck's header builds the design library into it
     word = sys.argv[1] if len(sys.argv) > 1 else ""
     files = sorted(glob.glob("Packages/*/Checks/*Check.swift") + glob.glob("scripts/tests/*Check.swift"))
     failed, ran = [], 0
@@ -57,7 +58,7 @@ def main():
         first = next((w for w in cmd.split() if w.endswith(".swift")), "")
         cwd = os.getcwd() if glob.glob(first) else os.path.dirname(os.path.dirname(path))  # first may be a pattern
         out = tempfile.mktemp(prefix="check-")
-        cmd = re.sub(r"-o\s+\S+", f"-o {out}", cmd)
+        cmd = re.sub(r"-o\s+\S+(?!.*\s-o\s)", f"-o {out}", cmd)   # only the last: a header may build a library first
         cmd = re.sub(r"&&\s*/tmp/\S+", f"&& {out}", cmd)
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
         ran += 1

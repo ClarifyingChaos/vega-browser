@@ -90,679 +90,683 @@ struct NookCommands: Commands {
     }
 
     var body: some Commands {
-        CommandGroup(replacing: .newItem) {}
-        CommandGroup(replacing: .windowList) {}
+        Group {
+            CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .windowList) {}
 
-        // The Settings scene supplies the standard Settings… item at ⌘,
-        CommandGroup(after: .appSettings) {
-            Button("Import from Another Browser…") {
-                browserManager.dialogManager.showDialog(
-                    BrowserImportDialog(
-                        onCancel: {
-                            browserManager.dialogManager.closeDialog()
-                        }
+            // The Settings scene supplies the standard Settings… item at ⌘,
+            CommandGroup(after: .appSettings) {
+                Button("Import from Another Browser…") {
+                    browserManager.dialogManager.showDialog(
+                        BrowserImportDialog(
+                            onCancel: {
+                                browserManager.dialogManager.closeDialog()
+                            }
+                        )
                     )
-                )
-            }
-        }
-
-        // Replace the standard Quit menu item to route through showQuitDialog(),
-        // which respects the "warn before quitting" setting
-        CommandGroup(replacing: .appTermination) {
-            Button("Quit Vega") {
-                browserManager.showQuitDialog()
-            }
-            .keyboardShortcut("q", modifiers: .command)
-        }
-
-        // App Menu Section (under Nook)
-        CommandGroup(after: .help) {
-            Button("Feature Tour") { browserManager.showFeatureTour() }
-        }
-
-        CommandGroup(after: .appInfo) {
-            Divider()
-            Button("Make Vega Default Browser") {
-                browserManager.setAsDefaultBrowser()
+                }
             }
 
-            Button("Check for Updates…") {
-                browserManager.appDelegate?.updaterController.checkForUpdates(nil)
+            // Replace the standard Quit menu item to route through showQuitDialog(),
+            // which respects the "warn before quitting" setting
+            CommandGroup(replacing: .appTermination) {
+                Button("Quit Vega") {
+                    browserManager.showQuitDialog()
+                }
+                .keyboardShortcut("q", modifiers: .command)
             }
-        }
+
+            // App Menu Section (under Nook)
+            CommandGroup(after: .help) {
+                Button("Feature Tour") { browserManager.showFeatureTour() }
+            }
+
+            CommandGroup(after: .appInfo) {
+                Divider()
+                Button("Make Vega Default Browser") {
+                    browserManager.setAsDefaultBrowser()
+                }
+
+                Button("Check for Updates…") {
+                    browserManager.appDelegate?.updaterController.checkForUpdates(nil)
+                }
+            }
         
 
-        // Edit Section
-        CommandGroup(replacing: .undoRedo) {
-            Button("Undo") {
-                if KeyboardShortcutManager.textHasFocus, NSApp.keyWindow?.firstResponder?.undoManager?.canUndo == true {
-                    NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
-                } else if let window = windowRegistry.activeWindow {
-                    browserManager.tabs.reopenLastClosed(in: window)
-                }
-            }
-            .modifier(dynamicShortcut(.undoCloseTab))
-
-            Button("Redo") {
-                NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
-            }
-            .keyboardShortcut("z", modifiers: [.command, .shift])
-
-            Button("Reopen Closed Tab") {
-                if let window = windowRegistry.activeWindow { browserManager.tabs.reopenLastClosed(in: window) }
-            }
-            .keyboardShortcut("t", modifiers: [.command, .shift])
-        }
-
-        // File Section
-        CommandGroup(after: .newItem) {
-            Button("New Tab") {
-                windowRegistry.activeWindow?.commandPalette?.open()
-            }
-            .modifier(dynamicShortcut(.newTab))
-            Button("New Window") {
-                browserManager.createWindowForActiveProfile()
-            }
-            .modifier(dynamicShortcut(.newWindow))
-            // FORK: one window per person, as in Chrome: a profile's own window.
-            if browserManager.tabs.profiles.count > 1 {
-                Menu("New Window for Profile") {
-                    ForEach(browserManager.tabs.profiles) { profile in
-                        Button(profile.name) { browserManager.openWindow(forProfile: profile.id) }
+            // Edit Section
+            CommandGroup(replacing: .undoRedo) {
+                Button("Undo") {
+                    if KeyboardShortcutManager.textHasFocus, NSApp.keyWindow?.firstResponder?.undoManager?.canUndo == true {
+                        NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+                    } else if let window = windowRegistry.activeWindow {
+                        browserManager.tabs.reopenLastClosed(in: window)
                     }
                 }
-            }
-            
-            Button("New Incognito Window") {
-                browserManager.createIncognitoWindow()
-            }
-            .keyboardShortcut("n", modifiers: [.command, .shift])
+                .modifier(dynamicShortcut(.undoCloseTab))
 
-            // FORK: Arc's File items.
-            Button("Blank Window") { browserManager.openBlankWindow() }
-            Button("New Little Window") { browserManager.openLittleArcWindow() }
-                .keyboardShortcut("n", modifiers: [.command, .option])
-            
-            Divider()
-            Button("Open Command Bar") {
-                let currentURL = browserManager.tabs.activeWindowSession?.url.absoluteString ?? ""
-                windowRegistry.activeWindow?.commandPalette?.open(prefill: currentURL, navigateCurrentTab: true)
+                Button("Redo") {
+                    NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+                }
+                .keyboardShortcut("z", modifiers: [.command, .shift])
+
+                Button("Reopen Closed Tab") {
+                    if let window = windowRegistry.activeWindow { browserManager.tabs.reopenLastClosed(in: window) }
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
             }
-            .modifier(dynamicShortcut(.focusAddressBar))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
 
-            Divider()
-            Button("Capture Visible Area…") { browserManager.capturePage(fullPage: false) }
-                .keyboardShortcut("4", modifiers: [.command, .shift, .option])
-                .disabled(browserManager.tabs.activeWindowSession == nil)
-            Button("Capture Full Page…") { browserManager.capturePage(fullPage: true) }
-                .keyboardShortcut("5", modifiers: [.command, .shift, .option])
-                .disabled(browserManager.tabs.activeWindowSession == nil)
-
-            Button("Cast…") { browserManager.castPage() }
-                .disabled(browserManager.tabs.activeWindowSession == nil)
-            Button("Save Page As…") { browserManager.savePageAs() }
-                .keyboardShortcut("s", modifiers: [.command, .shift])
-                .disabled(browserManager.tabs.activeWindowSession == nil)
-
-            Button("Print…") {
-                browserManager.printCurrentPage()
-            }
-            .modifier(dynamicShortcut(.printPage))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
+            // File Section
         }
-
-        // Sidebar commands
-        CommandGroup(after: .sidebar) {
-            Button(windowRegistry.activeWindow?.isSidebarVisible == false ? "Show Sidebar" : "Hide Sidebar") { // FORK: HIG titles
-                browserManager.toggleSidebar()
-            }
-            .modifier(dynamicShortcut(.toggleSidebar))
-
-            Button(windowRegistry.activeWindow?.isSidebarAIChatVisible == true ? "Hide AI Assistant" : "Show AI Assistant") {
-                browserManager.toggleAISidebar()
-            }
-            .modifier(dynamicShortcut(.toggleAIAssistant))
-            .disabled(!nookSettings.showAIAssistant)
-
-            Button("Picture in Picture") {
-                browserManager.tabs.activeWindowSession?.requestPictureInPicture()
-            }
-            .modifier(dynamicShortcut(.togglePictureInPicture))
-            .disabled(
-                browserManager.tabs.activeWindowSession == nil
-                    || !(browserManager.tabs.activeWindowSession.map { $0.hasVideoContent || $0.hasPiPActive } ?? false)
-            )
-
-            // FORK: the sidebar footer's Library button, also in the menu bar (HIG, Sidebars).
-            Button("Show Library") {
-                if let window = windowRegistry.activeWindow { LibraryMotion.present(window) }
-            }
-            .disabled(windowRegistry.activeWindow == nil)
-
-            Divider()
-
-            Button("Collapse All Folders") {
-                if let spaceID = windowRegistry.activeWindow?.spaceID {
-                    browserManager.tabs.setAllFolders(open: false, space: spaceID)
+        Group {
+            CommandGroup(after: .newItem) {
+                Button("New Tab") {
+                    windowRegistry.activeWindow?.commandPalette?.open()
                 }
-            }
-            .disabled(windowRegistry.activeWindow?.spaceID == nil)
-
-            Button("Expand All Folders") {
-                if let spaceID = windowRegistry.activeWindow?.spaceID {
-                    browserManager.tabs.setAllFolders(open: true, space: spaceID)
+                .modifier(dynamicShortcut(.newTab))
+                Button("New Window") {
+                    browserManager.createWindowForActiveProfile()
                 }
-            }
-            .modifier(dynamicShortcut(.expandAllFolders))
-            .disabled(windowRegistry.activeWindow?.spaceID == nil)
-
-            if tabOrganizerManager.isAvailable {
-                Divider()
-
-                Button("Organize Tabs") {
-                    if let spaceID = windowRegistry.activeWindow?.spaceID {
-                        Task {
-                            await tabOrganizerManager.organizeTabs(in: spaceID, using: browserManager.tabs)
+                .modifier(dynamicShortcut(.newWindow))
+                // FORK: one window per person, as in Chrome: a profile's own window.
+                if browserManager.tabs.profiles.count > 1 {
+                    Menu("New Window for Profile") {
+                        ForEach(browserManager.tabs.profiles) { profile in
+                            Button(profile.name) { browserManager.openWindow(forProfile: profile.id) }
                         }
                     }
                 }
-                .modifier(dynamicShortcut(.organizeTabs))
-                .disabled(
-                    tabOrganizerManager.isOrganizing
-                        || windowRegistry.activeWindow?.spaceID == nil
-                )
-            }
-        }
-
-        // View commands. FORK: in the View menu, as Safari and Dia have them (they sat in Window).
-        CommandGroup(after: .toolbar) {
-            // FORK: Arc's View items.
-            // The app's own settings object: in Commands, @Environment(\.nookSettings) is a separate default copy.
-            Button(browserManager.nookSettings?.topBarAddressView == true ? "Hide Toolbar" : "Show Toolbar") {
-                browserManager.toggleTopBarAddressView()
-            }
-            .modifier(dynamicShortcut(.toggleTopBarAddressView))
-
-            Toggle("Show Full URL", isOn: Binding(get: { FullURLDisplay.shared.isOn }, set: { FullURLDisplay.shared.isOn = $0 }))
-
-            Button(browserManager.isPinnedSectionCollapsed ? "Expand Pinned Tabs" : "Collapse Pinned Tabs") {
-                browserManager.togglePinnedSection()
-            }
-            .disabled(windowRegistry.activeWindow?.spaceID == nil)
-
-            Divider()
-
-            Button("Add Split View") { browserManager.addSplitView() }
-                .keyboardShortcut("=", modifiers: [.command, .control])
-                .disabled(windowRegistry.activeWindow?.selectedItemID == nil)
-            Button("Close This Split Pane") { browserManager.closeActiveSplitPane() }
-                .disabled(windowRegistry.activeWindow?.split == nil)
-            Button("Focus Next Split Pane") { browserManager.focusSplitPane() }
-                .keyboardShortcut("]", modifiers: [.command, .option])
-                .disabled(windowRegistry.activeWindow?.split == nil)
-            Button("Focus Previous Split Pane") { browserManager.focusSplitPane() }
-                .keyboardShortcut("[", modifiers: [.command, .option])
-                .disabled(windowRegistry.activeWindow?.split == nil)
-            Button("Separate Page from Split View") {
-                if let window = windowRegistry.activeWindow { browserManager.separateSplit(in: window) }
-            }
-            .disabled(windowRegistry.activeWindow?.split == nil)
-
-            Divider()
-
-            Button("Reload Page") {
-                browserManager.tabs.activeWindowSession?.refresh()
-            }
-            .modifier(dynamicShortcut(.refresh))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
-
-            Button("Stop Loading") {
-                browserManager.stopLoadingCurrentPage()
-            }
-            .modifier(dynamicShortcut(.stopLoading))
-            .disabled(browserManager.tabs.activeWindowSession?.isLoading != true)
-
-            Button("Reload with Standard Fingerprinting Protection") {
-                browserManager.tabs.activeWindowSession?.reloadWithoutEnhancedFingerprintingProtection()
-            }
-            .disabled(browserManager.tabs.activeWindowSession?.usesEnhancedFingerprintingProtection != true)
-
-            Button(browserManager.tabs.activeWindowSession?.isReaderActive == true ? "Hide Reader" : "Show Reader") {
-                browserManager.tabs.activeWindowSession?.toggleReader()
-            }
-            .keyboardShortcut("r", modifiers: [.command, .option])
-            .disabled(browserManager.tabs.activeWindowSession?.canShowReader != true)
-
-            Button(browserManager.tabs.activeWindowSession?.isTranslated == true ? "Show Original" : "Translate Page") {
-                browserManager.tabs.activeWindowSession?.toggleTranslation()
-            }
-            .disabled(browserManager.tabs.activeWindowSession?.canTranslate != true)
-
-            Divider()
-
-            Button("Zoom In") {
-                browserManager.zoomInCurrentTab()
-            }
-            .modifier(dynamicShortcut(.zoomIn))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
-
-            Button("Zoom Out") {
-                browserManager.zoomOutCurrentTab()
-            }
-            .modifier(dynamicShortcut(.zoomOut))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
-
-            Button("Actual Size") {
-                browserManager.resetZoomCurrentTab()
-            }
-            .modifier(dynamicShortcut(.actualSize))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
-
-            Divider()
-
-            Button("Hard Reload (Ignore Cache)") {
-                browserManager.hardReloadCurrentPage()
-            }
-            .modifier(dynamicShortcut(.hardReload))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
-
-            Divider()
-
-            Menu("Appearance") {
-                // The app's own settings object: in Commands, @Environment(\.nookSettings) is a separate default copy.
-                Picker("Appearance", selection: Binding(get: { browserManager.nookSettings?.appearanceMode ?? .system },
-                                                        set: { browserManager.nookSettings?.appearanceMode = $0 })) {
-                    Text("Automatic").tag(AppearanceMode.system)
-                    Text("Light").tag(AppearanceMode.light)
-                    Text("Dark").tag(AppearanceMode.dark)
+            
+                Button("New Incognito Window") {
+                    browserManager.createIncognitoWindow()
                 }
-                .pickerStyle(.inline)
-                .labelsHidden()
-            }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
 
-            Menu("Developer") {
-                Button("Web Inspector") {
-                    browserManager.openWebInspector()
+                // FORK: Arc's File items.
+                Button("Blank Window") { browserManager.openBlankWindow() }
+                Button("New Little Window") { browserManager.openLittleArcWindow() }
+                    .keyboardShortcut("n", modifiers: [.command, .option])
+            
+                Divider()
+                Button("Open Command Bar") {
+                    let currentURL = browserManager.tabs.activeWindowSession?.url.absoluteString ?? ""
+                    windowRegistry.activeWindow?.commandPalette?.open(prefill: currentURL, navigateCurrentTab: true)
                 }
-                .modifier(dynamicShortcut(.openDevTools))
+                .modifier(dynamicShortcut(.focusAddressBar))
                 .disabled(browserManager.tabs.activeWindowSession == nil)
 
-                if nookSettings.developerModeEnabled {
-                    Button("Developer Panel") {
-                        browserManager.toggleDevPanel(.console)
-                    }
-                    .modifier(dynamicShortcut(.openDevPanel))
-
-                    Button("Pick Element") {
-                        browserManager.startElementPicker()
-                    }
-                    .modifier(dynamicShortcut(.pickElement))
+                Divider()
+                Button("Capture Visible Area…") { browserManager.capturePage(fullPage: false) }
+                    .keyboardShortcut("4", modifiers: [.command, .shift, .option])
                     .disabled(browserManager.tabs.activeWindowSession == nil)
+                Button("Capture Full Page…") { browserManager.capturePage(fullPage: true) }
+                    .keyboardShortcut("5", modifiers: [.command, .shift, .option])
+                    .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Button("Cast…") { browserManager.castPage() }
+                    .disabled(browserManager.tabs.activeWindowSession == nil)
+                Button("Save Page As…") { browserManager.savePageAs() }
+                    .keyboardShortcut("s", modifiers: [.command, .shift])
+                    .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Button("Print…") {
+                    browserManager.printCurrentPage()
+                }
+                .modifier(dynamicShortcut(.printPage))
+                .disabled(browserManager.tabs.activeWindowSession == nil)
+            }
+
+            // Sidebar commands
+            CommandGroup(after: .sidebar) {
+                Button(windowRegistry.activeWindow?.isSidebarVisible == false ? "Show Sidebar" : "Hide Sidebar") { // FORK: HIG titles
+                    browserManager.toggleSidebar()
+                }
+                .modifier(dynamicShortcut(.toggleSidebar))
+
+                Button(windowRegistry.activeWindow?.isSidebarAIChatVisible == true ? "Hide AI Assistant" : "Show AI Assistant") {
+                    browserManager.toggleAISidebar()
+                }
+                .modifier(dynamicShortcut(.toggleAIAssistant))
+                .disabled(!nookSettings.showAIAssistant)
+
+                Button("Picture in Picture") {
+                    browserManager.tabs.activeWindowSession?.requestPictureInPicture()
+                }
+                .modifier(dynamicShortcut(.togglePictureInPicture))
+                .disabled(
+                    browserManager.tabs.activeWindowSession == nil
+                        || !(browserManager.tabs.activeWindowSession.map { $0.hasVideoContent || $0.hasPiPActive } ?? false)
+                )
+
+                // FORK: the sidebar footer's Library button, also in the menu bar (HIG, Sidebars).
+                Button("Show Library") {
+                    if let window = windowRegistry.activeWindow { LibraryMotion.present(window) }
+                }
+                .disabled(windowRegistry.activeWindow == nil)
+
+                Divider()
+
+                Button("Collapse All Folders") {
+                    if let spaceID = windowRegistry.activeWindow?.spaceID {
+                        browserManager.tabs.setAllFolders(open: false, space: spaceID)
+                    }
+                }
+                .disabled(windowRegistry.activeWindow?.spaceID == nil)
+
+                Button("Expand All Folders") {
+                    if let spaceID = windowRegistry.activeWindow?.spaceID {
+                        browserManager.tabs.setAllFolders(open: true, space: spaceID)
+                    }
+                }
+                .modifier(dynamicShortcut(.expandAllFolders))
+                .disabled(windowRegistry.activeWindow?.spaceID == nil)
+
+                if tabOrganizerManager.isAvailable {
+                    Divider()
+
+                    Button("Organize Tabs") {
+                        if let spaceID = windowRegistry.activeWindow?.spaceID {
+                            Task {
+                                await tabOrganizerManager.organizeTabs(in: spaceID, using: browserManager.tabs)
+                            }
+                        }
+                    }
+                    .modifier(dynamicShortcut(.organizeTabs))
+                    .disabled(
+                        tabOrganizerManager.isOrganizing
+                            || windowRegistry.activeWindow?.spaceID == nil
+                    )
                 }
             }
-        }
 
-        // FORK: Edit gains Find and the URL copies, where Dia and Safari keep them.
-        CommandGroup(after: .pasteboard) {
-            Divider()
-            Button("Copy URL") {
-                browserManager.copyCurrentURL()
-            }
-            .modifier(dynamicShortcut(.copyCurrentURL))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
+            // View commands. FORK: in the View menu, as Safari and Dia have them (they sat in Window).
+            CommandGroup(after: .toolbar) {
+                // FORK: Arc's View items.
+                // The app's own settings object: in Commands, @Environment(\.nookSettings) is a separate default copy.
+                Button(browserManager.nookSettings?.topBarAddressView == true ? "Hide Toolbar" : "Show Toolbar") {
+                    browserManager.toggleTopBarAddressView()
+                }
+                .modifier(dynamicShortcut(.toggleTopBarAddressView))
 
-            Button("Copy URL as Markdown") {
-                guard let page = browserManager.tabs.activeWindowSession else { return }
-                let title = page.title.replacingOccurrences(of: "]", with: "\\]")
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString("[\(title)](\(page.url.absoluteString))", forType: .string)
-            }
-            .disabled(browserManager.tabs.activeWindowSession == nil)
+                Toggle("Show Full URL", isOn: Binding(get: { FullURLDisplay.shared.isOn }, set: { FullURLDisplay.shared.isOn = $0 }))
 
-            Button("Copy URL as Quote") { browserManager.copyURLAsQuote() }
+                Button(browserManager.isPinnedSectionCollapsed ? "Expand Pinned Tabs" : "Collapse Pinned Tabs") {
+                    browserManager.togglePinnedSection()
+                }
+                .disabled(windowRegistry.activeWindow?.spaceID == nil)
+
+                Divider()
+
+                Button("Add Split View") { browserManager.addSplitView() }
+                    .keyboardShortcut("=", modifiers: [.command, .control])
+                    .disabled(windowRegistry.activeWindow?.selectedItemID == nil)
+                Button("Close This Split Pane") { browserManager.closeActiveSplitPane() }
+                    .disabled(windowRegistry.activeWindow?.split == nil)
+                Button("Focus Next Split Pane") { browserManager.focusSplitPane() }
+                    .keyboardShortcut("]", modifiers: [.command, .option])
+                    .disabled(windowRegistry.activeWindow?.split == nil)
+                Button("Focus Previous Split Pane") { browserManager.focusSplitPane() }
+                    .keyboardShortcut("[", modifiers: [.command, .option])
+                    .disabled(windowRegistry.activeWindow?.split == nil)
+                Button("Separate Page from Split View") {
+                    if let window = windowRegistry.activeWindow { browserManager.separateSplit(in: window) }
+                }
+                .disabled(windowRegistry.activeWindow?.split == nil)
+
+                Divider()
+
+                Button("Reload Page") {
+                    browserManager.tabs.activeWindowSession?.refresh()
+                }
+                .modifier(dynamicShortcut(.refresh))
                 .disabled(browserManager.tabs.activeWindowSession == nil)
 
-            Divider()
-            Button("Find in Page…") {
-                browserManager.showFindBar()
-            }
-            .modifier(dynamicShortcut(.findInPage))
-            .disabled(browserManager.tabs.activeWindowSession == nil)
-        }
+                Button("Stop Loading") {
+                    browserManager.stopLoadingCurrentPage()
+                }
+                .modifier(dynamicShortcut(.stopLoading))
+                .disabled(browserManager.tabs.activeWindowSession?.isLoading != true)
 
-        // FORK: Tabs and History menus, as in Dia, built on the existing shortcut actions.
-        CommandMenu("Tabs") {
-            Button("New Note") { browserManager.newNote() }
-                .keyboardShortcut("n", modifiers: [.command, .control])
+                Button("Reload with Standard Fingerprinting Protection") {
+                    browserManager.tabs.activeWindowSession?.reloadWithoutEnhancedFingerprintingProtection()
+                }
+                .disabled(browserManager.tabs.activeWindowSession?.usesEnhancedFingerprintingProtection != true)
+
+                Button(browserManager.tabs.activeWindowSession?.isReaderActive == true ? "Hide Reader" : "Show Reader") {
+                    browserManager.tabs.activeWindowSession?.toggleReader()
+                }
+                .keyboardShortcut("r", modifiers: [.command, .option])
+                .disabled(browserManager.tabs.activeWindowSession?.canShowReader != true)
+
+                Button(browserManager.tabs.activeWindowSession?.isTranslated == true ? "Show Original" : "Translate Page") {
+                    browserManager.tabs.activeWindowSession?.toggleTranslation()
+                }
+                .disabled(browserManager.tabs.activeWindowSession?.canTranslate != true)
+
+                Divider()
+
+                Button("Zoom In") {
+                    browserManager.zoomInCurrentTab()
+                }
+                .modifier(dynamicShortcut(.zoomIn))
+                .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Button("Zoom Out") {
+                    browserManager.zoomOutCurrentTab()
+                }
+                .modifier(dynamicShortcut(.zoomOut))
+                .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Button("Actual Size") {
+                    browserManager.resetZoomCurrentTab()
+                }
+                .modifier(dynamicShortcut(.actualSize))
+                .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Divider()
+
+                Button("Hard Reload (Ignore Cache)") {
+                    browserManager.hardReloadCurrentPage()
+                }
+                .modifier(dynamicShortcut(.hardReload))
+                .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Divider()
+
+                Menu("Appearance") {
+                    // The app's own settings object: in Commands, @Environment(\.nookSettings) is a separate default copy.
+                    Picker("Appearance", selection: Binding(get: { browserManager.nookSettings?.appearanceMode ?? .system },
+                                                            set: { browserManager.nookSettings?.appearanceMode = $0 })) {
+                        Text("Automatic").tag(AppearanceMode.system)
+                        Text("Light").tag(AppearanceMode.light)
+                        Text("Dark").tag(AppearanceMode.dark)
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                }
+
+                Menu("Developer") {
+                    Button("Web Inspector") {
+                        browserManager.openWebInspector()
+                    }
+                    .modifier(dynamicShortcut(.openDevTools))
+                    .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                    if nookSettings.developerModeEnabled {
+                        Button("Developer Panel") {
+                            browserManager.toggleDevPanel(.console)
+                        }
+                        .modifier(dynamicShortcut(.openDevPanel))
+
+                        Button("Pick Element") {
+                            browserManager.startElementPicker()
+                        }
+                        .modifier(dynamicShortcut(.pickElement))
+                        .disabled(browserManager.tabs.activeWindowSession == nil)
+                    }
+                }
+            }
+
+            // FORK: Edit gains Find and the URL copies, where Dia and Safari keep them.
+            CommandGroup(after: .pasteboard) {
+                Divider()
+                Button("Copy URL") {
+                    browserManager.copyCurrentURL()
+                }
+                .modifier(dynamicShortcut(.copyCurrentURL))
+                .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Button("Copy URL as Markdown") {
+                    guard let page = browserManager.tabs.activeWindowSession else { return }
+                    let title = page.title.replacingOccurrences(of: "]", with: "\\]")
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString("[\(title)](\(page.url.absoluteString))", forType: .string)
+                }
+                .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Button("Copy URL as Quote") { browserManager.copyURLAsQuote() }
+                    .disabled(browserManager.tabs.activeWindowSession == nil)
+
+                Divider()
+                Button("Find in Page…") {
+                    browserManager.showFindBar()
+                }
+                .modifier(dynamicShortcut(.findInPage))
+                .disabled(browserManager.tabs.activeWindowSession == nil)
+            }
+
+            // FORK: Tabs and History menus, as in Dia, built on the existing shortcut actions.
+            CommandMenu("Tabs") {
+                Button("New Note") { browserManager.newNote() }
+                    .keyboardShortcut("n", modifiers: [.command, .control])
+                    .disabled(windowRegistry.activeWindow?.spaceID == nil || windowRegistry.activeWindow?.isIncognito == true)
+
+                Button("New Folder…") {
+                    if let spaceID = windowRegistry.activeWindow?.spaceID {
+                        browserManager.tabs.createFolderForRename(in: .tabs(spaceID: spaceID), after: nil)
+                    }
+                }
+                .keyboardShortcut("n", modifiers: [.command, .option, .shift])
                 .disabled(windowRegistry.activeWindow?.spaceID == nil || windowRegistry.activeWindow?.isIncognito == true)
 
-            Button("New Folder…") {
-                if let spaceID = windowRegistry.activeWindow?.spaceID {
-                    browserManager.tabs.createFolderForRename(in: .tabs(spaceID: spaceID), after: nil)
+                Divider()
+                Button("Next Tab") { shortcutManager.executeAction(.nextTab) }
+                    .modifier(dynamicShortcut(.nextTab))
+                Button("Previous Tab") { shortcutManager.executeAction(.previousTab) }
+                    .modifier(dynamicShortcut(.previousTab))
+                Button("Search Tabs…") { windowRegistry.activeWindow?.commandPalette?.open() }
+                Button("Reveal Tab in Sidebar") { browserManager.revealSelectedTabInSidebar() }
+                    .disabled(windowRegistry.activeWindow?.selectedItemID == nil)
+
+                Divider()
+                Button(browserManager.pinToggleIsPin == false ? "Unpin Tab" : "Pin Tab") {
+                    browserManager.togglePinCurrentTab()
                 }
+                .modifier(dynamicShortcut(.togglePinTab))
+                .disabled(browserManager.pinToggleIsPin == nil)
+
+                Button("Duplicate Tab") { shortcutManager.executeAction(.duplicateTab) }
+                    .modifier(dynamicShortcut(.duplicateTab))
+                    .disabled(windowRegistry.activeWindow?.selectedItemID == nil)
+
+                Button(browserManager.tabs.activeWindowSession?.isAudioMuted == true ? "Unmute Site" : "Mute Site") {
+                    browserManager.tabs.activeWindowSession?.toggleMute()
+                }
+                .modifier(dynamicShortcut(.muteUnmuteAudio))
+                .disabled(
+                    browserManager.tabs.activeWindowSession == nil
+                        || browserManager.tabs.activeWindowSession?.hasAudioContent != true)
+
+                Divider()
+                Button("Clear Today") { browserManager.clearToday() }
+                    .keyboardShortcut("k", modifiers: [.command, .shift])
+                    .disabled(windowRegistry.activeWindow?.spaceID == nil)
+                Button("Reset All Tabs in This Space") { browserManager.resetAllTabsInSpace() }
+                    .disabled(windowRegistry.activeWindow?.spaceID == nil)
             }
-            .keyboardShortcut("n", modifiers: [.command, .option, .shift])
-            .disabled(windowRegistry.activeWindow?.spaceID == nil || windowRegistry.activeWindow?.isIncognito == true)
 
-            Divider()
-            Button("Next Tab") { shortcutManager.executeAction(.nextTab) }
-                .modifier(dynamicShortcut(.nextTab))
-            Button("Previous Tab") { shortcutManager.executeAction(.previousTab) }
-                .modifier(dynamicShortcut(.previousTab))
-            Button("Search Tabs…") { windowRegistry.activeWindow?.commandPalette?.open() }
-            Button("Reveal Tab in Sidebar") { browserManager.revealSelectedTabInSidebar() }
-                .disabled(windowRegistry.activeWindow?.selectedItemID == nil)
+            // FORK: Arc's Archive menu: navigation, history and the tab archive.
+            CommandMenu("Archive") {
+                Button("Go Back") { shortcutManager.executeAction(.goBack) }
+                    .disabled(browserManager.tabs.activeWindowSession?.canGoBack != true)
+                Button("Go Forward") { shortcutManager.executeAction(.goForward) }
+                    .disabled(browserManager.tabs.activeWindowSession?.canGoForward != true)
 
-            Divider()
-            Button(browserManager.pinToggleIsPin == false ? "Unpin Tab" : "Pin Tab") {
-                browserManager.togglePinCurrentTab()
+                Divider()
+                Button("View History") { shortcutManager.executeAction(.viewHistory) }
+                    .modifier(dynamicShortcut(.viewHistory))
+                Button("View Archive…") { browserManager.openLibrary(.archive) }
+                Button("Clear Archive…") { browserManager.confirmClearArchive() }
+                    .disabled(browserManager.tabs.archive.entries.isEmpty)
             }
-            .modifier(dynamicShortcut(.togglePinTab))
-            .disabled(browserManager.pinToggleIsPin == nil)
 
-            Button("Duplicate Tab") { shortcutManager.executeAction(.duplicateTab) }
-                .modifier(dynamicShortcut(.duplicateTab))
-                .disabled(windowRegistry.activeWindow?.selectedItemID == nil)
-
-            Button(browserManager.tabs.activeWindowSession?.isAudioMuted == true ? "Unmute Site" : "Mute Site") {
-                browserManager.tabs.activeWindowSession?.toggleMute()
+            // FORK: Arc's Window items.
+            CommandGroup(before: .windowArrangement) {
+                Button("Merge All Windows") { browserManager.mergeAllWindows() }
+                    .disabled(!browserManager.canMergeWindows)
+                Button(browserManager.isActiveWindowOnTop ? "Don't Stay on Top" : "Stay on Top") { browserManager.toggleStayOnTop() }
+                    .disabled(windowRegistry.activeWindow == nil)
+                Divider()
+                Button("Open Library…") { browserManager.openLibrary(.history) }
+                Button("View Media…") { browserManager.openLibrary(.media) }
+                Button("View Easels…") { browserManager.openLibrary(.easels) }
+                Button("View Downloads…") { shortcutManager.executeAction(.viewDownloads) }
+                    .modifier(dynamicShortcut(.viewDownloads))
+                Divider()
+                Button("Task Manager") { browserManager.showTaskManager() }
+                    .keyboardShortcut(.escape, modifiers: [.option, .command])
+                Divider()
             }
-            .modifier(dynamicShortcut(.muteUnmuteAudio))
-            .disabled(
-                browserManager.tabs.activeWindowSession == nil
-                    || browserManager.tabs.activeWindowSession?.hasAudioContent != true)
 
-            Divider()
-            Button("Clear Today") { browserManager.clearToday() }
-                .keyboardShortcut("k", modifiers: [.command, .shift])
-                .disabled(windowRegistry.activeWindow?.spaceID == nil)
-            Button("Reset All Tabs in This Space") { browserManager.resetAllTabsInSpace() }
-                .disabled(windowRegistry.activeWindow?.spaceID == nil)
-        }
-
-        // FORK: Arc's Archive menu: navigation, history and the tab archive.
-        CommandMenu("Archive") {
-            Button("Go Back") { shortcutManager.executeAction(.goBack) }
-                .disabled(browserManager.tabs.activeWindowSession?.canGoBack != true)
-            Button("Go Forward") { shortcutManager.executeAction(.goForward) }
-                .disabled(browserManager.tabs.activeWindowSession?.canGoForward != true)
-
-            Divider()
-            Button("View History") { shortcutManager.executeAction(.viewHistory) }
-                .modifier(dynamicShortcut(.viewHistory))
-            Button("View Archive…") { browserManager.openLibrary(.archive) }
-            Button("Clear Archive…") { browserManager.confirmClearArchive() }
-                .disabled(browserManager.tabs.archive.entries.isEmpty)
-        }
-
-        // FORK: Arc's Window items.
-        CommandGroup(before: .windowArrangement) {
-            Button("Merge All Windows") { browserManager.mergeAllWindows() }
-                .disabled(!browserManager.canMergeWindows)
-            Button(browserManager.isActiveWindowOnTop ? "Don't Stay on Top" : "Stay on Top") { browserManager.toggleStayOnTop() }
-                .disabled(windowRegistry.activeWindow == nil)
-            Divider()
-            Button("Open Library…") { browserManager.openLibrary(.history) }
-            Button("View Media…") { browserManager.openLibrary(.media) }
-            Button("View Easels…") { browserManager.openLibrary(.easels) }
-            Button("View Downloads…") { shortcutManager.executeAction(.viewDownloads) }
-                .modifier(dynamicShortcut(.viewDownloads))
-            Divider()
-            Button("Task Manager") { browserManager.showTaskManager() }
-                .keyboardShortcut(.escape, modifiers: [.option, .command])
-            Divider()
-        }
-
-        Group {
-            CommandMenu("Spaces") {
-                // FORK: the sidebar footer's New Space, also in the menu bar (HIG, Sidebars).
-                Button("New Space…") {
-                    guard let window = windowRegistry.activeWindow, !window.isIncognito else { return }
-                    withAnimation(NookDesign.Motion.standard) {
-                        window.isSidebarMenuVisible = false
-                        window.spaceDraftTheme = .randomPreset()
+            Group {
+                CommandMenu("Spaces") {
+                    // FORK: the sidebar footer's New Space, also in the menu bar (HIG, Sidebars).
+                    Button("New Space…") {
+                        guard let window = windowRegistry.activeWindow, !window.isIncognito else { return }
+                        withAnimation(NookDesign.Motion.standard) {
+                            window.isSidebarMenuVisible = false
+                            window.spaceDraftTheme = .randomPreset()
+                        }
                     }
-                }
-                .disabled(windowRegistry.activeWindow?.isIncognito != false)
-                Button("Edit Theme…") { browserManager.showSpaceSettings() }
-                    .disabled(windowRegistry.activeWindow?.spaceID == nil)
-                Button("Manage Spaces…") { browserManager.openLibrary(.spaces) }
+                    .disabled(windowRegistry.activeWindow?.isIncognito != false)
+                    Button("Edit Theme…") { browserManager.showSpaceSettings() }
+                        .disabled(windowRegistry.activeWindow?.spaceID == nil)
+                    Button("Manage Spaces…") { browserManager.openLibrary(.spaces) }
 
-                Divider()
+                    Divider()
 
-                Button("Summarize Open Tabs") {
-                    browserManager.askVega("Summarize my open tabs.", task: .summarizeTabs)
-                }
-                .disabled(windowRegistry.activeWindow?.spaceID == nil || nookSettings.showAIAssistant == false)
+                    Button("Summarize Open Tabs") {
+                        browserManager.askVega("Summarize my open tabs.", task: .summarizeTabs)
+                    }
+                    .disabled(windowRegistry.activeWindow?.spaceID == nil || nookSettings.showAIAssistant == false)
 
-                Button("Browse the Web for Me…") {
-                    browserManager.askVega(nil, task: .browse)
-                }
-                .disabled(nookSettings.showAIAssistant == false)
+                    Button("Browse the Web for Me…") {
+                        browserManager.askVega(nil, task: .browse)
+                    }
+                    .disabled(nookSettings.showAIAssistant == false)
 
-                Divider()
+                    Divider()
 
-                Button("Share Space…") { browserManager.shareSpace() }
-                    .disabled(windowRegistry.activeWindow?.spaceID == nil)
-                Button("Export Space…") { browserManager.exportSpace() }
-                    .disabled(windowRegistry.activeWindow?.spaceID == nil)
-                Button("Open Shared Space…") { browserManager.openSharedSpacePanel() }
+                    Button("Share Space…") { browserManager.shareSpace() }
+                        .disabled(windowRegistry.activeWindow?.spaceID == nil)
+                    Button("Export Space…") { browserManager.exportSpace() }
+                        .disabled(windowRegistry.activeWindow?.spaceID == nil)
+                    Button("Open Shared Space…") { browserManager.openSharedSpacePanel() }
 
-                Menu("Easels") {
-                    Button("New Easel") { EaselManager.shared.newEasel() }
-                    if !easels.easels.isEmpty {
-                        Divider()
-                        ForEach(easels.easels) { easel in
-                            Button(easel.name.isEmpty ? "Untitled Easel" : easel.name) { EaselManager.shared.open(easel.id) }
-                        }
-                        Divider()
-                        Menu("Add This Page to Easel") {
+                    Menu("Easels") {
+                        Button("New Easel") { EaselManager.shared.newEasel() }
+                        if !easels.easels.isEmpty {
+                            Divider()
                             ForEach(easels.easels) { easel in
-                                Button(easel.name.isEmpty ? "Untitled Easel" : easel.name) { EaselManager.shared.addCurrentPage(to: easel.id) }
+                                Button(easel.name.isEmpty ? "Untitled Easel" : easel.name) { EaselManager.shared.open(easel.id) }
                             }
-                        }
-                        .disabled(EaselManager.shared.currentPage() == nil)
-                        Menu("Delete Easel") {
-                            ForEach(easels.easels) { easel in
-                                Button(easel.name.isEmpty ? "Untitled Easel" : easel.name, role: .destructive) { EaselManager.shared.delete(easel.id) }
+                            Divider()
+                            Menu("Add This Page to Easel") {
+                                ForEach(easels.easels) { easel in
+                                    Button(easel.name.isEmpty ? "Untitled Easel" : easel.name) { EaselManager.shared.addCurrentPage(to: easel.id) }
+                                }
+                            }
+                            .disabled(EaselManager.shared.currentPage() == nil)
+                            Menu("Delete Easel") {
+                                ForEach(easels.easels) { easel in
+                                    Button(easel.name.isEmpty ? "Untitled Easel" : easel.name, role: .destructive) { EaselManager.shared.delete(easel.id) }
+                                }
                             }
                         }
                     }
-                }
 
-                Menu("Tabs from Other Macs") {
-                    let sync = SyncCoordinator.forProfile(windowRegistry.activeWindow.flatMap { browserManager.tabs.profileID(of: $0) })
-                    if !sync.isEnabled || !sync.sharesOpenTabs {
-                        Button("Turn On Sharing in Settings…") { browserManager.openSettings(tab: .general) }
-                    } else if sync.otherMacsTabs.isEmpty {
-                        Text("No other Mac is sharing tabs yet")
-                    } else {
-                        ForEach(sync.otherMacsTabs) { mac in
-                            Menu(mac.deviceName) {
-                                ForEach(mac.tabs) { tab in
-                                    Button(tab.title.isEmpty ? tab.url : tab.title) {
-                                        if let url = URL(string: tab.url), let window = windowRegistry.activeWindow {
-                                            _ = browserManager.tabs.open(url: url, in: window, placement: .newTab)
+                    Menu("Tabs from Other Macs") {
+                        let sync = SyncCoordinator.forProfile(windowRegistry.activeWindow.flatMap { browserManager.tabs.profileID(of: $0) })
+                        if !sync.isEnabled || !sync.sharesOpenTabs {
+                            Button("Turn On Sharing in Settings…") { browserManager.openSettings(tab: .general) }
+                        } else if sync.otherMacsTabs.isEmpty {
+                            Text("No other Mac is sharing tabs yet")
+                        } else {
+                            ForEach(sync.otherMacsTabs) { mac in
+                                Menu(mac.deviceName) {
+                                    ForEach(mac.tabs) { tab in
+                                        Button(tab.title.isEmpty ? tab.url : tab.title) {
+                                            if let url = URL(string: tab.url), let window = windowRegistry.activeWindow {
+                                                _ = browserManager.tabs.open(url: url, in: window, placement: .newTab)
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                // FORK: Arc's Change Profile; the space's pages reload on the chosen profile's logins.
-                Menu("Change Profile") {
-                    let spaceID = windowRegistry.activeWindow?.spaceID
-                    let current = spaceID.flatMap { browserManager.tabs.profile(forSpace: $0)?.id }
-                    ForEach(browserManager.tabs.profiles) { profile in
-                        Toggle(profile.name, isOn: Binding(get: { profile.id == current }, set: { _ in browserManager.changeProfile(to: profile) }))
-                    }
-                    Divider()
-                    Button("New Profile…") { browserManager.changeProfile(to: nil) }
-                }
-                .disabled(windowRegistry.activeWindow?.spaceID == nil || windowRegistry.activeWindow?.isIncognito == true)
-
-                Divider()
-
-                Button("Next Space") {
-                    if let window = windowRegistry.activeWindow { browserManager.tabs.selectNextSpace(in: window) }
-                }
-                .modifier(dynamicShortcut(.nextSpace))
-
-                Button("Previous Space") {
-                    if let window = windowRegistry.activeWindow { browserManager.tabs.selectPreviousSpace(in: window) }
-                }
-                .modifier(dynamicShortcut(.previousSpace))
-
-                if let window = windowRegistry.activeWindow {
-                    let spaces = browserManager.tabs.userSpaces(for: window)
-                    if !spaces.isEmpty { Divider() }
-                    ForEach(Array(spaces.enumerated()), id: \.element.id) { index, space in
-                        Button(space.name) {
-                            browserManager.tabs.selectSpace(at: index, in: window)
+                    // FORK: Arc's Change Profile; the space's pages reload on the chosen profile's logins.
+                    Menu("Change Profile") {
+                        let spaceID = windowRegistry.activeWindow?.spaceID
+                        let current = spaceID.flatMap { browserManager.tabs.profile(forSpace: $0)?.id }
+                        ForEach(browserManager.tabs.profiles) { profile in
+                            Toggle(profile.name, isOn: Binding(get: { profile.id == current }, set: { _ in browserManager.changeProfile(to: profile) }))
                         }
-                        .modifier(spaceShortcut(index))
+                        Divider()
+                        Button("New Profile…") { browserManager.changeProfile(to: nil) }
                     }
-                }
-            }
-
-            CommandMenu("Privacy") {
-                Button("Privacy Report") { browserManager.showPrivacyReport() }
-                Divider()
-                Menu("Clear Cookies") {
-                    Button("Clear Cookies for Current Site") {
-                        browserManager.clearCurrentPageCookies()
-                    }
-                    .disabled(browserManager.tabs.activeWindowSession?.url.host == nil)
-
-                    Button("Clear Expired Cookies") {
-                        browserManager.clearExpiredCookies()
-                    }
+                    .disabled(windowRegistry.activeWindow?.spaceID == nil || windowRegistry.activeWindow?.isIncognito == true)
 
                     Divider()
 
-                    Button("Clear All Cookies") {
-                        browserManager.clearAllCookies()
+                    Button("Next Space") {
+                        if let window = windowRegistry.activeWindow { browserManager.tabs.selectNextSpace(in: window) }
                     }
+                    .modifier(dynamicShortcut(.nextSpace))
 
-                    Divider()
-
-                    Button("Clear Third-Party Cookies") {
-                        browserManager.clearThirdPartyCookies()
+                    Button("Previous Space") {
+                        if let window = windowRegistry.activeWindow { browserManager.tabs.selectPreviousSpace(in: window) }
                     }
+                    .modifier(dynamicShortcut(.previousSpace))
 
-                    Button("Clear High-Risk Cookies") {
-                        browserManager.clearHighRiskCookies()
-                    }
-                }
-
-                Menu("Clear Cache") {
-                    Button("Clear Cache for Current Site") {
-                        browserManager.clearCurrentPageCache()
-                    }
-                    .disabled(browserManager.tabs.activeWindowSession?.url.host == nil)
-
-                    Button("Clear Stale Cache") {
-                        browserManager.clearStaleCache()
-                    }
-
-                    Button("Clear Disk Cache") {
-                        browserManager.clearDiskCache()
-                    }
-
-                    Button("Clear Memory Cache") {
-                        browserManager.clearMemoryCache()
-                    }
-
-                    Divider()
-
-                    Button("Clear All Cache") {
-                        browserManager.clearAllCache()
-                    }
-
-                    Divider()
-
-                    Button("Clear Personal Data Cache") {
-                        browserManager.clearPersonalDataCache()
-                    }
-
-                    Button("Clear Favicon Cache") {
-                        browserManager.clearFaviconCache()
-                    }
-                }
-
-                Divider()
-
-                Button("Privacy Cleanup") {
-                    browserManager.performPrivacyCleanup()
-                }
-
-                Button("Clear Browsing History") {
-                    browserManager.historyManager.clearHistory()
-                }
-
-                Button("Clear All Website Data") {
-                    Task {
-                        // Tabs use one store per space; Peek and the base config have used the default.
-                        let tabs = browserManager.tabs
-                        let dataStores: [WKWebsiteDataStore] = tabs.orderedSpaces.compactMap { tabs.profile(forSpace: $0.id)?.dataStore }
-                            + [WKWebsiteDataStore.default()]
-                        let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
-                        for dataStore in dataStores {
-                            await dataStore.removeData(ofTypes: dataTypes, modifiedSince: Date.distantPast)
+                    if let window = windowRegistry.activeWindow {
+                        let spaces = browserManager.tabs.userSpaces(for: window)
+                        if !spaces.isEmpty { Divider() }
+                        ForEach(Array(spaces.enumerated()), id: \.element.id) { index, space in
+                            Button(space.name) {
+                                browserManager.tabs.selectSpace(at: index, in: window)
+                            }
+                            .modifier(spaceShortcut(index))
                         }
                     }
                 }
-            }
 
-            CommandMenu("Extensions") {
-                Button("Show Site Controls") {
-                    browserManager.toggleExtensionLibrary()
+                CommandMenu("Privacy") {
+                    Button("Privacy Report") { browserManager.showPrivacyReport() }
+                    Divider()
+                    Menu("Clear Cookies") {
+                        Button("Clear Cookies for Current Site") {
+                            browserManager.clearCurrentPageCookies()
+                        }
+                        .disabled(browserManager.tabs.activeWindowSession?.url.host == nil)
+
+                        Button("Clear Expired Cookies") {
+                            browserManager.clearExpiredCookies()
+                        }
+
+                        Divider()
+
+                        Button("Clear All Cookies") {
+                            browserManager.clearAllCookies()
+                        }
+
+                        Divider()
+
+                        Button("Clear Third-Party Cookies") {
+                            browserManager.clearThirdPartyCookies()
+                        }
+
+                        Button("Clear High-Risk Cookies") {
+                            browserManager.clearHighRiskCookies()
+                        }
+                    }
+
+                    Menu("Clear Cache") {
+                        Button("Clear Cache for Current Site") {
+                            browserManager.clearCurrentPageCache()
+                        }
+                        .disabled(browserManager.tabs.activeWindowSession?.url.host == nil)
+
+                        Button("Clear Stale Cache") {
+                            browserManager.clearStaleCache()
+                        }
+
+                        Button("Clear Disk Cache") {
+                            browserManager.clearDiskCache()
+                        }
+
+                        Button("Clear Memory Cache") {
+                            browserManager.clearMemoryCache()
+                        }
+
+                        Divider()
+
+                        Button("Clear All Cache") {
+                            browserManager.clearAllCache()
+                        }
+
+                        Divider()
+
+                        Button("Clear Personal Data Cache") {
+                            browserManager.clearPersonalDataCache()
+                        }
+
+                        Button("Clear Favicon Cache") {
+                            browserManager.clearFaviconCache()
+                        }
+                    }
+
+                    Divider()
+
+                    Button("Privacy Cleanup") {
+                        browserManager.performPrivacyCleanup()
+                    }
+
+                    Button("Clear Browsing History") {
+                        browserManager.historyManager.clearHistory()
+                    }
+
+                    Button("Clear All Website Data") {
+                        Task {
+                            // Tabs use one store per space; Peek and the base config have used the default.
+                            let tabs = browserManager.tabs
+                            let dataStores: [WKWebsiteDataStore] = tabs.orderedSpaces.compactMap { tabs.profile(forSpace: $0.id)?.dataStore }
+                                + [WKWebsiteDataStore.default()]
+                            let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+                            for dataStore in dataStores {
+                                await dataStore.removeData(ofTypes: dataTypes, modifiedSince: Date.distantPast)
+                            }
+                        }
+                    }
                 }
-                .keyboardShortcut("e", modifiers: [.command, .shift])
 
-                Divider()
+                CommandMenu("Extensions") {
+                    Button("Show Site Controls") {
+                        browserManager.toggleExtensionLibrary()
+                    }
+                    .keyboardShortcut("e", modifiers: [.command, .shift])
 
-                Button("Install Extension…") {
-                    browserManager.showExtensionInstallDialog()
+                    Divider()
+
+                    Button("Install Extension…") {
+                        browserManager.showExtensionInstallDialog()
+                    }
+                    .modifier(dynamicShortcut(.installExtension))
+
+                    Button("Manage Extensions…") {
+                        SettingsNavigation.shared.currentSettingsTab = .extensions
+                        openSettings()
+                    }
+
+                    Divider()
+
+                    Button("Chrome Web Store") {
+                        browserManager.tabs.activeWindowSession?.load(URL(string: "https://chromewebstore.google.com")!)
+                    }
+
+                    #if DEBUG
+                    Divider()
+                    Button("Open Popup Console") {
+                        browserManager.extensionManager(for: nil)?.showPopupConsole()
+                    }
+                    #endif
                 }
-                .modifier(dynamicShortcut(.installExtension))
 
-                Button("Manage Extensions…") {
-                    SettingsNavigation.shared.currentSettingsTab = .extensions
-                    openSettings()
+                CommandMenu("Appearance") {
+                    Button("Space Settings…") {
+                        browserManager.showSpaceSettings()
+                    }
+                    .modifier(dynamicShortcut(.customizeSpaceGradient))
+                    .disabled(windowRegistry.activeWindow?.spaceID == nil)
+
+                    Button("Boost This Site…") {
+                        browserManager.boostCurrentSite()
+                    }
+                    .disabled(browserManager.tabs.activeWindowSession == nil)
                 }
-
-                Divider()
-
-                Button("Chrome Web Store") {
-                    browserManager.tabs.activeWindowSession?.load(URL(string: "https://chromewebstore.google.com")!)
-                }
-
-                #if DEBUG
-                Divider()
-                Button("Open Popup Console") {
-                    browserManager.extensionManager?.showPopupConsole()
-                }
-                #endif
-            }
-
-            CommandMenu("Appearance") {
-                Button("Space Settings…") {
-                    browserManager.showSpaceSettings()
-                }
-                .modifier(dynamicShortcut(.customizeSpaceGradient))
-                .disabled(windowRegistry.activeWindow?.spaceID == nil)
-
-                Button("Boost This Site…") {
-                    browserManager.boostCurrentSite()
-                }
-                .disabled(browserManager.tabs.activeWindowSession == nil)
             }
         }
-    }
+}
 }
 
 // MARK: - Dynamic Shortcut Modifier

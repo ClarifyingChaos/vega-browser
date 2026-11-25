@@ -37,7 +37,12 @@ extension Array where Element == WKUserScript {
 
 extension WKUserContentController {
     /// Clears the scripts and re-adds `scripts`, skipping any WebKit kept. removeAllUserScripts() leaves
-    /// extension content scripts in place, and some begin with `// Nook`, so re-adding them stacked a copy per call.
+    /// extension content scripts in place, and some begin with `// Vega`, so re-adding them stacked a copy per call.
+    ///
+    /// Sources are matched as NSStrings, by length and then contents. A `[String: Int]` keyed by
+    /// source hashed every surviving extension script (bridged from WebKit, often hundreds of KB)
+    /// through Unicode normalization one character at a time: seconds of main thread on each
+    /// main-frame navigation, which stalled the swipe-back animation running on that thread.
     public func resetUserScripts(to scripts: [WKUserScript]) {
         removeAllUserScripts()
         // Keyed by NSString: Swift's String hash normalises every character of these large bridged

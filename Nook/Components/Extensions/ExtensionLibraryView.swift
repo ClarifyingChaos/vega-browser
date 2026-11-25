@@ -111,7 +111,7 @@ struct ExtensionLibraryView: View {
                 .font(NookDesign.Font.label)
                 .foregroundStyle(.secondary)
 
-            let extensions = browserManager.extensionManager?.installedExtensions.filter { $0.isEnabled } ?? []
+            let extensions = browserManager.extensionManager(for: windowState)?.installedExtensions.filter { $0.isEnabled } ?? []
             LazyVGrid(columns: columns, spacing: NookDesign.Spacing.sm) {
                 ForEach(extensions, id: \.id) { ext in
                     ExtensionGridItem(
@@ -284,11 +284,9 @@ struct ExtensionLibraryView: View {
 
     /// Extensions come from the Chrome Web Store, whose pages get Nook's install button.
     private func openWebStore() {
-        browserManager.tabs.open(url: Self.webStoreURL, in: windowState, placement: .newTab)
+        browserManager.tabs.open(url: ExtensionStore.chromeWebStoreURL, in: windowState, placement: .newTab)
         onDismiss()
     }
-
-    private static let webStoreURL = URL(string: "https://chromewebstore.google.com/category/extensions")!
 
     private func clear(cache: Bool) {
         guard let host = currentHost else { return }
@@ -430,7 +428,7 @@ private struct ExtensionGridItem: View {
     }
 
     private func triggerExtensionAction() {
-        guard let ctx = ExtensionManager.shared.getExtensionContext(for: ext.id) else { return }
+        guard let ctx = ExtensionSetRegistry.shared.manager(for: windowState).getExtensionContext(for: ext.id) else { return }
 
         if ctx.webExtension.hasBackgroundContent {
             ctx.loadBackgroundContent { error in
@@ -438,16 +436,16 @@ private struct ExtensionGridItem: View {
             }
         }
 
-        let adapter = ExtensionManager.shared.actionAdapter(in: windowState)
-        ExtensionManager.shared.performAction(ctx, for: adapter)
+        let adapter = ExtensionSetRegistry.shared.manager(for: windowState).actionAdapter(in: windowState)
+        ExtensionSetRegistry.shared.manager(for: windowState).performAction(ctx, for: adapter)
     }
 
     private func refreshBadge() {
-        guard let ctx = ExtensionManager.shared.getExtensionContext(for: ext.id) else {
+        guard let ctx = ExtensionSetRegistry.shared.manager(for: windowState).getExtensionContext(for: ext.id) else {
             badgeText = nil
             return
         }
-        let adapter = ExtensionManager.shared.actionAdapter(in: windowState)
+        let adapter = ExtensionSetRegistry.shared.manager(for: windowState).actionAdapter(in: windowState)
         badgeText = ctx.action(for: adapter)?.badgeText
     }
 }

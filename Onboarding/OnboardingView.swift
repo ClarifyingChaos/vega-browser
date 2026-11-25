@@ -13,11 +13,14 @@ import NookSettings
 struct OnboardingView: View {
     @Environment(\.nookSettings) var nookSettings
     @EnvironmentObject var browserManager: BrowserManager
+    @ObservedObject private var extensionManager = ExtensionManager.shared
 
     @State private var currentStage: Int = 0
     @State private var selectedBrowser: Browsers = .arc
     @State private var isLoading: Bool = false
     @State private var showSafariImportFlow: Bool = false
+    @State private var extensionChoices: [ExtensionChoice] = []
+    @State private var isFindingExtensions = false
 
     var body: some View {
         ZStack {
@@ -33,16 +36,17 @@ struct OnboardingView: View {
                 .ignoresSafeArea()
 
             VStack {
-                StageIndicator(stages: 4, activeStage: currentStage)
+                StageIndicator(stages: 5, activeStage: currentStage)
                 Spacer()
                 stageView
                     .transition(.slideAndBlur)
                 Spacer()
-                if !showSafariImportFlow {
+                if !showsOwnButtons {
                     StageFooter(
                         currentStage: currentStage,
-                        totalStages: 4,
+                        totalStages: 5,
                         isLoading: isLoading,
+                        canGoBack: !isInstallingExtensions,
                         onContinue: advance,
                         onBack: goBack,
                         onSkip: skipImport
@@ -56,12 +60,20 @@ struct OnboardingView: View {
         .focusable()
         .focusEffectDisabled()
         .onKeyPress(.return) {
-            if !isLoading && !showSafariImportFlow {
+            if !isLoading && !showsOwnButtons {
                 advance()
                 return .handled
             }
             return .ignored
         }
+    }
+
+    private var showsOwnButtons: Bool {
+        showSafariImportFlow || currentStage == 3
+    }
+
+    private var isInstallingExtensions: Bool {
+        extensionManager.listInstallProgress.map { !$0.isDone } ?? false
     }
 
     @ViewBuilder
@@ -75,10 +87,7 @@ struct OnboardingView: View {
                     }
                 },
                 onComplete: {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        showSafariImportFlow = false
-                        currentStage += 1
-                    }
+                    showExtensions(includingArc: false)
                 }
             )
         } else {
@@ -86,15 +95,20 @@ struct OnboardingView: View {
             case 0: HelloStage()
             case 1: AccountStage()
             case 2: ImportStage(selectedBrowser: $selectedBrowser)
-            case 3: FinalStage()
+            case 3: ExtensionsStage(
+                choices: extensionChoices,
+                preview: { await extensionManager.consentPreview(of: $0) },
+                onDone: finishExtensions
+            )
+            case 4: FinalStage(extensionManager: extensionManager)
             default: EmptyView()
             }
         }
     }
 
     private func advance() {
-        guard currentStage < 4 else { return }
-        if currentStage == 3 {
+        guard currentStage < 5, !isFindingExtensions else { return }
+        if currentStage == 4 {
             nookSettings.didFinishOnboarding = true
             // FORK: then a short tour of what Vega can do.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [browserManager] in browserManager.showFeatureTour() }
@@ -110,10 +124,7 @@ struct OnboardingView: View {
                 isLoading = true
             }
             performImport {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    currentStage += 1
-                    isLoading = false
-                }
+                showExtensions(includingArc: selectedBrowser == .arc)
             }
         } else {
             withAnimation(.easeInOut(duration: 0.25)) {
@@ -138,17 +149,42 @@ struct OnboardingView: View {
         }
     }
 
-    /// Skip moves past the sign-in step or the import step to the next one.
+    /// Skip moves past the sign-in step, or from the import step on to the extensions.
     private func skipImport() {
+        guard !isFindingExtensions else { return }
+        if currentStage == 2 {
+            showExtensions(includingArc: false)
+        } else {
+            withAnimation(.easeInOut(duration: 0.25)) { currentStage += 1 }
+        }
+    }
+
+    private func showExtensions(includingArc: Bool) {
+        isFindingExtensions = true
+        Task {
+            let choices = await browserManager.extensionChoices(includingArc: includingArc)
+            isFindingExtensions = false
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showSafariImportFlow = false
+                isLoading = false
+                extensionChoices = choices
+                currentStage = choices.isEmpty ? 4 : 3
+            }
+        }
+    }
+
+    private func finishExtensions(_ chosen: [ExtensionOffer]) {
+        guard currentStage == 3 else { return }
+        extensionManager.install(chosen)
         withAnimation(.easeInOut(duration: 0.25)) {
-            currentStage += 1
+            currentStage = 4
         }
     }
 
     private func goBack() {
         guard currentStage > 0 else { return }
         withAnimation(.easeInOut(duration: 0.25)) {
-            currentStage -= 1
+            currentStage = currentStage == 4 ? 2 : currentStage - 1
         }
     }
 

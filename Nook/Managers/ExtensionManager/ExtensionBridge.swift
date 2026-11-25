@@ -18,12 +18,15 @@ final class ExtensionWindowAdapter: NSObject, WKWebExtensionWindow {
     let windowID: UUID
     weak var state: BrowserWindowState?
     private unowned let browserManager: BrowserManager
+    /// The extension set that announced this window.
+    private weak var manager: ExtensionManager?
 
-    init(window: BrowserWindowState, browserManager: BrowserManager) {
+    init(window: BrowserWindowState, browserManager: BrowserManager, manager: ExtensionManager) {
         self.windowID = window.id
         self.isPrivate = window.isIncognito || window.privateTree != nil
         self.state = window
         self.browserManager = browserManager
+        self.manager = manager
         super.init()
     }
 
@@ -37,36 +40,21 @@ final class ExtensionWindowAdapter: NSObject, WKWebExtensionWindow {
 
     private var nsWindow: NSWindow? { state?.window }
 
+    // The order comes from `ExtensionManager.tabOrder(in:)`, kept per space: one query reads it
+    // several times per tab, and Observation drops it when the trees, open folders or device
+    // state change.
     func activeTab(for extensionContext: WKWebExtensionContext) -> (any WKWebExtensionTab)? {
-        guard let state else { return nil }
-        let tabs = browserManager.tabs
-        if let front = ExtensionManager.shared.detachedAdapters(in: state).first(where: { $0.isInFront }) {
+        guard let state, let manager else { return nil }
+        if let front = manager.detachedAdapters(in: state).first(where: { $0.isInFront }) {
             return front
         }
-        guard let itemID = tabs.selectedItemID(in: state) ?? tabs.displayOrder(in: state).first else { return nil }
-        return ExtensionManager.shared.adapter(for: itemID)
+        guard let itemID = browserManager.tabs.selectedItemID(in: state) ?? manager.tabOrder(in: state).ids.first else { return nil }
+        return manager.adapter(for: itemID)
     }
 
     func tabs(for extensionContext: WKWebExtensionContext) -> [any WKWebExtensionTab] {
-        guard let state else { return [] }
-        let items = Self.order(in: state, tabs: browserManager.tabs).compactMap { ExtensionManager.shared.adapter(for: $0) }
-        return items + ExtensionManager.shared.detachedAdapters(in: state)
-    }
-
-    /// WebKit asks for a window's tabs once per extension for every tab change, often many times in one turn of the
-    /// run loop; building the order each time cost half a second over a few tab switches. One build per turn: the
-    /// cache is dropped on the next turn, so a tree move is never missed.
-    private static var orderCache: [UUID: [UUID]] = [:]
-    private static var orderCacheClearScheduled = false
-    private static func order(in state: BrowserWindowState, tabs: TabsController) -> [UUID] {
-        if let hit = orderCache[state.id] { return hit }
-        let order = tabs.displayOrder(in: state)
-        orderCache[state.id] = order
-        if !orderCacheClearScheduled {
-            orderCacheClearScheduled = true
-            DispatchQueue.main.async { orderCache = [:]; orderCacheClearScheduled = false }
-        }
-        return order
+        guard let state, let manager else { return [] }
+        return manager.adapters(in: state) + manager.detachedAdapters(in: state)
     }
 
     func frame(for extensionContext: WKWebExtensionContext) -> CGRect {
@@ -162,13 +150,16 @@ final class ExtensionWindowAdapter: NSObject, WKWebExtensionWindow {
 final class ExtensionTabAdapter: NSObject, WKWebExtensionTab {
     let itemID: UUID
     private unowned let browserManager: BrowserManager
+    /// The extension set this tab belongs to.
+    private weak var manager: ExtensionManager?
 
     /// Set for a Peek or mini window page, which has no item until it is adopted.
     private weak var detachedPage: PageSession?
 
-    init(itemID: UUID, browserManager: BrowserManager, detachedPage: PageSession? = nil) {
+    init(itemID: UUID, browserManager: BrowserManager, manager: ExtensionManager, detachedPage: PageSession? = nil) {
         self.itemID = itemID
         self.browserManager = browserManager
+        self.manager = manager
         self.detachedPage = detachedPage
         super.init()
     }
@@ -215,7 +206,7 @@ final class ExtensionTabAdapter: NSObject, WKWebExtensionTab {
             return page.detachedWindow.flatMap { $0.privateTree == nil ? $0 : nil } ?? active ?? regular.first
         }
         let candidates = (active.map { [$0] } ?? []) + regular.filter { $0 !== active }
-        return candidates.first { tabs.displayOrder(in: $0).contains(itemID) } ?? active ?? regular.first
+        return candidates.first { manager?.tabOrder(in: $0).contains(itemID) == true } ?? active ?? regular.first
     }
 
     private func error(_ code: Int, _ message: String) -> NSError {
@@ -241,8 +232,8 @@ final class ExtensionTabAdapter: NSObject, WKWebExtensionTab {
 
     func indexInWindow(for extensionContext: WKWebExtensionContext) -> Int {
         guard let window = hostWindow else { return 0 }
-        let order = tabs.displayOrder(in: window)
-        return order.firstIndex(of: itemID) ?? (detached != nil ? order.count : 0)
+        let order = manager?.tabOrder(in: window) ?? .empty
+        return order.index(of: itemID) ?? (detached != nil ? order.count : 0)
     }
 
     func isLoadingComplete(for extensionContext: WKWebExtensionContext) -> Bool {
@@ -353,6 +344,6 @@ final class ExtensionTabAdapter: NSObject, WKWebExtensionTab {
     }
 
     func window(for extensionContext: WKWebExtensionContext) -> (any WKWebExtensionWindow)? {
-        hostWindow.flatMap { ExtensionManager.shared.windowAdapter(for: $0) }
+        hostWindow.flatMap { manager?.windowAdapter(for: $0) }
     }
 }
