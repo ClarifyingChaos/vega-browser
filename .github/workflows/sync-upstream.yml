@@ -28,25 +28,21 @@ jobs:
         run: |
           git clone --branch develop --single-branch --no-tags https://github.com/nook-browser/Nook.git ../upstream
           python3 scripts/upstream/transform.py ../upstream
-      # The job's own token may not push commits that change workflow files, and the upstream project's do. A deploy key
-      # (a write key for this repository only, kept as the SYNC_DEPLOY_KEY secret) may.
+      # GitHub refuses to let the job's own token (or a deploy key) push commits that change workflow files, and the
+      # upstream project's do. SYNC_TOKEN is a fine-grained personal access token for this repository only, with
+      # Contents, Pull requests and Workflows set to read and write.
       - name: Fast-forward develop
         env:
-          SYNC_DEPLOY_KEY: ${{ secrets.SYNC_DEPLOY_KEY }}
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
+          if [ -z "$SYNC_TOKEN" ]; then echo "The SYNC_TOKEN secret is not set: see the comment above this step."; exit 1; fi
           git fetch ../upstream develop:refs/remotes/renamed/develop
           git fetch origin develop
           if ! git merge-base --is-ancestor origin/develop renamed/develop; then
             echo "develop is not an ancestor of the renamed upstream: the rewrite rules or the tool changed, or the upstream history was rewritten."
             exit 1
           fi
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SYNC_DEPLOY_KEY" > ~/.ssh/sync_key
-          chmod 600 ~/.ssh/sync_key
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          GIT_SSH_COMMAND="ssh -i ~/.ssh/sync_key -o IdentitiesOnly=yes" \
-            git push "git@github.com:${GITHUB_REPOSITORY}.git" renamed/develop:refs/heads/develop
-          rm -f ~/.ssh/sync_key
+          git push "https://x-access-token:${SYNC_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" renamed/develop:refs/heads/develop
       - name: Open or refresh the pull request into main
         env:
           GH_TOKEN: ${{ github.token }}
