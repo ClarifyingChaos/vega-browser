@@ -327,12 +327,14 @@ private struct ExtensionRowView: View {
                     Divider()
                     Button("Remove…", nookIcon: "trash", role: .destructive, action: onRemove)
                 } label: {
-                    Image(systemName: "ellipsis")
+                    NookSymbol("ellipsis", size: 14)
+                        .frame(width: 26, height: 26)
+                        .background(Circle().fill(.quaternary))
+                        .contentShape(Circle())
                 }
                 // FORK: System Settings' row menu: a round "…" button with no disclosure arrow.
                 .menuStyle(.button)
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.circle)
+                .buttonStyle(.plain)
                 .menuIndicator(.hidden)
                 .fixedSize()
                 .accessibilityLabel("More options for \(`extension`.name)")
