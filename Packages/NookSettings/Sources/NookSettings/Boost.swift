@@ -36,6 +36,8 @@ public struct Boost: Codable, Identifiable, Equatable, Sendable {
     public var css: String
     /// Selectors hidden by Zap. Also compiled as `host##selector` into the user cosmetic rule list.
     public var zaps: [String]
+    /// FORK: Focus (from Zen): one part of the page stays bright and everything else is dimmed. A selector, or empty.
+    public var focus: String
     public var script: String
     /// Off by default and forced off on import: a script is code the user must choose to run.
     public var scriptEnabled: Bool
@@ -50,7 +52,7 @@ public struct Boost: Codable, Identifiable, Equatable, Sendable {
         id: UUID = UUID(), name: String = "", host: String, includeSubdomains: Bool = true, isEnabled: Bool = true,
         brightness: Double = 1, contrast: Double = 1, tint: String = "", tintStrength: Double = 0.35,
         darkPage: Bool = false, fontFamily: String = "", fontScale: Double = 1,
-        textCase: TextCase = .none, css: String = "", zaps: [String] = [], script: String = "", scriptEnabled: Bool = false,
+        textCase: TextCase = .none, css: String = "", zaps: [String] = [], focus: String = "", script: String = "", scriptEnabled: Bool = false,
         updated: Date = Date()
     ) {
         self.id = id
@@ -68,6 +70,7 @@ public struct Boost: Codable, Identifiable, Equatable, Sendable {
         self.textCase = textCase
         self.css = css
         self.zaps = zaps
+        self.focus = focus
         self.script = script
         self.scriptEnabled = scriptEnabled
         self.updated = updated
@@ -92,6 +95,7 @@ public struct Boost: Codable, Identifiable, Equatable, Sendable {
             textCase: (try? c.decodeIfPresent(TextCase.self, forKey: .textCase)) ?? .none,
             css: try c.decodeIfPresent(String.self, forKey: .css) ?? "",
             zaps: try c.decodeIfPresent([String].self, forKey: .zaps) ?? [],
+            focus: try c.decodeIfPresent(String.self, forKey: .focus) ?? "",
             script: try c.decodeIfPresent(String.self, forKey: .script) ?? "",
             scriptEnabled: try c.decodeIfPresent(Bool.self, forKey: .scriptEnabled) ?? false,
             updated: try c.decodeIfPresent(Date.self, forKey: .updated) ?? Date()
@@ -173,6 +177,12 @@ public struct Boost: Codable, Identifiable, Equatable, Sendable {
         for selector in zaps where Self.isAllowedZap(selector) {
             rules.append("\(selector) { display: none !important; }")
         }
+        if Self.isAllowedZap(focus) {
+            // The picked part draws a page-sized shadow around itself, so everything else is dimmed and still clickable.
+            // :where keeps the position rule weakest, so a site that places the element itself still wins.
+            rules.append(":where(\(focus)) { position: relative; }")
+            rules.append("\(focus) { z-index: 2147483645 !important; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.6) !important; border-radius: 6px; }")
+        }
         let own = Self.removingBaitRules(css)
         if !own.isEmpty { rules.append(own) }
         return rules.joined(separator: "\n")
@@ -239,6 +249,7 @@ public struct Boost: Codable, Identifiable, Equatable, Sendable {
 
     public mutating func resetVisuals() {
         brightness = 1; contrast = 1; tint = ""; darkPage = false; fontFamily = ""; fontScale = 1; textCase = .none
+        focus = ""
         updated = Date()
     }
 }

@@ -160,6 +160,35 @@ final class MediaControlsManager {
 
     // MARK: - Media Controls
 
+    /// FORK: the playback speed of the page's videos and audio (0.5x to 2x), or nil when it has none.
+    /// Picture in Picture shows the same element, so the speed carries over.
+    func setPlaybackRate(_ rate: Double, tab explicitTab: PageSession? = nil) async -> Double? {
+        guard let tab = explicitTab ?? findActiveMediaTab(), (0.25...4).contains(rate) else { return nil }
+        let script = """
+        (function() {
+            const media = document.querySelectorAll('video, audio');
+            if (!media.length) return { handled: false };
+            media.forEach(m => { m.playbackRate = \(rate); m.defaultPlaybackRate = \(rate); });
+            return { handled: true, rate: media[0].playbackRate };
+        })();
+        """
+        let result = await executeMediaScript(for: tab, script: script, description: "set playback speed")
+        return result.handled ? (result.payload as? [String: Any])?["rate"] as? Double : nil
+    }
+
+    /// FORK: the current playback speed of the page's first video or audio.
+    func playbackRate(tab explicitTab: PageSession? = nil) async -> Double? {
+        guard let tab = explicitTab ?? findActiveMediaTab() else { return nil }
+        let script = """
+        (function() {
+            const m = document.querySelector('video') || document.querySelector('audio');
+            return m ? { handled: true, rate: m.playbackRate } : { handled: false };
+        })();
+        """
+        let result = await executeMediaScript(for: tab, script: script, description: "read playback speed")
+        return result.handled ? (result.payload as? [String: Any])?["rate"] as? Double : nil
+    }
+
     /// Toggle play/pause on media player
     func playPause(tab explicitTab: PageSession? = nil) async -> Bool? {
         guard let tab = explicitTab ?? findActiveMediaTab() else { return nil }

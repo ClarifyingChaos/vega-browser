@@ -137,6 +137,9 @@ public struct SettingsGeneralTab: View {
             }
 
             Section {
+                #if os(macOS)
+                OpenAtLoginToggle()
+                #endif
                 Picker("On Startup", selection: Binding(
                     get: { nookSettings.startupLoadMode },
                     set: { nookSettings.startupLoadMode = $0 }

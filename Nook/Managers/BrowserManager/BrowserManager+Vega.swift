@@ -103,13 +103,23 @@ extension BrowserManager {
 // MARK: - Clear data on quit
 
 import WebKit
+import NookSettings
 
 extension BrowserManager {
     /// Every space's cookies, site data and cache, the default store's, and the history.
     func clearWebsiteDataAtQuit() async {
         let stores: [WKWebsiteDataStore] = tabs.orderedSpaces.compactMap { tabs.profile(forSpace: $0.id)?.dataStore } + [WKWebsiteDataStore.default()]
+        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+        let kept = nookSettings?.keepSignedInSites ?? []
         for store in stores {
-            await store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast)
+            if kept.isEmpty {
+                await store.removeData(ofTypes: types, modifiedSince: .distantPast)
+            } else {
+                // FORK: sites the person keeps signed in keep their cookies and data; every other site's go.
+                let records = await store.dataRecords(ofTypes: types)
+                let cleared = records.filter { !KeepSignedIn.keeps($0.displayName, sites: kept) }
+                await store.removeData(ofTypes: types, for: cleared)
+            }
         }
         historyManager.clearHistory()
     }

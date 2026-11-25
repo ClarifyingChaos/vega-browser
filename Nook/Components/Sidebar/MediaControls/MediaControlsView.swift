@@ -37,6 +37,8 @@ struct MediaControlsView: View {
     @State private var isHovering: Bool = false
     @State private var overrideIsPlaying: Bool? = nil
     @State private var overrideIsMuted: Bool? = nil
+    /// FORK: the playing media's speed, shown on the speed button.
+    @State private var playbackRate: Double = 1
     @State private var mediaControlsManager: MediaControlsManager?
     @State private var updateTask: Task<Void, Never>?
     /// Page whose bar the person closed; it returns when that page plays again.
@@ -177,6 +179,40 @@ struct MediaControlsView: View {
 
                         Spacer(minLength: 0)
 
+                        // FORK: playback speed, 0.5x to 2x (from Zen).
+                        Menu {
+                            ForEach([0.5, 0.75, 1, 1.25, 1.5, 2], id: \.self) { rate in
+                                Button {
+                                    Task {
+                                        guard let manager = mediaControlsManager,
+                                              let applied = await manager.setPlaybackRate(rate, tab: tab) else { return }
+                                        playbackRate = applied
+                                    }
+                                } label: {
+                                    if abs(rate - playbackRate) < 0.01 {
+                                        Label(Self.speedLabel(rate), nookIcon: "checkmark")
+                                    } else {
+                                        Text(Self.speedLabel(rate))
+                                    }
+                                }
+                            }
+                        } label: {
+                            Text(Self.speedLabel(playbackRate))
+                                .font(.system(size: 11, weight: .semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(Color.white)
+                                .frame(minWidth: 30, minHeight: 20)
+                                .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 5))
+                        }
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .menuIndicator(.hidden)
+                        .fixedSize()
+                        .help("Playback speed")
+                        .accessibilityLabel("Playback speed \(Self.speedLabel(playbackRate))")
+
+                        Spacer(minLength: 0)
+
                         // Mute toggle
                         Button(isMuted ? "Unmute" : "Mute", systemImage: isMuted ? "speaker.slash.fill": "speaker.wave.2.fill") {
                             Task {
@@ -291,6 +327,10 @@ struct MediaControlsView: View {
         Task { _ = await manager.playPause(tab: tab) }
     }
 
+    static func speedLabel(_ rate: Double) -> String {
+        (rate == rate.rounded() ? String(Int(rate)) : String(format: "%g", rate)) + "×"
+    }
+
     private func updateMediaState() {
         // Cancel any previous update task to debounce rapid calls
         updateTask?.cancel()
@@ -342,6 +382,9 @@ struct MediaControlsView: View {
 
             if activeMediaTab?.itemID != resolvedTab?.itemID {
                 activeMediaTab = resolvedTab
+            }
+            if let resolvedTab, let rate = await manager.playbackRate(tab: resolvedTab) {
+                playbackRate = rate
             }
 
             // Actively sync title from the webview to catch YouTube SPA title changes

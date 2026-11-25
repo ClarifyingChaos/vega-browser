@@ -34,6 +34,7 @@ public struct BoostPanel: View {
     @State private var renaming = false
     @State private var showingLibrary = false
     @State private var zapping = false
+    @State private var focusing = false
     @State private var lastZap: String?  // the selector Zap added last
     @State private var importing = false
     @State private var exporting = false
@@ -89,6 +90,7 @@ public struct BoostPanel: View {
                             caseButton
                         }
                         zapRow
+                        focusRow
                         codeRow
                         if showingCode { codeTab.transition(.opacity.combined(with: .move(edge: .top))) }
                     }
@@ -448,6 +450,30 @@ public struct BoostPanel: View {
             }
             .disabled(lastZap == nil)
         }
+    }
+
+    /// FORK: Focus (from Zen): pick one part of the page; everything else is dimmed. Picking again replaces it.
+    private var focusRow: some View {
+        rowButton(focusing ? "Click an element" : "Focus",
+                  trailing: focusing ? "esc" : (draft.focus.isEmpty ? "Off" : "On")) {
+            if focusing {
+                onCancelZap()
+                focusing = false
+            } else {
+                focusing = true
+                Task {
+                    let selector = await onZap()
+                    focusing = false
+                    guard let selector, Boost.isAllowedZap(selector) else { return }
+                    draft.focus = selector
+                }
+            }
+        }
+        .contextMenu {
+            Button("Clear Focus") { draft.focus = "" }
+                .disabled(draft.focus.isEmpty)
+        }
+        .help("Dim everything except one part of the page")
     }
 
     private var codeRow: some View {

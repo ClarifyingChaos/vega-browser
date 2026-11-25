@@ -23,6 +23,7 @@ public final class NookSettingsService {
     private let removeTrackingFromLinksKey = "settings.removeTrackingFromLinks"
     private let warnBeforeHTTPKey = "settings.warnBeforeHTTP"
     private let clearDataOnQuitKey = "settings.clearDataOnQuit"
+    private let keepSignedInSitesKey = "settings.keepSignedInSites"
     private let blockScriptedPopupsKey = "settings.blockScriptedPopups"
     private let webRTCRelayOnlyKey = "settings.webRTCRelayOnly"
     private let adBlockerEnabledKey = "settings.adBlockerEnabled"
@@ -240,6 +241,12 @@ public final class NookSettingsService {
     /// FORK: cookies, site data and history are erased every time Vega quits.
     public var clearDataOnQuit: Bool {
         didSet { userDefaults.set(clearDataOnQuit, forKey: clearDataOnQuitKey) }
+    }
+
+    /// FORK: sites whose cookies and data stay when Vega clears data at quit, so they stay signed in.
+    /// Stored as hosts, lowercased, without `www.`.
+    public var keepSignedInSites: [String] = [] {
+        didSet { userDefaults.set(keepSignedInSites, forKey: keepSignedInSitesKey) }
     }
 
     /// FORK: WebRTC may only connect through a relay, so a site cannot read this Mac's own network address.
@@ -755,6 +762,7 @@ public final class NookSettingsService {
         self.warnBeforeHTTP = userDefaults.bool(forKey: warnBeforeHTTPKey)
         self.blockScriptedPopups = userDefaults.bool(forKey: blockScriptedPopupsKey)
         self.clearDataOnQuit = userDefaults.bool(forKey: clearDataOnQuitKey)
+        self.keepSignedInSites = userDefaults.stringArray(forKey: keepSignedInSitesKey) ?? []
         self.webRTCRelayOnly = userDefaults.bool(forKey: webRTCRelayOnlyKey)
         if let wlData = userDefaults.data(forKey: adBlockerWhitelistKey),
            let decoded = try? JSONDecoder().decode([String].self, from: wlData) {

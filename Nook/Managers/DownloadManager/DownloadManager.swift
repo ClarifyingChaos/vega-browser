@@ -47,8 +47,10 @@ extension DownloadOrigin {
 @Observable
 public class Download: Identifiable {
     public let id: UUID
-    /// Nil for a file Nook wrote itself, such as a PDF saved from the viewer.
-    let download: WKDownload?
+    /// Nil for a file Nook wrote itself, such as a PDF saved from the viewer. A resumed download is a new WKDownload.
+    var download: WKDownload?
+    /// FORK: what WebKit needs to carry on a paused download where it stopped.
+    @ObservationIgnored var resumeData: Data?
     let originalURL: URL
     let suggestedFilename: String
     let destinationPreference: DestinationPreference
@@ -89,9 +91,12 @@ public class Download: Identifiable {
         case completed
         case failed
         case cancelled
+        case paused
 
         var description: String {
             switch self {
+            case .paused:
+                return "Paused"
             case .pending:
                 return "Pending"
             case .downloading:
@@ -107,6 +112,8 @@ public class Download: Identifiable {
 
         var icon: String {
             switch self {
+            case .paused:
+                return "pause.circle"
             case .pending:
                 return "clock"
             case .downloading:
@@ -311,7 +318,7 @@ public class DownloadManager: NSObject {
     private(set) var lastTidied: Download?
 
     var activeDownloads: [Download] {
-        return Array(downloads.values).filter { $0.state == .downloading || $0.state == .pending }
+        return Array(downloads.values).filter { $0.state == .downloading || $0.state == .pending || $0.state == .paused }
     }
 
     var allDownloads: [Download] {
@@ -441,9 +448,48 @@ public class DownloadManager: NSObject {
         persist()
     }
 
+    /// FORK: the web view a paused download resumes through, given the download's profile and privacy. Set by the app.
+    @ObservationIgnored var resumeWebView: (DownloadOrigin) -> WKWebView? = { _ in nil }
+    /// Web views kept alive while a resumed download gets going.
+    @ObservationIgnored private var resumingWebViews: [UUID: WKWebView] = [:]
+
+    /// FORK: stops a download and keeps what WebKit needs to continue it later. A site that does not support
+    /// ranges gives no resume data; the download is then paused but starts over when resumed.
+    func pauseDownload(_ id: UUID) {
+        guard let download = downloads[id], download.state == .downloading, let wk = download.download else { return }
+        downloadDelegates[id]?.stopProgressObservation()
+        updateDownloadState(id, state: .paused)
+        wk.cancel { data in
+            Task { @MainActor in download.resumeData = data }
+        }
+    }
+
+    func resumeDownload(_ id: UUID) {
+        guard let download = downloads[id], download.state == .paused,
+              let webView = resumeWebView(download.origin) else { return }
+        updateDownloadState(id, state: .pending)
+        let finish: (WKDownload) -> Void = { [weak self] wk in
+            guard let self else { return }
+            download.download = wk
+            let delegate = DownloadDelegate(downloadManager: self, download: download, wkDownload: wk,
+                                            resumed: download.resumeData != nil)
+            self.downloadDelegates[id] = delegate
+            wk.delegate = delegate
+            download.resumeData = nil
+            self.resumingWebViews[id] = nil
+        }
+        resumingWebViews[id] = webView
+        if let data = download.resumeData {
+            webView.resumeDownload(fromResumeData: data, completionHandler: finish)
+        } else {
+            webView.startDownload(using: URLRequest(url: download.originalURL), completionHandler: finish)
+        }
+    }
+
     func cancelDownload(_ id: UUID) {
         guard let download = downloads[id] else { return }
         updateDownloadState(id, state: .cancelled)
+        download.resumeData = nil
         download.download?.cancel()
         #if DEBUG
         print("Cancelled download: \(download.suggestedFilename)")
@@ -647,11 +693,18 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
     /// WebKit asked where to save it: from here on the download is waiting on a person or making progress.
     private var destinationAsked = false
 
-    init(downloadManager: DownloadManager, download: Download, wkDownload: WKDownload) {
+    init(downloadManager: DownloadManager, download: Download, wkDownload: WKDownload, resumed: Bool = false) {
         self.downloadManager = downloadManager
         self.download = download
         self.wkDownload = wkDownload
         super.init()
+        // FORK: a resumed download writes on into the file it had; WebKit does not ask where to save it again.
+        if resumed {
+            destinationAsked = true
+            downloadManager.updateDownloadState(download.id, state: .downloading)
+            startProgressObservation()
+            return
+        }
         // FORK: a download WebKit never gets a response for (a page's blob: link revoked before it started, a page
         // closed) used to sit at "Pending" for good. It fails after a minute instead.
         Task { @MainActor [weak self] in
@@ -670,6 +723,13 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
 
     public func download(_: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
         destinationAsked = true
+        // FORK: a paused download the site gave no resume data for starts over in the file it already had.
+        if let existing = download.destinationURL {
+            try? FileManager.default.removeItem(at: existing)
+            completionHandler(existing)
+            configureDownload(for: existing, response: response)
+            return
+        }
         decideDestination(response: response, suggestedFilename: suggestedFilename) { [weak self] decision in
             guard let self else { return }
             switch decision {
@@ -852,6 +912,8 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
     }
 
     func download(_: WKDownload, didFailWithError error: Error, resumeData _: Data?) {
+        // FORK: pausing cancels the WKDownload; that is not a failure.
+        guard download.state != .paused else { return }
         #if DEBUG
         print("Download failed: \(download.suggestedFilename) - \(error.localizedDescription)")
         #endif

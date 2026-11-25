@@ -56,7 +56,15 @@ struct BoostCheck {
         precondition(!dark.darkPage && dark.compiledCSS.isEmpty)
         // A Boost saved before the field existed loads with it off.
         let old = try JSONDecoder().decode(Boost.self, from: Data(#"{"host":"a.com"}"#.utf8))
-        precondition(!old.darkPage)
+        precondition(!old.darkPage && old.focus.isEmpty)
+
+        // Focus: the picked part gets the page-sized shadow; an unsafe selector adds nothing; reset clears it.
+        var focused = Boost(host: "example.com", focus: "main article")
+        precondition(focused.compiledCSS.contains("main article { z-index: 2147483645 !important; box-shadow: 0 0 0 100vmax"), focused.compiledCSS)
+        precondition(focused.compiledCSS.contains(":where(main article) { position: relative; }"))
+        precondition(Boost(host: "example.com", focus: "a{} body").compiledCSS.isEmpty, "braces are refused")
+        focused.resetVisuals()
+        precondition(focused.focus.isEmpty && focused.compiledCSS.isEmpty)
 
         var script = Boost(host: "example.com", script: "alert(1)", scriptEnabled: true)
         let data = BoostBundle.export([script])!

@@ -116,6 +116,8 @@ struct SidebarMenuHoverDownloadItem: View {
             return "Cancelled"
         case .pending:
             return "Pending"
+        case .paused:
+            return "Paused · \(download.formattedDownloadedSize) of \(download.formattedFileSize)"
         }
     }
 
@@ -164,6 +166,25 @@ struct SidebarMenuHoverDownloadItem: View {
             }
 
             Spacer(minLength: 0)
+
+            // FORK: pause, resume and cancel a download while it runs (from Zen).
+            if download.state == .downloading || download.state == .paused {
+                HStack(spacing: NookDesign.Spacing.sm) {
+                    let paused = download.state == .paused
+                    Button(paused ? "Resume" : "Pause", nookIcon: paused ? "play" : "pause") {
+                        if paused { DownloadManager.shared.resumeDownload(download.id) } else { DownloadManager.shared.pauseDownload(download.id) }
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(NookIconButtonStyle(size: 24))
+                    .help(paused ? "Resume" : "Pause")
+                    Button("Cancel", nookIcon: "xmark") {
+                        DownloadManager.shared.cancelDownload(download.id)
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(NookIconButtonStyle(size: 24))
+                    .help("Cancel")
+                }
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, NookDesign.Spacing.xs)

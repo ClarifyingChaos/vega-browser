@@ -16,6 +16,8 @@ import NookWeb
 
 struct PrivacySettingsView: View {
     @State private var confirmingClearHistory = false
+    @State private var addingKeptSite = false
+    @State private var newKeptSite = ""
     @EnvironmentObject var browserManager: BrowserManager
     @Environment(\.nookSettings) var nookSettings
     @Environment(\.showSettingsSubPane) private var showSettingsSubPane
@@ -120,6 +122,32 @@ struct PrivacySettingsView: View {
                         : "Signs you out of sites each time you quit. Saved passwords and your tabs stay. With Sync on, your other Macs use this setting too.",
                     isOn: $settings.clearDataOnQuit
                 )
+                if settings.clearDataOnQuit {
+                    // FORK: sites kept signed in when Vega clears data at quit.
+                    HStack {
+                        VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
+                            Text("Keep signed in")
+                            Text("These sites keep their cookies and data when Vega quits.")
+                                .font(NookDesign.Font.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Add Site…") { newKeptSite = ""; addingKeptSite = true }
+                    }
+                    ForEach(settings.keepSignedInSites, id: \.self) { site in
+                        HStack {
+                            Text(site)
+                            Spacer()
+                            Button {
+                                settings.keepSignedInSites.removeAll { $0 == site }
+                            } label: {
+                                NookSymbol("trash", size: 14)
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Stop keeping \(site) signed in")
+                        }
+                    }
+                }
                 cookiesRow
                 cacheRow
                 HStack {
@@ -138,6 +166,17 @@ struct PrivacySettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .alert("Keep a Site Signed In", isPresented: $addingKeptSite) {
+            TextField("example.com", text: $newKeptSite)
+            Button("Add") {
+                if let site = KeepSignedIn.normalize(newKeptSite), !nookSettings.keepSignedInSites.contains(site) {
+                    nookSettings.keepSignedInSites.append(site)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Its cookies and data stay when Vega quits, so you stay signed in.")
+        }
         .nookConfirm("Clear your browsing history?", message: "Every page you visited is removed from history in all spaces. You can't undo this.",
                      confirm: "Clear History", isPresented: $confirmingClearHistory, action: clearBrowsingHistory)
         .onAppear {

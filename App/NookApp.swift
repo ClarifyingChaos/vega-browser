@@ -12,6 +12,7 @@ import Carbon
 import OSLog
 import Sparkle
 import SwiftUI
+import WebKit
 import NookDesign
 import NookSettings
 import NookUI
@@ -201,6 +202,17 @@ struct NookApp: App {
         browserManager.mcpManager = mcpManager
         browserManager.tabOrganizerManager = tabOrganizerManager
         browserManager.downloadManager.tidyDownloadsEnabled = { [settingsManager] in settingsManager.tidyDownloads }
+        // FORK: a paused download resumes in its own profile's website data, so its cookies still apply.
+        // A private window's data is gone once the window closes, so its downloads resume only while it is open.
+        browserManager.downloadManager.resumeWebView = { [weak browserManager] origin in
+            guard !origin.isPrivate, let tabs = browserManager?.tabs else { return nil }
+            let space = tabs.orderedSpaces.first { tabs.tree.dataStoreID(for: $0.id) == origin.profileID }
+                ?? (origin.profileID == nil ? tabs.orderedSpaces.first : nil)
+            guard let space, let profile = tabs.profile(forSpace: space.id) else { return nil }
+            let configuration = WKWebViewConfiguration()
+            configuration.websiteDataStore = profile.dataStore
+            return WKWebView(frame: .zero, configuration: configuration)
+        }
         browserManager.tabs.onTabsPinned = { [weak browserManager, tabOrganizerManager, settingsManager] itemIDs in
             guard settingsManager.autoRenamePinnedTabs, let tabs = browserManager?.tabs else { return }
             tabOrganizerManager.autoRename(itemIDs, using: tabs)
