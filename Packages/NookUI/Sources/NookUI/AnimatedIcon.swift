@@ -114,6 +114,7 @@ public struct AnimatedIcon: View {
             } else {
                 // No animation for this icon: Vega's still icon for the symbol, never a different glyph.
                 NookSymbol(fallback, size: size)
+                    .foregroundStyle(ink ?? (colorScheme == .dark ? Color.white : Color(red: 0.1, green: 0.1, blue: 0.12)))
             }
         }
         .offset(x: -(Self.inkOffsets[name]?.x ?? 0) * size / 32, y: -(Self.inkOffsets[name]?.y ?? 0) * size / 32)
