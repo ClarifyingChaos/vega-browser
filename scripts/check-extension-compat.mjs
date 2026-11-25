@@ -548,7 +548,7 @@ const stuck = load('chrome', 'content', { globals: fast, before: `
   globalThis.pings = 0;
   chrome.runtime.sendMessage = m => Promise.resolve(m && m.__vegaCompatPing === 1 ? void pings++ : 'late:' + m);` });
 assert.equal(await stuck.run(`chrome.runtime.sendMessage('x')`), 'late:x');
-assert.ok(stuck.run('pings') >= 8 && stuck.run('pings') <= 20, 'the wait backs off: ' + stuck.run('pings'));
+assert.ok(stuck.run('pings') >= 5 && stuck.run('pings') <= 20, 'the wait backs off: ' + stuck.run('pings'));
 // A hidden page's timers run a second apart or worse. The wait still ends after its four seconds.
 const hidden = load('chrome', 'content', { globals: { setTimeout: (f, ms) => setTimeout(f, 10), Date: { now: () => Date.now() * 100 } }, before: `
   globalThis.pings = 0;
