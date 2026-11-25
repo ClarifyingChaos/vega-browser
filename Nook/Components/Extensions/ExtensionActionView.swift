@@ -58,7 +58,7 @@ struct ExtensionActionButton: View {
                             .antialiased(true)
                             .scaledToFit()
                     } else {
-                        Image(systemName: "puzzlepiece.extension")
+                        NookSymbol("puzzlepiece.extension", size: 16)
                             .foregroundStyle(.primary)
                     }
                 }

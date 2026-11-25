@@ -167,7 +167,7 @@ struct SpaceCreationSidebar: View {
 
     private var extensionsRow: some View {
         HStack(spacing: NookDesign.Spacing.sm) {
-            Image(systemName: "puzzlepiece.extension")
+            NookSymbol("puzzlepiece.extension", size: 16)
                 .foregroundStyle(.secondary)
             Text("Extensions")
             Spacer(minLength: 0)

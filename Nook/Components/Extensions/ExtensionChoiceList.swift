@@ -6,6 +6,7 @@
 
 import AppKit
 import NookDesign
+import NookUI
 import SwiftUI
 
 /// Which choices are checked, which version is picked where there are two, and what each row
@@ -140,7 +141,7 @@ struct ExtensionChoiceList: View {
                     Image(nsImage: icon)
                         .resizable()
                 } else {
-                    Image(systemName: "puzzlepiece.extension")
+                    NookSymbol("puzzlepiece.extension", size: 22)
                         .foregroundStyle(.secondary)
                 }
             }

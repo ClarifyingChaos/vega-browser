@@ -22,47 +22,57 @@ struct ExtensionsSettingsView: View {
     var shownSet: Binding<UUID>?
     @State private var pendingRemoval: InstalledExtension?
     @State private var consent: PendingConsent?
+    @State private var isScanningSafari = false
 
     var body: some View {
         Form {
-            SettingsHero(symbol: "puzzlepiece.extension", title: "Extensions", detail: "Add, turn off or remove browser extensions.")
+            // FORK: Vega's page (mockup docs/mockups/extensions-settings.html, Layout A): the two ways to add an
+            // extension under the title, profiles as a menu, then installed and Safari extensions.
+            SettingsHero(symbol: "puzzlepiece.extension", title: "Extensions", detail: "Add, turn off or remove browser extensions.") {
+                HStack(spacing: NookDesign.Spacing.md) {
+                    Button("From a File…", nookIcon: "folder.badge.plus") {
+                        extensionManager.showExtensionInstallDialog(presenter: presentConsent)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .help("A folder, or a ZIP, CRX or XPI file")
+                    Button("Chrome Web Store", nookIcon: "arrow.up.forward.app") {
+                        openWebStore()
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Install from an extension's page in the store")
+                }
+                .controlSize(.large)
+            }
 
             if sets.count > 1, let shownSet {
                 Section {
-                    Picker("Profiles", selection: shownSet) {
+                    Picker("Showing extensions for", selection: shownSet) {
                         ForEach(sets, id: \.set) { choice in
                             Text(choice.members.compactMap { id in tabs.profiles.first { $0.id == id }?.name }.joined(separator: ", "))
                                 .tag(choice.set)
                         }
                     }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("Profiles")
+                } footer: {
+                    Text("Synced profiles share extensions and their data. Set this for each profile in Settings › Spaces.")
+                        .font(NookDesign.Font.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 
             Section {
-                Button("Install Extension…", nookIcon: "plus") {
-                    extensionManager.showExtensionInstallDialog(presenter: presentConsent)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .padding(.vertical, NookDesign.Spacing.sm)
-            }
-
-            if extensionManager.installedExtensions.isEmpty && extensionManager.uninstalledSafariExtensions.isEmpty {
-                Section {
-                    VStack(spacing: NookDesign.Spacing.lg) {
-                        NookSymbol("puzzlepiece.extension", size: 60)
-                            .font(NookDesign.Font.hero)
-                            .foregroundStyle(.secondary)
+                if installed.isEmpty {
+                    VStack(spacing: NookDesign.Spacing.xs) {
                         Text("No Extensions Installed")
-                            .font(NookDesign.Font.titleLarge)
-                        Text("Install browser extensions to enhance your browsing experience")
+                            .font(NookDesign.Font.title)
+                        Text("Add one from a file or the Chrome Web Store.")
                             .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
-                }
-            } else if !extensionManager.installedExtensions.isEmpty {
-                Section("Installed Extensions") {
+                    .padding(.vertical, NookDesign.Spacing.lg)
+                } else {
                     ForEach(installed, id: \.id) { ext in
                         ExtensionRowView(
                             extension: ext,
@@ -73,29 +83,47 @@ struct ExtensionsSettingsView: View {
                             onInstall: install,
                             onRemove: { pendingRemoval = ext }
                         )
-                        .padding(.vertical, NookDesign.Spacing.md)
+                    }
+                }
+            } header: {
+                HStack {
+                    Text("Installed")
+                    Spacer()
+                    if !installed.isEmpty {
+                        Text(installed.count == 1 ? "1 extension" : "\(installed.count) extensions")
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
 
             Section {
-                if extensionManager.safariExtensions == nil {
+                if isScanningSafari || extensionManager.safariExtensions == nil {
                     HStack(spacing: NookDesign.Spacing.md) {
                         ProgressView()
                             .controlSize(.small)
-                        Text("Scanning...")
+                        Text("Scanning…")
                             .foregroundStyle(.secondary)
                     }
                 } else if extensionManager.uninstalledSafariExtensions.isEmpty {
                     Text("No Safari Web Extensions found on this Mac.")
-                        .font(NookDesign.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 ForEach(extensionManager.uninstalledSafariExtensions) { ext in
-                    SafariExtensionRowView(info: ext, isAlreadyInstalled: false, onInstall: { install(ext) })
+                    SafariExtensionRowView(info: ext, onInstall: { install(ext) })
                 }
             } header: {
-                Text("Safari Extensions")
+                HStack {
+                    Text("Safari Extensions")
+                    Spacer()
+                    Button("Scan Again") { scanSafari() }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.primary)
+                        .disabled(isScanningSafari)
+                }
+            } footer: {
+                Text("Safari extensions come with Mac apps. Install the app and its extension shows up here.")
+                    .font(NookDesign.Font.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -131,6 +159,14 @@ struct ExtensionsSettingsView: View {
         }
     }
 
+    private func scanSafari() {
+        isScanningSafari = true
+        Task {
+            await extensionManager.refreshSafariExtensions()
+            isScanningSafari = false
+        }
+    }
+
     private func install(_ info: ExtensionManager.SafariExtensionInfo) {
         extensionManager.installSafariExtension(info, presenter: presentConsent) { result in
             guard case .failure(let error) = result else { return }
@@ -148,9 +184,39 @@ struct ExtensionsSettingsView: View {
         }
     }
 
+    private func openWebStore() {
+        guard let window = browserManager.openBrowserWindow() else { return }
+        browserManager.tabs.open(url: ExtensionStore.chromeWebStoreURL, in: window, placement: .newTab)
+    }
+
     private func answer(_ pending: PendingConsent, granted: Bool) {
         pending.decide(granted)
         consent = nil
+    }
+}
+
+// MARK: - Extension Icon
+
+/// An extension's own icon on a rounded tile, or Vega's cube when it has none.
+private struct ExtensionIconTile: View {
+    let image: NSImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+            } else {
+                NookSymbol("puzzlepiece.extension", size: 18)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.quaternary)
+            }
+        }
+        .frame(width: 32, height: 32)
+        .clipShape(NookDesign.Radius.shape(NookDesign.Radius.md))
     }
 }
 
@@ -158,42 +224,25 @@ struct ExtensionsSettingsView: View {
 
 private struct SafariExtensionRowView: View {
     let info: ExtensionManager.SafariExtensionInfo
-    let isAlreadyInstalled: Bool
     let onInstall: () -> Void
 
     var body: some View {
         HStack(spacing: NookDesign.Spacing.lg) {
-            Image(systemName: "safari")
-                .font(NookDesign.Font.titleLarge)
-                .foregroundStyle(.blue)
-                .frame(
-                    width: NookDesign.Size.settingsIcon,
-                    height: NookDesign.Size.settingsIcon
-                )
-
+            ExtensionIconTile(image: NSWorkspace.shared.icon(forFile: info.appPath.path))
             VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
                 Text(info.name)
                     .font(NookDesign.Font.label)
                     .lineLimit(1)
-                Text(info.appPath.lastPathComponent)
+                Text("Safari · \(info.appPath.lastPathComponent)")
                     .font(NookDesign.Font.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-
             Spacer()
-
-            if isAlreadyInstalled {
-                Text("Installed")
-                    .font(NookDesign.Font.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                Button("Install") {
-                    onInstall()
-                }
+            Button("Install", action: onInstall)
                 .buttonStyle(.bordered)
-            }
         }
+        .padding(.vertical, NookDesign.Spacing.xs)
     }
 }
 
@@ -210,45 +259,37 @@ private struct ExtensionRowView: View {
     let onRemove: () -> Void
 
     var body: some View {
-        HStack(spacing: NookDesign.Spacing.xl) {
-            // FORK: roomier row: a larger icon, the name with its version, a description of up to two lines.
-            Group {
-                if let iconPath = `extension`.iconPath,
-                    let nsImage = NSImage(contentsOfFile: iconPath)
-                {
-                    Image(nsImage: nsImage)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
-                } else {
-                    Image(systemName: "puzzlepiece.extension")
-                        .foregroundStyle(.blue)
-                }
-            }
-            .frame(width: 36, height: 36)
-            .clipShape(NookDesign.Radius.shape(NookDesign.Radius.md))
+        HStack(spacing: NookDesign.Spacing.lg) {
+            ExtensionIconTile(image: `extension`.iconPath.flatMap(NSImage.init(contentsOfFile:)))
+                .opacity(`extension`.isEnabled ? 1 : 0.5)
 
-            VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
+            VStack(alignment: .leading, spacing: NookDesign.Spacing.xxs) {
                 HStack(alignment: .firstTextBaseline, spacing: NookDesign.Spacing.sm) {
                     Text(`extension`.name)
-                        .font(NookDesign.Font.title)
-                        .fontWeight(.medium)
+                        .font(NookDesign.Font.label)
+                        .fontWeight(.semibold)
                         .lineLimit(1)
-                    Text("v\(`extension`.version)")
+                    Text(`extension`.version)
                         .font(NookDesign.Font.caption)
                         .foregroundStyle(.secondary)
+                    if let badge {
+                        Text(badge)
+                            .font(NookDesign.Font.caption)
+                            .padding(.horizontal, NookDesign.Spacing.sm)
+                            .padding(.vertical, 1)
+                            .background(.quaternary, in: NookDesign.Radius.shape(NookDesign.Radius.sm))
+                    }
                 }
                 if let description = `extension`.description, !description.isEmpty {
                     Text(description)
-                        .font(NookDesign.Font.secondary)
+                        .font(NookDesign.Font.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(1)
                 }
             }
 
             Spacer()
 
-            // Controls
             HStack(spacing: NookDesign.Spacing.md) {
                 Toggle(
                     "Enabled",
@@ -267,6 +308,9 @@ private struct ExtensionRowView: View {
 
                 // FORK: the secondary actions sit in a menu so each row is a name, a switch and one control.
                 Menu {
+                    if hasOptionsPage {
+                        Button("Settings…", nookIcon: "gearshape") { extensionManager.openOptionsPage(`extension`.id) }
+                    }
                     Toggle(
                         "Allow in Private Browsing",
                         isOn: Binding(
@@ -274,14 +318,11 @@ private struct ExtensionRowView: View {
                             set: { extensionManager.setAllowsPrivateBrowsing(`extension`.id, allowed: $0) }
                         )
                     )
-                    if hasOptionsPage {
-                        Button("Settings…", nookIcon: "gearshape") { extensionManager.openOptionsPage(`extension`.id) }
-                    }
                     if let update {
-                        Button("Update from \(update.appPath.lastPathComponent)", nookIcon: "arrow.triangle.2.circlepath") { onInstall(update) }
+                        Button("Update from \(update.appPath.lastPathComponent)", nookIcon: "arrow.clockwise") { onInstall(update) }
                     }
                     if let alternative {
-                        Button("Switch to the Safari version", nookIcon: "safari") { onInstall(alternative) }
+                        Button("Switch to the Safari Version", nookIcon: "arrow.clockwise") { onInstall(alternative) }
                     }
                     Divider()
                     Button("Remove…", nookIcon: "trash", role: .destructive, action: onRemove)
@@ -297,6 +338,13 @@ private struct ExtensionRowView: View {
                 .accessibilityLabel("More options for \(`extension`.name)")
             }
         }
+        .padding(.vertical, NookDesign.Spacing.xs)
+    }
+
+    private var badge: String? {
+        if update != nil { return "Update available" }
+        if alternative != nil { return "Safari version available" }
+        return nil
     }
 }
 

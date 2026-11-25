@@ -16,12 +16,23 @@ public struct SettingsHero: View {
     let detail: String
     /// Name of an asset-catalog image shown in place of the symbol tile (Updates uses Vega's logotype).
     let logotype: String?
+    /// Controls under the description, such as a page's main buttons.
+    let accessory: AnyView?
 
     public init(symbol: String, title: String, detail: String, logotype: String? = nil) {
         self.logotype = logotype
         self.symbol = symbol
         self.title = title
         self.detail = detail
+        self.accessory = nil
+    }
+
+    public init<Accessory: View>(symbol: String, title: String, detail: String, @ViewBuilder accessory: () -> Accessory) {
+        self.logotype = nil
+        self.symbol = symbol
+        self.title = title
+        self.detail = detail
+        self.accessory = AnyView(accessory())
     }
 
     public var body: some View {
@@ -36,8 +47,7 @@ public struct SettingsHero: View {
                         .frame(minHeight: 48)
                         .accessibilityHidden(true)
                 } else {
-                    Image(systemName: symbol)
-                        .font(.system(size: 26, weight: .regular))
+                    NookSymbol(symbol, size: 28)
                         .foregroundStyle(.primary)
                         .frame(width: 48, height: 48)
                         .background(NookDesign.Radius.shape(12).fill(.quaternary))
@@ -52,10 +62,14 @@ public struct SettingsHero: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                if let accessory {
+                    accessory
+                        .padding(.top, NookDesign.Spacing.md)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, NookDesign.Spacing.lg)
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: accessory == nil ? .combine : .contain)
         }
     }
 }

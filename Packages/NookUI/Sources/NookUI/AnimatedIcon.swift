@@ -112,7 +112,8 @@ public struct AnimatedIcon: View {
                         }
                     }
             } else {
-                Image(systemName: fallback)
+                // No animation for this icon: Vega's still icon for the symbol, never a different glyph.
+                NookSymbol(fallback, size: size)
             }
         }
         .offset(x: -(Self.inkOffsets[name]?.x ?? 0) * size / 32, y: -(Self.inkOffsets[name]?.y ?? 0) * size / 32)
