@@ -92,5 +92,5 @@ enum DownloadHistoryStore {
         }
     }
 
-    private static let queue = DispatchQueue(label: "com.gstudios.vega.download-history", qos: .utility)
+    private static let queue = DispatchQueue(label: "com.vega.browser.download-history", qos: .utility)
 }

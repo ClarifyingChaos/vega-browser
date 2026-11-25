@@ -11,6 +11,7 @@
 enum Main {
     static func main() {
         LegacyDataMigration.migrateIfNeeded()
+        RenameMigration.run()
         VegaApp.main()
     }
 }

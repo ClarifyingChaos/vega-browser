@@ -20,7 +20,7 @@ import VegaSettings
 
 @MainActor
 enum LibraryMotion {
-    private static let log = Logger(subsystem: "com.gstudios.vega", category: "Library")
+    private static let log = Logger(subsystem: "com.vega.browser", category: "Library")
 
     /// The pager's spring: response 0.25, critically damped.
     static let open = Animation.interpolatingSpring(VegaDesign.Motion.librarySpring)

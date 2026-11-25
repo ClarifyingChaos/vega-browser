@@ -1,12 +1,12 @@
 # Vega changelog
 
-What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
+What Vega changes on top of [its upstream project](https://github.com/nook-browser/Nook). The upstream project's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [its releases](https://github.com/nook-browser/Nook/releases).
 
 ## Vega 1.8.7 (2026-11-24)
 
 ### New
-- **Look It Up:** in the Cmd-T command bar, Shift-Return (or the new Look It Up row under what you typed) searches DuckDuckGo, reads the top pages and writes one page answering your question, with booking cards for flights and hotels. It uses your AI provider, or Apple's on-device model when you have none. Turn it off in Settings › AI. (From Vega.)
-- **Link hints:** press Option-F on any page and every link, button and field gets a letter; type the letter to click it. (From the satyasaibhushan Vega fork.)
+- **Look It Up:** in the Cmd-T command bar, Shift-Return (or the new Look It Up row under what you typed) searches DuckDuckGo, reads the top pages and writes one page answering your question, with booking cards for flights and hotels. It uses your AI provider, or Apple's on-device model when you have none. Turn it off in Settings › AI. (From the upstream project.)
+- **Link hints:** press Option-F on any page and every link, button and field gets a letter; type the letter to click it. (From a fork of the upstream project by satyasaibhushan.)
 - **Command bar:** open tabs that match what you type come first, and Return switches to the tab instead of opening the page again. With nothing typed, your open tabs are listed most recent first.
 - **Auto-Play per site:** Allow All, Stop Media with Sound, or Never, in Site Permissions and the address bar's site panel.
 - **Error page:** a page that can't load shows a clear page with Go Back and Try Again instead of a blank tab, in split view too.
@@ -18,11 +18,11 @@ What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's
 - **Sync between Macs:** a Mac whose Google sign-in had expired fell back to iCloud Drive without saying so, and stopped seeing your other Macs. Vega now notices the expired sign-in and asks you to sign in again, Settings says why the Vega Sync server failed, and the server is retried every minute. Google sign-ins also no longer expire after 7 days. **Sign in with Google again once on each Mac** (Settings › Account).
 - **Address bar:** the selected address now shows a clear highlight.
 - **YouTube:** with Shorts hidden, a Shorts link opens as the regular video.
-- Sites with a bad certificate on their upgraded https address fall back to http instead of leaving the tab stuck; ad-block fixes from Vega (a rule for some sites no longer hides buttons everywhere, lists with Windows line endings, rules scoped to sites); Translate reads the whole page to detect its language; several speed fixes for background tabs, media and the sidebar.
+- Sites with a bad certificate on their upgraded https address fall back to http instead of leaving the tab stuck; ad-block fixes from the upstream project (a rule for some sites no longer hides buttons everywhere, lists with Windows line endings, rules scoped to sites); Translate reads the whole page to detect its language; several speed fixes for background tabs, media and the sidebar.
 
 ### Privacy and security
 Reviewed before release; one problem found and fixed.
-- **Ad-block removals list:** the new list that can switch off a bad ad-block rule without an app update was fetched from Vega's repository, which would have let a third party weaken Vega's blocker. It is now fetched from Vega's own repository. It can only remove rules, and a bundled copy is used until it downloads.
+- **Ad-block removals list:** the new list that can switch off a bad ad-block rule without an app update was fetched from the upstream project's repository, which would have let a third party weaken Vega's blocker. It is now fetched from Vega's own repository. It can only remove rules, and a bundled copy is used until it downloads.
 - **New network destination:** Look It Up contacts DuckDuckGo with your query, and your AI provider with what it read, only when you press Shift-Return. Never in private windows.
 - **Link hints** run in their own isolated script world: a page can't see, fake or trigger them.
 - **Local-device certificates:** only names that can't be on the public internet (.local, .lan, .home.arpa, .internal, single-word names) get the accept prompt, and you decide each time. Public sites never do.
@@ -275,7 +275,7 @@ Reviewed before release.
 - A new Mac that signs in on first launch takes your first profile even though a new install already opens a tab (it used to end up with two profiles). It still never replaces a profile that has favorites or pinned tabs.
 - Sync keeps running while Vega is hidden or minimised, instead of waiting until you bring it forward.
 - Settings sync no longer writes a file with a broken name. (One file named \(own.uuidString).plist may be left in your sync folder; it is harmless.)
-- `defaults write com.vega.browser skipLegacyMigration -bool true` before the first launch starts Vega empty, without importing an older Vega or Vega install's data.
+- `defaults write com.vega.browser skipLegacyMigration -bool true` before the first launch starts Vega empty, without importing data from an older install.
 - Spaces deleted when profiles were merged are deleted on your other Macs too. They used to stay there for good, which is how a Mac could show spaces the first one no longer had.
 
 ## Vega 1.7.8 (2026-11-16)
@@ -424,7 +424,7 @@ Your passwords, and your setup on every Mac.
 
 ## Vega 1.6.0 (2026-11-13)
 
-The first public Vega release, built on Vega 1.6.0.
+The first public Vega release, built on the upstream project's 1.6.0.
 
 ### Sidebar and browsing
 - **Sidebar** reworked: 247 pt wide, 32 pt buttons, tighter insets and title row, a cleaner address field, an 8 pt page frame.
@@ -462,9 +462,9 @@ The first public Vega release, built on Vega 1.6.0.
 - A private-window favicon leak, notes not saved on quit, and an icon cache that grew without limit.
 
 ### Under the hood
-- Its own app: bundle ID `com.vega.browser` and the `vega://` scheme. Data from an existing Vega install moves over on first launch.
+- Its own app: bundle ID `com.vega.browser` and the `vega://` scheme. Data from an existing install of the upstream project moves over on first launch.
 - Updates itself (Sparkle) from this repository's releases.
-- One-command releases (`scripts/release.sh`, see [docs/RELEASING.md](docs/RELEASING.md)) and a daily sync with upstream Vega.
+- One-command releases (`scripts/release.sh`, see [docs/RELEASING.md](docs/RELEASING.md)) and a daily sync with the upstream project.
 
 ### Not yet
 - Notarization (no "Open Anyway" step) and web push notifications need the paid Apple Developer Program; the release script turns them on once it's set up.

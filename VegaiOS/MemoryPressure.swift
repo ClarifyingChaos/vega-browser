@@ -15,7 +15,7 @@ import VegaWeb
 
 @MainActor
 final class MemoryPressureWatcher {
-    private let logger = Logger(subsystem: "com.gstudios.vega", category: "Memory")
+    private let logger = Logger(subsystem: "com.vega.browser", category: "Memory")
     private let source: DispatchSourceMemoryPressure
     private var observer: NSObjectProtocol?
     private weak var tabs: TabsController?

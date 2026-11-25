@@ -32,7 +32,7 @@ const webkit = `
       // WebKit sets runtime.lastError for the length of a callback whose message failed.
       if (callback) { chrome.runtime.lastError = { message: 'Invalid call to runtime.sendNativeMessage(). ' + request.args[0] }; callback(); delete chrome.runtime.lastError; return undefined; }
       vega.requests.push(application + ' ' + request.api + '.' + request.method);
-      if (application !== 'com.gstudios.vega.compat') return Promise.reject(new Error('host not found'));
+      if (application !== 'com.vega.browser.compat') return Promise.reject(new Error('host not found'));
       const key = request.api + '.' + request.method;
       if (key === 'offscreen.createDocument') {
         if (vega.document) return Promise.resolve({ error: 'Only a single offscreen document may be created.' });
@@ -270,7 +270,7 @@ assert.equal(bridged.run(`chrome.tabs.onCreated.removeListener(onCreated); chrom
 assert.equal(run(`chrome.tabs.onCreated.addListener.toString().includes('listeners.push')`), true);
 
 // Every request went to Vega's own application and nowhere else.
-assert.ok(bridged.run('vega.requests.length > 0 && vega.requests.every(r => r.startsWith("com.gstudios.vega.compat "))'));
+assert.ok(bridged.run('vega.requests.length > 0 && vega.requests.every(r => r.startsWith("com.vega.browser.compat "))'));
 
 // nativeMessaging is in the manifest only as Vega's channel, so the extension is told it has none.
 assert.equal(JSON.stringify((await bridged.run('chrome.permissions.getAll()')).permissions), '["tabs"]');

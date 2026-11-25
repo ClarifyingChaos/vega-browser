@@ -252,7 +252,7 @@ jobs:
           git fetch origin gh-pages
           git checkout gh-pages
 
-          # Builds below 110 (the 1.0.x line, bundle id io.browsewithnook.vega, signed by another
+          # Builds below 110 (the 1.0.x line, bundle id io.browsewithnook.nook, signed by another
           # team) cannot install our updates: Sparkle binds an update to the running app's Team ID.
           # The informational scope shows them a link instead. Keep it on every item.
           ENTRY=$(cat << XMLEOF

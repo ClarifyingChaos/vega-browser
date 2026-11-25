@@ -99,7 +99,7 @@ final class LookupReader {
         opened += 1
         defer { end(session) }
         guard let view = session.webView else { return nil }
-        // Sized once, before it enters the window (see the maintainer notes on resizing off-window views).
+        // Sized once, before it enters the window: a web view resized while off-window loses its size.
         view.frame = NSRect(origin: .zero, size: Self.pageSize)
         host.addSubview(view)
         await session.finishedLoading(within: Self.loadSeconds)

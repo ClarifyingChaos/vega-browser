@@ -8,7 +8,7 @@ import AppKit
 import VegaWeb
 import OSLog
 
-private let vegaURLLog = Logger(subsystem: "com.gstudios.vega", category: "VegaURL")
+private let vegaURLLog = Logger(subsystem: "com.vega.browser", category: "VegaURL")
 
 extension BrowserManager {
     /// Runs a vega:// link from another app. Dropped unless Settings > Links allows it.

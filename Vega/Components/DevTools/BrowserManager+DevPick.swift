@@ -13,7 +13,7 @@ import WebKit
 import VegaWeb
 
 extension BrowserManager {
-    private static let devLog = Logger(subsystem: "com.gstudios.vega", category: "DevTools")
+    private static let devLog = Logger(subsystem: "com.vega.browser", category: "DevTools")
 
     /// Cmd+Shift+X: the picker on the active window's page.
     func startElementPicker() {
@@ -90,7 +90,7 @@ extension BrowserManager {
     private static func devPicksDirectory() throws -> URL {
         let fm = FileManager.default
         let caches = try fm.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        let dir = caches.appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.gstudios.vega")
+        let dir = caches.appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.vega.browser")
             .appendingPathComponent("DevPicks")
         try fm.createDirectory(at: dir, withIntermediateDirectories: true)
         let cutoff = Date().addingTimeInterval(-86_400)

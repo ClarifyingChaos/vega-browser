@@ -40,7 +40,7 @@ extension ExtensionCompatAPI {
 @MainActor
 final class ExtensionCompatBridge {
     /// The native messaging application the shim talks to. No host process carries this name.
-    static let applicationID = "com.gstudios.vega.compat"
+    static let applicationID = "com.vega.browser.compat"
 
     private var apis: [String: ExtensionCompatAPI] = [:]
     private final class Listener {

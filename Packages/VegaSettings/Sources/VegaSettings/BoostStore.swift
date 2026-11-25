@@ -12,7 +12,7 @@ import os
 
 public final class BoostStore: @unchecked Sendable {
     public let fileURL: URL
-    private let queue = DispatchQueue(label: "com.gstudios.vega.boosts", qos: .utility)
+    private let queue = DispatchQueue(label: "com.vega.browser.boosts", qos: .utility)
 
     public init(fileURL: URL = BoostStore.defaultFileURL) {
         self.fileURL = fileURL
@@ -20,7 +20,7 @@ public final class BoostStore: @unchecked Sendable {
 
     public static var defaultFileURL: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return base.appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.gstudios.vega", isDirectory: true)
+        return base.appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.vega.browser", isDirectory: true)
             .appendingPathComponent("Boosts.json")
     }
 
@@ -33,7 +33,7 @@ public final class BoostStore: @unchecked Sendable {
             let backup = url.appendingPathExtension("bak")
             try? FileManager.default.removeItem(at: backup)
             try? FileManager.default.copyItem(at: url, to: backup)
-            Logger(subsystem: "com.gstudios.vega", category: "Boosts")
+            Logger(subsystem: "com.vega.browser", category: "Boosts")
                 .error("Boosts.json could not be decoded; copied to \(backup.lastPathComponent, privacy: .public)")
             return []
         }

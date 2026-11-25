@@ -1,7 +1,9 @@
 name: Sync upstream
 
-# FORK: keeps `develop` an exact mirror of nook-browser/Nook and offers its new commits to
-# `main` as a pull request. Merging stays a human decision.
+# FORK: keeps `develop` a renamed mirror of the upstream project and offers its new commits to `main` as a pull
+# request. `develop` is the upstream history rewritten into Vega's names by scripts/upstream/transform.py. The rewrite
+# is deterministic, so a commit has the same hash every day and `develop` only ever fast-forwards. Merging stays a
+# human decision.
 on:
   schedule:
     - cron: '17 6 * * *'
@@ -17,21 +19,31 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: develop
+          ref: main
           fetch-depth: 0
-      - name: Fast-forward develop from upstream
+      # The hashes depend on the tool's version: keep it the same as the one used for the first rewrite.
+      - name: Install git-filter-repo
+        run: pip install git-filter-repo==2.47.0
+      - name: Rewrite the upstream history into Vega's names
         run: |
-          git remote add upstream https://github.com/nook-browser/Nook.git
-          git fetch upstream develop
-          git merge --ff-only upstream/develop
-          git push origin develop
+          git clone --branch develop --single-branch --no-tags https://github.com/nook-browser/Nook.git ../upstream
+          python3 scripts/upstream/transform.py ../upstream
+      - name: Fast-forward develop
+        run: |
+          git fetch ../upstream develop:refs/remotes/renamed/develop
+          git fetch origin develop
+          if ! git merge-base --is-ancestor origin/develop renamed/develop; then
+            echo "develop is not an ancestor of the renamed upstream: the rewrite rules or the tool changed, or the upstream history was rewritten."
+            exit 1
+          fi
+          git push origin renamed/develop:refs/heads/develop
       - name: Open or refresh the pull request into main
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git fetch origin main
-          if [ "$(git rev-list --count origin/main..develop)" = "0" ]; then echo "main is up to date"; exit 0; fi
+          if [ "$(git rev-list --count origin/main..origin/develop)" = "0" ]; then echo "main is up to date"; exit 0; fi
           if gh pr list --base main --head develop --state open --json number --jq 'length' | grep -q '^0$'; then
-            gh pr create --base main --head develop --title "Sync upstream Vega" \
-              --body "New commits from nook-browser/Nook. Review, resolve conflicts (keep com.vega.browser and // FORK: code), merge, then run scripts/release.sh."
+            gh pr create --base main --head develop --title "Sync upstream" \
+              --body "New commits from the upstream project, renamed. Review, resolve conflicts (keep com.vega.browser and // FORK: code), merge, then run scripts/release.sh."
           fi

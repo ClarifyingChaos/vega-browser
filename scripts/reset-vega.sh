@@ -2,7 +2,7 @@
 # Licensed under GPL-3.0. See LICENSE.
 #
 # Starts Vega over on this Mac, as if it had never been installed: the next launch runs the whole first-run
-# sign-in and sync setup, and picks up nothing from an earlier Vega or Vega install.
+# sign-in and sync setup, and picks up nothing from an earlier install.
 #
 #   bash reset-vega.sh              moves Vega's data to a folder on your Desktop (you can put it back)
 #   bash reset-vega.sh --delete     deletes it instead
@@ -17,9 +17,9 @@ for arg in "$@"; do
   case "$arg" in --delete) DELETE=true ;; --app) APP=true ;; *) echo "unknown option $arg"; exit 1 ;; esac
 done
 
-# Vega, and the Vega builds it grew from: Vega copies an older one's data in on its first launch, which is the
+# Vega, and the earlier builds it grew from: Vega copies an older one's data in on its first launch, which is the
 # usual source of a profile or spaces nobody remembers adding.
-IDS=(com.vega.browser com.gstudios.vega com.baingurley.vega io.browsewithnook.vega)
+IDS=(com.vega.browser com.gstudios.nook com.baingurley.nook io.browsewithnook.nook)
 LIB="$HOME/Library"
 STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP="$HOME/Desktop/Vega-reset-$STAMP"

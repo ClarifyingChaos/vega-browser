@@ -23,7 +23,7 @@ import VegaWeb
 @MainActor
 @Observable
 final class SidebarPiPController: PictureInPictureHolder {
-    private static let logger = Logger(subsystem: "com.gstudios.vega", category: "SidebarPiP")
+    private static let logger = Logger(subsystem: "com.vega.browser", category: "SidebarPiP")
     /// Every PiP script runs here, out of the page's reach.
     static let world = WKContentWorld.world(name: "VegaPiP")
 

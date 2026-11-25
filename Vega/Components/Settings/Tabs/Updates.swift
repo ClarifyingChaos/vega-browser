@@ -169,7 +169,7 @@ struct UpdatesSettingsView: View {
                     }
                 } footer: {
                     if index == releases.count - 1 {
-                        Text("Changes from Vega, which Vega is built on, are in [Vega's releases](https://github.com/nook-browser/Nook/releases).")
+                        Text("Changes from the upstream project Vega is built on are in [its releases](https://github.com/nook-browser/Nook/releases).")
                     }
                 }
             }

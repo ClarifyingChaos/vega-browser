@@ -26,7 +26,7 @@ OUT="$ROOT/build/release-out"
 PBX="Vega.xcodeproj/project.pbxproj"
 SPARKLE_BIN="$ROOT/build/SourcePackages/artifacts/sparkle/Sparkle/bin"
 DMG_NAME="Vega-$VERSION.dmg"
-TAG="vega-v$VERSION"   # upstream Vega tags vX.Y.Z; a prefix keeps the two apart
+TAG="vega-v$VERSION"   # the upstream project tags vX.Y.Z; a prefix keeps the two apart
 
 # --- Preconditions ---------------------------------------------------------------------------
 if ! $DRY_RUN; then

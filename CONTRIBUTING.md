@@ -18,8 +18,8 @@ You need an Apple Silicon Mac and Xcode 26 or later.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/nook-browser/Nook.git
-   cd Vega
+   git clone https://github.com/ClarifyingChaos/vega-browser.git
+   cd vega-browser
    ```
 
 2. **Install the Metal Toolchain** (Xcode 26 and later ship without it; Vega has one shader)

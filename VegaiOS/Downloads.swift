@@ -13,7 +13,7 @@ import WebKit
 import OSLog
 
 final class IOSDownload: NSObject, WKDownloadDelegate {
-    private let logger = Logger(subsystem: "com.gstudios.vega", category: "Downloads")
+    private let logger = Logger(subsystem: "com.vega.browser", category: "Downloads")
     private let onFinish: @MainActor (IOSDownload) -> Void
 
     init(onFinish: @escaping @MainActor (IOSDownload) -> Void) {

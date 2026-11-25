@@ -14,7 +14,7 @@ Run it from a clean `main`. It:
 2. signs: Developer ID + notarization when set up (below), ad-hoc otherwise;
 3. makes `Vega-X.Y.Z.dmg` with an Applications shortcut and `scripts/dmg/Read Me First.txt`;
 4. signs the DMG for Sparkle with the EdDSA key in the login Keychain and writes the feed;
-5. commits "Release vega-vX.Y.Z", tags `vega-vX.Y.Z` (upstream Vega owns the plain `vX.Y.Z` tags), pushes, creates the GitHub Release with the DMG, and publishes the feed to the `gh-pages` branch, served at <https://clarifyingchaos.github.io/vega-browser/appcast.xml>.
+5. commits "Release vega-vX.Y.Z", tags `vega-vX.Y.Z` (the upstream project owns the plain `vX.Y.Z` tags), pushes, creates the GitHub Release with the DMG, and publishes the feed to the `gh-pages` branch, served at <https://clarifyingchaos.github.io/vega-browser/appcast.xml>.
 
 Release notes: add a `## Vega X.Y.Z` section to `VEGA_CHANGELOG.md` before releasing and the script uses it; `RELEASE_NOTES=notes.md` overrides it, and with neither GitHub writes notes from the commits.
 
@@ -40,4 +40,4 @@ The next `scripts/release.sh` picks all of this up: the app is notarized (no Ope
 
 ## Upstream
 
-`develop` mirrors [nook-browser/Nook](https://github.com/nook-browser/Nook). The *Sync upstream* workflow fast-forwards it daily and opens a pull request into `main`. Review it, fix conflicts like any merge (keep `com.vega.browser`, keep `// FORK:` code), merge, then release.
+`develop` is a renamed mirror of the upstream project ([nook-browser/Nook](https://github.com/nook-browser/Nook)): the *Sync upstream* workflow clones its `develop` every day, rewrites it into Vega's names with `scripts/upstream/transform.py` (the rewrite is deterministic, so a commit keeps its hash and `develop` only fast-forwards), pushes it, and opens a pull request into `main`. Review it, fix conflicts like any merge (keep `com.vega.browser`, keep `// FORK:` code), merge, then release. If the rewrite rules or the `git-filter-repo` version change, the hashes change and the job stops with an error: change them only together with a one-time rewrite of `develop` and `main`.

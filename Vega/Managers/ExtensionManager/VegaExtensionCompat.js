@@ -11,7 +11,7 @@
   var IDENTITY = '__VEGA_IDENTITY__';
   var inExtensionOrigin = !!g.location && /-extension:$/.test(g.location.protocol);
   // Vega's own native messaging application: the delegate answers it, and no host process carries the name.
-  var BRIDGE = 'com.gstudios.vega.compat';
+  var BRIDGE = 'com.vega.browser.compat';
   // True when nativeMessaging is in the manifest only because Vega put it there for this channel.
   var OWNS_CHANNEL = '__VEGA_OWNS_CHANNEL__' === 'true';
   // True when Vega put this shim in the extension's background too.

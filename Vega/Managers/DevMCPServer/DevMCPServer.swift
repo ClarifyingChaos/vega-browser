@@ -7,8 +7,8 @@
 //  Streamable HTTP (JSON responses only) on 127.0.0.1, bearer token from a 0600 file. A client
 //  holds a GET stream open for as long as it runs, so the last one closing ends the agent's tabs.
 //
-//  mcp add --transport http vega http://127.0.0.1:47823/mcp \
-//    --header "Authorization: Bearer $(cat ~/Library/Application\ Support/com.vega.browser/dev-mcp-token)"
+//  Add it to an MCP client as an HTTP server at http://127.0.0.1:47823/mcp, with the header
+//  "Authorization: Bearer <contents of ~/Library/Application Support/com.vega.browser/dev-mcp-token>".
 //
 
 import AppKit

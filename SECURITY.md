@@ -16,4 +16,4 @@ Only the latest release is supported. Vega updates itself, and each release list
 
 Vega draws web pages with Apple's WebKit, so fixes for the engine itself come with macOS updates. Keep macOS up to date.
 
-Problems in Apple's WebKit should be reported to Apple. Problems in Vega, the browser Vega is built on, may also be reported to [Vega](https://github.com/nook-browser/Nook).
+Problems in Apple's WebKit should be reported to Apple. Problems in the upstream project Vega is built on may also be reported to [its repository](https://github.com/nook-browser/Nook).

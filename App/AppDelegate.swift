@@ -61,7 +61,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     lazy var updaterController: SPUStandardUpdaterController = {
         return SPUStandardUpdaterController(
             // FORK: on, with Vega's own feed (GitHub Pages) and EdDSA key; releases come from
-            // scripts/release.sh, so an update never brings upstream Vega in.
+            // scripts/release.sh, so an update never brings the upstream project's build in.
             startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
     }()
 

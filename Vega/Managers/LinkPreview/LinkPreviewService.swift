@@ -53,7 +53,7 @@ final class LinkPreviewService {
     @ObservationIgnored private var order: [URL] = []
     private let cacheLimit = 60
     private nonisolated static let maxBytes = 1_500_000
-    private nonisolated static let log = Logger(subsystem: "com.gstudios.vega", category: "LinkPreview")
+    private nonisolated static let log = Logger(subsystem: "com.vega.browser", category: "LinkPreview")
 
     func state(for url: URL) -> State? { states[url] }
 

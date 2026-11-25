@@ -107,7 +107,7 @@ private struct SiteSettingsPopover: View {
 
             policyPicker("Camera", .camera, $camera)
             policyPicker("Microphone", .microphone, $microphone)
-            // From upstream Vega #384, kept in Vega's own per-site store. Applies from the next load.
+            // From the upstream project (#384), kept in Vega's own per-site store. Applies from the next load.
             Picker("Auto-Play", selection: Binding(get: { SitePreferences.shared.prefs(for: host).autoplay ?? .allowAll },
                                                     set: { v in SitePreferences.shared.update(host) { $0.autoplay = v == .allowAll ? nil : v } })) {
                 ForEach(SiteAutoplay.allCases, id: \.self) { Text($0.label).tag($0) }

@@ -44,7 +44,7 @@ final class NoteStore {
 
     init(directory: URL? = nil) {
         let base = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.gstudios.vega").appendingPathComponent("Notes")
+            .appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.vega.browser").appendingPathComponent("Notes")
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         url = base.appendingPathComponent("notes.json")
         writeOnQuit()
