@@ -2,6 +2,27 @@
 
 What Vega changes on top of [Vega](https://github.com/nook-browser/Nook). Vega's own changes reach Vega through the daily upstream sync; they're in [CHANGELOG.md](CHANGELOG.md) and [Vega's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.8 (2026-11-25)
+
+### New
+- **Extensions per profile:** in Settings › Profiles a profile can share its extensions and their data with the others or keep its own. Settings › Extensions shows one list per group of profiles.
+- **Import lists show what extensions ask for** before anything installs, and the consent sheet names the files and sites an extension wants to reach.
+
+### Fixes
+- **Extension updates** that are cut short by a quit keep the previous version, and removing an extension also unpins it.
+- **Large spaces:** extensions asking for your tabs no longer freeze Vega when a space has hundreds of them.
+- **Back** on a tab opened from a link returns to the tab the link came from.
+- **Translate** reads a page's language from all of its text, not just the first words.
+- **Error page:** a page under the error page can no longer dismiss it or take key presses, in split view too.
+- Chat tools can reach fixed-position buttons and fields on a page.
+- A test build under another app id starts with its own empty data, so it can't touch your installed Vega's extensions or settings.
+
+### Privacy and security
+Reviewed before release; nothing needed fixing.
+- **No new network destinations** and no new Keychain or file access: this release only changes how extensions are grouped and listed.
+- **Profiles that keep their own extensions** also keep their own extension storage and web data, so an extension in one profile can't see another profile's.
+- **Removing a profile's extension set** deletes its folder and its saved extension data.
+
 ## Vega 1.8.7 (2026-11-24)
 
 ### New
