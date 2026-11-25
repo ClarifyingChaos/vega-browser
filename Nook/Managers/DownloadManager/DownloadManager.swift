@@ -465,8 +465,13 @@ public class DownloadManager: NSObject {
     }
 
     func resumeDownload(_ id: UUID) {
-        guard let download = downloads[id], download.state == .paused,
-              let webView = resumeWebView(download.origin) else { return }
+        guard let download = downloads[id], download.state == .paused else { return }
+        guard let webView = resumeWebView(download.origin) else {
+            // A private window's data went with the window; there is nothing to resume it in.
+            updateDownloadState(id, state: .failed, error: NSError(domain: "Vega", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "This download can't resume: the private window that started it is closed."]))
+            return
+        }
         updateDownloadState(id, state: .pending)
         let finish: (WKDownload) -> Void = { [weak self] wk in
             guard let self else { return }

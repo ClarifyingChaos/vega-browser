@@ -2,6 +2,23 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.11 (2026-11-25)
+
+### New
+- **Boost Focus:** in a site's Boost, Focus picks one part of the page and dims everything else, and keeps it for that site. (Automatic dark mode was already there as Dark page.)
+- **Video speed:** the sidebar media controls have a speed button, 0.5× to 2×. Picture in Picture keeps the speed.
+- **Open Vega at login:** Settings › General › Startup, through macOS Login Items.
+- **Pause downloads:** a running download can be paused, resumed and cancelled from the downloads list. It continues where it stopped when the site allows it; otherwise it starts over in the same file.
+- **Keep sites signed in:** with "Clear cookies, site data and history when Vega quits" on, Settings › Privacy lists sites that keep their cookies and data, so you stay signed in to them.
+- **Extensions icon:** an animated cube in Settings, and still icons now match the brightness of the others.
+
+### Privacy and security
+Reviewed before release; one problem fixed.
+- **Kept sites are your choice:** only the sites you add keep their data at quit; history is still cleared. A site keeps its whole domain's data, since that is where a sign-in lives (keeping mail.google.com keeps google.com's cookies).
+- **Downloads resume in their own profile**, with that profile's cookies. A download from a private window can resume only while the window is open; after that it now says so instead of doing nothing (the fix).
+- **Boost Focus** accepts only a plain selector, the same check as Zap, so a Boost file can't inject styles.
+- No new network destinations, Keychain items or files beyond your own downloads.
+
 ## Vega 1.8.10 (2026-11-25)
 
 ### Changes
