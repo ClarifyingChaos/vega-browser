@@ -1,3 +1,5 @@
+// Licensed under GPL-3.0. See LICENSE.
+// swiftc Packages/VegaTabsCore/Sources/VegaTabsCore/*.swift Packages/VegaTabsCore/Checks/SpaceThemeArcRulesCheck.swift -o /tmp/theme-arc && /tmp/theme-arc
 import Foundation
 
 @main

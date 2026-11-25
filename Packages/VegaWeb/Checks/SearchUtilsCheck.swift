@@ -30,6 +30,17 @@ struct SearchUtilsCheck {
         }
         precondition(normalizeURL("192.168.1.140", queryTemplate: template) == "http://192.168.1.140")
         precondition(normalizeURL("example.de", queryTemplate: template) == "https://example.de")
+
+        // An open tab goes above the typed row only when what was typed starts its host or title.
+        let pull = URL(string: "https://github.com/ClarifyingChaos/vega-browser/pull/429")!
+        for typed in ["git", " GitHub ", "github.com", "www.git", "vega"] {
+            precondition(typedStartsTab(typed, title: "vega-browser/Vega: open tabs in the palette", url: pull), "\(typed) should lead to the tab")
+        }
+        precondition(typedStartsTab("you", title: "Video", url: URL(string: "https://www.youtube.com/watch?v=1")!))
+        precondition(typedStartsTab("caf", title: "Caf\u{E9} Gratitude", url: URL(string: "https://example.com")!))
+        for typed in ["github.com/vega", "open tabs", "pull", "", "   "] {
+            precondition(!typedStartsTab(typed, title: "vega-browser/Vega: open tabs in the palette", url: pull), "\(typed) should stay below the typed row")
+        }
         print("SearchUtilsCheck passed")
     }
 }

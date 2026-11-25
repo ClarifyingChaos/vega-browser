@@ -1,6 +1,6 @@
 // Licensed under GPL-3.0. See LICENSE.
 //
-//  swiftc Sources/VegaSettings/SitePreferences.swift Checks/SitePreferencesCheck.swift -o /tmp/sp && /tmp/sp
+//  swiftc Sources/VegaSettings/SitePermission.swift Sources/VegaSettings/SitePreferences.swift Checks/SitePreferencesCheck.swift -o /tmp/sp && /tmp/sp
 //
 //  Per-site settings: defaults store nothing, host spellings share an entry, values survive a reload,
 //  and an unreadable file is moved aside, not overwritten.

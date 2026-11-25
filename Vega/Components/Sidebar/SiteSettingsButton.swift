@@ -74,11 +74,17 @@ private struct SiteSettingsPopover: View {
     @State private var coveringRule: String?
     @State private var camera = SitePermissionPolicy.ask
     @State private var microphone = SitePermissionPolicy.ask
+    @State private var autoplay = SiteAutoplay.allowAll
+    @State private var keepsVideo = false
 
     private let width: CGFloat = 280
 
     private var blocksAds: Bool { coveringRule == nil }
     private var ruleIsParent: Bool { coveringRule.map { $0 != host.lowercased() } ?? false }
+    /// Feeds never move to the sidebar on their own, whatever is chosen.
+    private var sidebarVideoAllowed: Bool {
+        URL(string: "https://\(host)").map(SidebarPiPController.allowsAutomatic) ?? true
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: VegaDesign.Spacing.lg) {
@@ -113,6 +119,20 @@ private struct SiteSettingsPopover: View {
                 ForEach(SiteAutoplay.allCases, id: \.self) { Text($0.label).tag($0) }
             }
 
+            Picker("Auto-Play", selection: Binding(get: { autoplay }, set: {
+                autoplay = $0
+                vegaSettings.setAutoplay($0, for: host)
+            })) {
+                ForEach(SiteAutoplay.allCases, id: \.self) { Text($0.label).tag($0) }
+            }
+            .pickerStyle(.menu)
+
+            Toggle("Keep videos playing in the sidebar", isOn: Binding(get: { sidebarVideoAllowed && keepsVideo }, set: {
+                keepsVideo = $0
+                vegaSettings.setAutoPictureInPicture($0, for: host)
+            }))
+            .disabled(!sidebarVideoAllowed)
+
             Button("Clear Cookies and Site Data", role: .destructive, action: onClear)
         }
         .font(VegaDesign.Font.secondary)
@@ -123,6 +143,8 @@ private struct SiteSettingsPopover: View {
             coveringRule = AllowlistRule.covering(host, in: vegaSettings.adBlockerWhitelist)
             camera = vegaSettings.permission(.camera, for: host)
             microphone = vegaSettings.permission(.microphone, for: host)
+            autoplay = vegaSettings.autoplay(for: host)
+            keepsVideo = vegaSettings.autoPictureInPicture(for: host)
         }
     }
 

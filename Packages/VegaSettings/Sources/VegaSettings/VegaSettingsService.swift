@@ -75,6 +75,7 @@ public final class VegaSettingsService {
     private let sponsorBlockCategoryOptionsKey = "settings.sponsorBlockCategoryOptions"
     private let externalLinksInMiniWindowKey = "settings.externalLinksInMiniWindow"
     private let siteRoutingRulesKey = "settings.siteRoutingRules"
+    private let extensionSetsKey = "settings.extensionSets"
     private let boostsKey = "settings.boosts"
     private let sitePermissionsKey = "settings.sitePermissions"
     private let youTubeHideShortsKey = "settings.youTubeHideShorts"
@@ -101,7 +102,7 @@ public final class VegaSettingsService {
         }
     }
 
-    /// Stored per-site answers for camera and microphone, keyed by `SitePermissionRecord.key(for:)`.
+    /// Stored per-site choices (camera, microphone, Auto-Play, sidebar video), keyed by `SitePermissionRecord.key(for:)`.
     public var sitePermissions: [String: SitePermissionRecord] = [:] {
         didSet {
             if let data = try? JSONEncoder().encode(sitePermissions) {
@@ -116,19 +117,23 @@ public final class VegaSettingsService {
     }
 
     public func setPermission(_ permission: SitePermission, to policy: SitePermissionPolicy, for host: String) {
-        let key = SitePermissionRecord.key(for: host)
-        var record = sitePermissions[key] ?? SitePermissionRecord(host: key)
-        if policy == .ask {
-            record.policies.removeValue(forKey: permission)
-        } else {
-            record.policies[permission] = policy
-        }
-        // Drop the record entirely once it holds nothing, so the store does not grow forever.
-        if record.policies.isEmpty {
-            sitePermissions.removeValue(forKey: key)
-        } else {
-            sitePermissions[key] = record
-        }
+        sitePermissions.update(host) { $0.policies[permission] = policy == .ask ? nil : policy }
+    }
+
+    public func autoplay(for host: String?) -> SiteAutoplay { sitePermissions.autoplay(for: host) }
+
+    public func setAutoplay(_ choice: SiteAutoplay, for host: String) {
+        sitePermissions.update(host) { $0.autoplay = choice == .allowAll ? nil : choice }
+    }
+
+    /// Whether leaving a tab on `host` moves its playing video to the sidebar.
+    public func autoPictureInPicture(for host: String?) -> Bool {
+        sitePermissions.autoPictureInPicture(for: host, fallback: autoPictureInPicture)
+    }
+
+    /// Kept only while it differs from the switch in Settings, so the site follows that again.
+    public func setAutoPictureInPicture(_ on: Bool, for host: String) {
+        sitePermissions.update(host) { $0.autoPictureInPicture = on == autoPictureInPicture ? nil : on }
     }
 
     /// Empty until `waitForBoosts()` returns on a launch: the file loads off the main thread.
@@ -168,6 +173,15 @@ public final class VegaSettingsService {
         didSet {
             if let data = try? JSONEncoder().encode(siteRoutingRules) {
                 userDefaults.set(data, forKey: siteRoutingRulesKey)
+            }
+        }
+    }
+
+    /// Which extension set each profile runs; see `ExtensionSets`.
+    public var extensionSets = ExtensionSets() {
+        didSet {
+            if let data = try? JSONEncoder().encode(extensionSets) {
+                userDefaults.set(data, forKey: extensionSetsKey)
             }
         }
     }
@@ -695,6 +709,10 @@ public final class VegaSettingsService {
             self.siteRoutingRules = decoded
         } else {
             self.siteRoutingRules = []
+        }
+        if let data = userDefaults.data(forKey: extensionSetsKey),
+           let decoded = try? JSONDecoder().decode(ExtensionSets.self, from: data) {
+            self.extensionSets = decoded
         }
 
         // Initialize tab management mode (with migration from old timeout)
