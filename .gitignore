@@ -149,3 +149,6 @@ ASSESSMENT.md
 # FORK: Developer ID provisioning profile (scripts/release.sh)
 scripts/signing/
 scripts/signing/GoogleOAuth.plist
+
+# The extension cube animation is a Lottie file that happens to be called package.json.
+!Packages/NookUI/Sources/NookUI/Resources/UseAnimations/package.json
