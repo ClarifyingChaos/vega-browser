@@ -25,6 +25,25 @@ final class SplitDropCaptureView: NSView {
         registerForDraggedTypes([.nookTabItem])
         // Transparent to normal mouse events; only DnD uses these callbacks
         isHidden = false
+        // FORK: whatever ends a tab drag (a drop elsewhere, Escape, a drop AppKit refused) leaves this view
+        // passing clicks through again; a stuck flag made the page ignore every click.
+        dragEndObserver = NotificationCenter.default.addObserver(forName: .tabDragDidEnd, object: nil, queue: .main) { [weak self] _ in
+            self?.isDragActive = false
+        }
+    }
+
+    private var dragEndObserver: NSObjectProtocol?
+
+    deinit {
+        if let dragEndObserver { NotificationCenter.default.removeObserver(dragEndObserver) }
+    }
+
+    /// FORK: the operation to offer for a tab drag. A drag inside Vega allows only `.move`; answering `.copy`
+    /// there made AppKit refuse every drop, so dragging a tab onto the page never opened a split view.
+    static func dropOperation(for sourceMask: NSDragOperation) -> NSDragOperation {
+        if sourceMask.contains(.move) { return .move }
+        if sourceMask.contains(.copy) { return .copy }
+        return []
     }
 
     // Only intercept events during an active drag; otherwise pass through
@@ -42,14 +61,14 @@ final class SplitDropCaptureView: NSView {
         isDragActive = true
         updatePreview(sender)
         updateDragLocation(sender)
-        return .copy
+        return Self.dropOperation(for: sender.draggingSourceOperationMask)
     }
 
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
         isDragActive = true
         updateDragLocation(sender)
         updatePreview(sender)
-        return .copy
+        return Self.dropOperation(for: sender.draggingSourceOperationMask)
     }
 
     override func draggingExited(_ sender: NSDraggingInfo?) {
