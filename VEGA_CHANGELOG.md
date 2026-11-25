@@ -2,6 +2,17 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.10 (2026-11-25)
+
+### Changes
+- **Settings › Extensions** in Vega's design: "From a File…" and "Chrome Web Store" under the title, a Profiles menu when profiles keep their own extensions, and each extension's row with its icon, version, a short description, an update or Safari-version badge, its switch and a round "…" menu (Settings…, Allow in Private Browsing, Update or Switch to the Safari version, Remove…).
+- **One extension icon everywhere:** Vega's cube in the Settings sidebar, page headers, the address bar and new-space screens, instead of a mix of icons.
+
+### Privacy and security
+Reviewed before release.
+- **Test builds can't touch your Keychain:** a copy of Vega built under another app id now keeps its own Keychain items for passwords, the sync key, the Google sign-in, AI keys, website logins and Bitwarden. Before, some of these were shared with the real app.
+- No new network destinations or files.
+
 ## Vega 1.8.9 (2026-11-25)
 
 ### Fixes
