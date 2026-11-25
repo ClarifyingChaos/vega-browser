@@ -90,12 +90,15 @@ final class SplitViewManager: ObservableObject {
             tabs.select(itemID, in: window)
             return
         }
-        guard let current = window.selectedItemID, current != itemID else { return }
-        let (left, right) = side == .left ? (itemID, current) : (current, itemID)
+        // FORK: pressing on a sidebar row selects it, so a dragged tab is already the selected one; its partner is then the tab used before it.
+        let selected = window.selectedItemID
+        let partner = selected != itemID ? selected : tabs.recentItems(in: window).first { $0 != itemID }
+        guard let partner else { return }
+        let (left, right) = side == .left ? (itemID, partner) : (partner, itemID)
         window.split = SplitRecord(leftItemID: left, rightItemID: right, fraction: 0.5)
         loadPanes(of: window)
         // Selecting again saves the window record with its new split.
-        tabs.select(current, in: window)
+        tabs.select(selected ?? partner, in: window)
     }
 
     /// A pane shows its page, so the sidebar gives it back first.
