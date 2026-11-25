@@ -20,10 +20,8 @@ struct ExtensionsSettingsView: View {
     /// The extension sets in use and the one shown, for the picker once there is more than one.
     var sets: [ExtensionSetChoice] = []
     var shownSet: Binding<UUID>?
-    @State private var showingInstallDialog = false
-    @State private var safariExtensions: [ExtensionManager.SafariExtensionInfo] = []
-    @State private var isScanningSafari = false
-    @State private var showSafariSection = false
+    @State private var pendingRemoval: InstalledExtension?
+    @State private var consent: PendingConsent?
 
     var body: some View {
         Form {
@@ -40,140 +38,185 @@ struct ExtensionsSettingsView: View {
                 }
             }
 
-            Section {
-                Button("Install Extension…", vegaIcon: "plus") {
-                    extensionManager.showExtensionInstallDialog()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .padding(.vertical, VegaDesign.Spacing.sm)
-            }
-
-            if extensionManager.installedExtensions.isEmpty && !showSafariSection {
-                Section {
-                    VStack(spacing: VegaDesign.Spacing.lg) {
-                        VegaSymbol("puzzlepiece.extension", size: 60)
-                            .font(VegaDesign.Font.hero)
-                            .foregroundStyle(.secondary)
-                        Text("No Extensions Installed")
-                            .font(VegaDesign.Font.titleLarge)
-                        Text("Install browser extensions to enhance your browsing experience")
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            } else {
-                Section("Installed Extensions") {
-                    ForEach(extensionManager.installedExtensions, id: \.id) { ext in
-                        ExtensionRowView(extension: ext, extensionManager: extensionManager)
-                            .environmentObject(browserManager)
-                            .padding(.vertical, VegaDesign.Spacing.md)
+            Section("Installed") {
+                if extensionManager.installedExtensions.isEmpty {
+                    emptyState
+                } else {
+                    ForEach(installed, id: \.id) { ext in
+                        let update = extensionManager.safariUpdate(for: ext)
+                        let alternative = extensionManager.safariAlternative(to: ext)
+                        ExtensionRowView(
+                            extension: ext,
+                            appName: ext.source.appName
+                                ?? extensionManager.safariExtension(id: ext.id)?.appPath.lastPathComponent,
+                            hasOptionsPage: extensionManager.hasOptionsPage(ext.id),
+                            onEnabledChange: { isEnabled in
+                                if isEnabled {
+                                    extensionManager.enableExtension(ext.id)
+                                } else {
+                                    extensionManager.disableExtension(ext.id)
+                                }
+                            },
+                            onPrivateBrowsingChange: { extensionManager.setAllowsPrivateBrowsing(ext.id, allowed: $0) },
+                            onUpdate: update.map { info in { install(info) } },
+                            onSwitch: alternative.map { info in { install(info) } },
+                            onOpenOptions: { extensionManager.openOptionsPage(ext.id) },
+                            onRemove: { pendingRemoval = ext }
+                        )
                     }
                 }
             }
 
             Section {
-                if isScanningSafari {
+                if extensionManager.safariExtensions == nil {
                     HStack(spacing: VegaDesign.Spacing.md) {
                         ProgressView()
                             .controlSize(.small)
-                        Text("Scanning...")
+                        Text("Scanning…")
                             .foregroundStyle(.secondary)
                     }
-                } else {
-                    Button("Scan for Safari Extensions") {
-                        scanForSafariExtensions()
-                    }
                 }
-
-                if showSafariSection {
-                    if safariExtensions.isEmpty {
-                        Text("No Safari Web Extensions found on this Mac.")
-                            .font(VegaDesign.Font.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(safariExtensions) { ext in
-                            SafariExtensionRowView(
-                                info: ext,
-                                // A copy from before stable IDs can be installed again from here, which moves it to its real id.
-                                isAlreadyInstalled: extensionManager.installedExtensions.contains(where: {
-                                    $0.id == ext.id || ($0.name == ext.name && UUID(uuidString: $0.id) == nil)
-                                }),
-                                onInstall: {
-                                    installSafariExtension(ext)
-                                }
-                            )
-                        }
-                    }
+                ForEach(extensionManager.uninstalledSafariExtensions) { info in
+                    AddExtensionRow(
+                        title: info.name,
+                        subtitle: "Safari · \(info.appPath.lastPathComponent)",
+                        action: "Install",
+                        icon: {
+                            Image(nsImage: NSWorkspace.shared.icon(forFile: info.appPath.path))
+                                .resizable()
+                        },
+                        onAction: { install(info) }
+                    )
                 }
+                AddExtensionRow(
+                    title: "Chrome Web Store",
+                    subtitle: "Install from an extension's page in the store",
+                    action: "Open",
+                    actionSymbol: "arrow.up.right",
+                    icon: { SymbolTile(systemName: "storefront") },
+                    onAction: openWebStore
+                )
+                AddExtensionRow(
+                    title: "From a File",
+                    subtitle: "A folder, or a ZIP, CRX or XPI file",
+                    action: "Choose…",
+                    icon: { SymbolTile(systemName: "doc.zipper") },
+                    onAction: { extensionManager.showExtensionInstallDialog(presenter: presentConsent) }
+                )
             } header: {
-                Text("Safari Extensions")
+                Text("Add Extensions")
+            } footer: {
+                Text("Safari extensions come with Mac apps. Install the app and its extension shows up here.")
+                    .font(VegaDesign.Font.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .onAppear {
-            if safariExtensions.isEmpty && !isScanningSafari {
-                scanForSafariExtensions()
+        .alert(
+            Text("Remove \(pendingRemoval?.name ?? "")?"),
+            isPresented: Binding(get: { pendingRemoval != nil }, set: { if !$0 { pendingRemoval = nil } }),
+            presenting: pendingRemoval
+        ) { ext in
+            Button("Remove", role: .destructive) {
+                extensionManager.uninstallExtension(ext.id)
             }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("Its data in Vega, such as sign-ins and settings, is deleted.")
+        }
+        .sheet(item: $consent) { pending in
+            ExtensionPermissionView(
+                consent: pending.request,
+                onGrant: { answer(pending, granted: true) },
+                onDeny: { answer(pending, granted: false) }
+            )
+            .frame(width: VegaDesign.Size.dialogMaxWidth)
+        }
+        .task { await extensionManager.refreshSafariExtensions() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await extensionManager.refreshSafariExtensions() }
         }
     }
 
-    private func scanForSafariExtensions() {
-        isScanningSafari = true
-        showSafariSection = true
-        Task {
-            let found = await extensionManager.discoverSafariExtensions()
-            await MainActor.run {
-                safariExtensions = found
-                isScanningSafari = false
-            }
+    private var emptyState: some View {
+        VStack(spacing: VegaDesign.Spacing.lg) {
+            Image(systemName: "puzzlepiece.extension")
+                .font(VegaDesign.Font.hero)
+                .foregroundStyle(.secondary)
+            Text("No Extensions Installed")
+                .font(VegaDesign.Font.titleLarge)
+            Text("Add extensions from the Chrome Web Store or from apps on this Mac.")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Derived State
+
+    private var installed: [InstalledExtension] {
+        extensionManager.installedExtensions.sorted {
+            $0.name.localizedStandardCompare($1.name) == .orderedAscending
         }
     }
 
-    private func installSafariExtension(_ info: ExtensionManager.SafariExtensionInfo) {
-        extensionManager.installSafariExtension(info) { result in
-            switch result {
-            case .success(let ext):
-                // Remove from available list since it's now installed
-                safariExtensions.removeAll { $0.id == info.id }
-                _ = ext // suppress unused warning
-            case .failure(.cancelled):
-                break
-            case .failure(let error):
-                let alert = NSAlert()
-                alert.messageText = "Failed to Install Safari Extension"
-                alert.informativeText = error.localizedDescription
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "OK")
-                alert.runModal()
-            }
+    // MARK: - Actions
+
+    private func install(_ info: ExtensionManager.SafariExtensionInfo) {
+        extensionManager.installSafariExtension(info, presenter: presentConsent) { result in
+            guard case .failure(let error) = result else { return }
+            if case .cancelled = error { return }
+            extensionManager.showErrorAlert(error)
         }
+    }
+
+    private func presentConsent(_ request: InstallConsent) async -> Bool {
+        await withCheckedContinuation { continuation in
+            consent = PendingConsent(
+                request: request,
+                decide: ResumeOnce(fallback: false) { continuation.resume(returning: $0) }
+            )
+        }
+    }
+
+    private func answer(_ pending: PendingConsent, granted: Bool) {
+        pending.decide(granted)
+        consent = nil
+    }
+
+    private func openWebStore() {
+        guard let window = browserManager.openBrowserWindow() else { return }
+        browserManager.tabs.open(url: ExtensionStore.chromeWebStoreURL, in: window, placement: .newTab)
     }
 }
 
-// MARK: - Safari Extension Row
+private struct PendingConsent: Identifiable {
+    let request: InstallConsent
+    let decide: ResumeOnce<Bool>
 
-private struct SafariExtensionRowView: View {
-    let info: ExtensionManager.SafariExtensionInfo
-    let isAlreadyInstalled: Bool
-    let onInstall: () -> Void
+    var id: UUID { request.id }
+}
+
+// MARK: - Add Extension Row
+
+private struct AddExtensionRow<Icon: View>: View {
+    let title: String
+    let subtitle: String
+    let action: String
+    var actionSymbol: String?
+    @ViewBuilder let icon: () -> Icon
+    let onAction: () -> Void
 
     var body: some View {
         HStack(spacing: VegaDesign.Spacing.lg) {
-            Image(systemName: "safari")
-                .font(VegaDesign.Font.titleLarge)
-                .foregroundStyle(.blue)
-                .frame(
-                    width: VegaDesign.Size.settingsIcon,
-                    height: VegaDesign.Size.settingsIcon
-                )
+            icon()
+                .frame(width: VegaDesign.Size.settingsIcon, height: VegaDesign.Size.settingsIcon)
 
             VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
-                Text(info.name)
+                Text(title)
                     .font(VegaDesign.Font.label)
                     .lineLimit(1)
-                Text(info.appPath.lastPathComponent)
+                Text(subtitle)
                     .font(VegaDesign.Font.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -181,17 +224,35 @@ private struct SafariExtensionRowView: View {
 
             Spacer()
 
-            if isAlreadyInstalled {
-                Text("Installed")
-                    .font(VegaDesign.Font.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                Button("Install") {
-                    onInstall()
+            Button(action: onAction) {
+                HStack(spacing: VegaDesign.Spacing.xs) {
+                    Text(action)
+                    if let actionSymbol {
+                        Image(systemName: actionSymbol)
+                    }
                 }
-                .buttonStyle(.bordered)
             }
+            .buttonStyle(.bordered)
         }
+    }
+}
+
+private struct SymbolTile: View {
+    let systemName: String
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(VegaDesign.Font.title)
+            .foregroundStyle(.secondary)
+            .extensionIconTile()
+    }
+}
+
+private extension View {
+    func extensionIconTile() -> some View {
+        frame(width: VegaDesign.Size.settingsIcon, height: VegaDesign.Size.settingsIcon)
+            .background(VegaDesign.Surface.raised)
+            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.sm))
     }
 }
 
@@ -199,91 +260,93 @@ private struct SafariExtensionRowView: View {
 
 private struct ExtensionRowView: View {
     let `extension`: InstalledExtension
-    /// The extension set this row's extension is installed in.
-    let extensionManager: ExtensionManager
-    @EnvironmentObject var browserManager: BrowserManager
+    let appName: String?
+    let hasOptionsPage: Bool
+    let onEnabledChange: (Bool) -> Void
+    let onPrivateBrowsingChange: (Bool) -> Void
+    let onUpdate: (() -> Void)?
+    let onSwitch: (() -> Void)?
+    let onOpenOptions: () -> Void
+    let onRemove: () -> Void
 
     var body: some View {
-        HStack(spacing: VegaDesign.Spacing.xl) {
-            // FORK: roomier row: a larger icon, the name with its version, a description of up to two lines.
+        HStack(spacing: VegaDesign.Spacing.lg) {
             Group {
                 if let iconPath = `extension`.iconPath,
                     let nsImage = NSImage(contentsOfFile: iconPath)
                 {
                     Image(nsImage: nsImage)
                         .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
                 } else {
                     Image(systemName: "puzzlepiece.extension")
                         .foregroundStyle(.blue)
                 }
             }
-            .frame(width: 36, height: 36)
-            .clipShape(VegaDesign.Radius.shape(VegaDesign.Radius.md))
+            .extensionIconTile()
+            .opacity(`extension`.isEnabled ? 1 : VegaDesign.Surface.unloadedOpacity)
 
-            VStack(alignment: .leading, spacing: VegaDesign.Spacing.xs) {
-                HStack(alignment: .firstTextBaseline, spacing: VegaDesign.Spacing.sm) {
+            VStack(alignment: .leading, spacing: VegaDesign.Spacing.xxs) {
+                Group {
                     Text(`extension`.name)
-                        .font(VegaDesign.Font.title)
-                        .fontWeight(.medium)
+                        .font(VegaDesign.Font.label)
+                        .foregroundStyle(`extension`.isEnabled ? .primary : .secondary)
                         .lineLimit(1)
-                    Text("v\(`extension`.version)")
+                    Text(subtitle)
                         .font(VegaDesign.Font.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
-                if let description = `extension`.description, !description.isEmpty {
-                    Text(description)
-                        .font(VegaDesign.Font.secondary)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
+                .help(`extension`.description ?? "")
+
+                Toggle(
+                    "Allow in Private Browsing",
+                    isOn: Binding(get: { `extension`.allowsPrivateBrowsing }, set: onPrivateBrowsingChange)
+                )
+                .toggleStyle(.checkbox)
+                .font(VegaDesign.Font.caption)
             }
 
             Spacer()
 
-            // Controls
-            HStack(spacing: VegaDesign.Spacing.md) {
-                Toggle(
-                    "Enabled",
-                    isOn: Binding(
-                        get: { `extension`.isEnabled },
-                        set: { isEnabled in
-                            if isEnabled {
-                                extensionManager.enableExtension(`extension`.id)
-                            } else {
-                                extensionManager.disableExtension(`extension`.id)
-                            }
-                        }
-                    )
-                )
-                .labelsHidden()
-
-                // FORK: the secondary actions sit in a menu so each row is a name, a switch and one control.
-                Menu {
-                    Toggle(
-                        "Allow in Private Browsing",
-                        isOn: Binding(
-                            get: { `extension`.allowsPrivateBrowsing },
-                            set: { extensionManager.setAllowsPrivateBrowsing(`extension`.id, allowed: $0) }
-                        )
-                    )
-                    Divider()
-                    Button("Remove", vegaIcon: "trash", role: .destructive) {
-                        extensionManager.uninstallExtension(`extension`.id)
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                }
-                // FORK: System Settings' row menu: a round "…" button with no disclosure arrow.
-                .menuStyle(.button)
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.circle)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .accessibilityLabel("More options for \(`extension`.name)")
+            if let onUpdate {
+                Button("Update", action: onUpdate)
+                    .buttonStyle(.bordered)
             }
+            if let onSwitch {
+                Button("Switch…", action: onSwitch)
+                    .buttonStyle(.bordered)
+            }
+
+            Toggle(
+                "Enabled",
+                isOn: Binding(get: { `extension`.isEnabled }, set: onEnabledChange)
+            )
+            .labelsHidden()
+
+            Menu {
+                if hasOptionsPage {
+                    Button("Settings…", systemImage: "gearshape", action: onOpenOptions)
+                    Divider()
+                }
+                Button("Remove…", systemImage: "trash", role: .destructive, action: onRemove)
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
         }
+    }
+
+    private var subtitle: String {
+        [
+            `extension`.source.name,
+            appName,
+            `extension`.version,
+            onUpdate != nil ? "update available" : nil,
+            onSwitch != nil ? "Safari version available" : nil,
+        ]
+        .compactMap { $0 }
+        .joined(separator: " · ")
     }
 }
 

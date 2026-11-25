@@ -34,19 +34,6 @@ public struct SitePrefs: Codable, Equatable, Sendable {
     public var isDefault: Bool { javaScript == nil && mobileSite == nil && autoPiP == nil && allowsPopups == nil && autoplay == nil }
 }
 
-/// Safari's three Auto-Play choices for a site (from upstream Vega #384).
-public enum SiteAutoplay: String, Codable, CaseIterable, Sendable {
-    case allowAll, stopMediaWithSound, never
-
-    public var label: String {
-        switch self {
-        case .allowAll: return "Allow All Auto-Play"
-        case .stopMediaWithSound: return "Stop Media with Sound"
-        case .never: return "Never Auto-Play"
-        }
-    }
-}
-
 @MainActor
 @Observable
 public final class SitePreferences {

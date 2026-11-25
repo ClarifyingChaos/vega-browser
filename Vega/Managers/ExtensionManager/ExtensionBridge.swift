@@ -40,13 +40,16 @@ final class ExtensionWindowAdapter: NSObject, WKWebExtensionWindow {
 
     private var nsWindow: NSWindow? { state?.window }
 
+    // The order comes from `ExtensionManager.tabOrder(in:)`, kept per space: one query reads it
+    // several times per tab, and Observation drops it when the trees, open folders or device
+    // state change.
     func activeTab(for extensionContext: WKWebExtensionContext) -> (any WKWebExtensionTab)? {
         guard let state, let manager else { return nil }
         if let front = manager.detachedAdapters(in: state).first(where: { $0.isInFront }) {
             return front
         }
-        guard let itemID = tabs.selectedItemID(in: state) ?? tabs.displayOrder(in: state).first else { return nil }
-        return ExtensionManager.shared.adapter(for: itemID)
+        guard let itemID = browserManager.tabs.selectedItemID(in: state) ?? manager.tabOrder(in: state).ids.first else { return nil }
+        return manager.adapter(for: itemID)
     }
 
     func tabs(for extensionContext: WKWebExtensionContext) -> [any WKWebExtensionTab] {

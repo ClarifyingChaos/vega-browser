@@ -366,6 +366,16 @@ extension ExtensionManager {
             }
             return
         }
+        guard let bm = browserManagerRef, let window = targetWindow(configuration.window),
+              let spaceID = window.spaceID
+        else {
+            if let itemID = openTabOutOfSight(url) {
+                completionHandler(adapter(for: itemID), nil)
+            } else {
+                completionHandler(nil, Self.noWindowError())
+            }
+            return
+        }
         let parent: Parent? = configuration.shouldBePinned ? .pinned(spaceID: spaceID) : nil
         guard let itemID = openExtensionTab(
             url, in: window, placement: configuration.shouldBeActive ? .newTab : .background, parent: parent)

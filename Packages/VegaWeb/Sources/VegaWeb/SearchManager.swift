@@ -220,6 +220,21 @@ public class SearchManager {
         query.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
     }
 
+    /// The open tabs for an empty field, most recently used first.
+    @MainActor public func showOpenTabs(limit: Int = 5) {
+        searchTask?.cancel()
+        historyTask?.cancel()
+        autofillTask?.cancel()
+        searchGeneration = UUID()
+        isLoading = false
+        autofillHost = nil
+        historyRows = []
+        textRows = []
+        webRows = []
+        updateSpaceContext()
+        updateSuggestionsIfNeeded(searchTabs(for: "", limit: limit))
+    }
+
     /// FORK: what the palette lists before anything is typed, as Arc's does: the tabs to switch to.
     /// Tabs of this space and of the others alternate, this space's first, as in Arc's list.
     @MainActor public func openTabSuggestions(limit: Int = 5) -> [SearchSuggestion] {
@@ -258,6 +273,27 @@ public class SearchManager {
                 ?? SwiftUI.Image(systemName: "globe")
             let other = tabs.spaceID(of: item.id).flatMap { $0 == spaceID ? nil : tabs.space($0)?.name }
             return TabMatch(itemID: item.id, title: title, url: url, favicon: favicon, otherSpaceName: other)
+        }
+        // Nothing typed: most recently used first, like Cmd-Tab, so the top row is the tab you
+        // were on before this one. This window's own recent list decides first (it also covers
+        // private windows, which are not stamped), then the device's last-active times; tabs
+        // never selected keep sidebar order at the end.
+        guard !words.isEmpty else {
+            let recent = Dictionary(tabs.recentItems(in: window).enumerated().map { ($1, $0) }, uniquingKeysWith: min)
+            let stamps = tabs.device.lastActive ?? [:]
+            let ranked = matches.enumerated().sorted { lhs, rhs in
+                let l = lhs.element.itemID, r = rhs.element.itemID
+                switch (recent[l], recent[r]) {
+                case let (li?, ri?): return li < ri
+                case (.some, nil): return true
+                case (nil, .some): return false
+                case (nil, nil): break
+                }
+                let ld = stamps[l] ?? .distantPast, rd = stamps[r] ?? .distantPast
+                if ld != rd { return ld > rd }
+                return lhs.offset < rhs.offset
+            }
+            return ranked.prefix(limit).map { SearchSuggestion(text: $0.element.title, type: .tab($0.element)) }
         }
         // Nothing typed: most recently used first, like Cmd-Tab, so the top row is the tab you
         // were on before this one. This window's own recent list decides first (it also covers

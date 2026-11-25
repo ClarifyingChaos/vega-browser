@@ -28,6 +28,11 @@ final class ExtensionManager: NSObject, ObservableObject,
     @Published var isExtensionSupportAvailable: Bool = false
     @Published var isPopupActive: Bool = false
     @Published var extensionsLoaded: Bool = false
+    /// Safari extensions found in the Applications folders; nil until the first scan finishes.
+    @Published var safariExtensions: [SafariExtensionInfo]?
+    var safariScan: Task<Void, Never>?
+    /// The last install from an import list, kept after it finishes until the next one starts.
+    @Published var listInstallProgress: ListInstallProgress?
     // Scope: one instance per extension set (`ExtensionSetRegistry`). Each has its own controller,
     // installs and storage; a profile's pages use its set's controller. Private windows run only
     // extensions the person allowed there (`hasAccessToPrivateData`).
@@ -210,7 +215,7 @@ final class ExtensionManager: NSObject, ObservableObject,
     func hasStoreVerifiedChromeID(_ context: WKWebExtensionContext) -> Bool {
         let id = context.uniqueIdentifier
         guard ExtensionStore.isValidExtensionID(id),
-              let store = fetchEntity(id: id)?.sourceStore.flatMap(ExtensionStore.init(rawValue:))
+              let store = fetchEntity(id: id)?.source.store
         else { return false }
         return store == .chrome || store == .edge
     }
@@ -284,6 +289,16 @@ final class ExtensionManager: NSObject, ObservableObject,
 
     /// Unloads every extension of a set that is being deleted.
     func tearDown() {
+        guard extensionController != nil else { return }
+        unloadContexts()
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
+        observers = []
+        installedExtensions = []
+        extensionController = nil
+    }
+
+    /// Unloads every extension and forgets the windows and tabs it knew; the controller stays.
+    private func unloadContexts() {
         guard let controller = extensionController else { return }
         for adapter in windowAdapters.values { controller.didCloseWindow(adapter) }
         for context in controller.extensionContexts {
@@ -291,14 +306,21 @@ final class ExtensionManager: NSObject, ObservableObject,
             compatBridge.contextUnloaded(context)
             try? controller.unload(context)
         }
-        observers.forEach { NotificationCenter.default.removeObserver($0) }
-        observers = []
         windowAdapters = [:]
         tabAdapters = [:]
         openedTabIDs = []
         extensionContexts = [:]
-        installedExtensions = []
-        extensionController = nil
+    }
+
+    /// True while no profile or private window runs this set: its installs stay and none loads.
+    /// The default set's manager is a singleton, so it idles where another set is torn down.
+    private(set) var isIdle = false
+
+    /// A view body can wake it, so the load runs after the update, which it publishes from.
+    func setIdle(_ idle: Bool) {
+        guard idle != isIdle, isExtensionSupportAvailable else { return }
+        isIdle = idle
+        if idle { unloadContexts() } else { Task { @MainActor in self.loadInstalledExtensions() } }
     }
 
     // MARK: - NSPopoverDelegate

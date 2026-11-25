@@ -4,6 +4,14 @@ import Testing
 @testable import VegaTabsCore
 
 struct TabStoreTests {
+    /// A load that has also written its backup: the write runs on the store's queue.
+    private func loaded(_ dir: URL, now: Date) -> LoadedState {
+        let store = TabStore(directory: dir)
+        let result = store.load(now: now)
+        store.flush()
+        return result
+    }
+
     func tempDirectory() -> URL {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("VegaTabsCoreTests-\(UUID().uuidString)", isDirectory: true)
         try! FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -49,7 +57,7 @@ struct TabStoreTests {
         #expect(Set(structure.items.map(\.displayTitle)) == ["F", "pinned child", "fav"])
         #expect(deviceFile.items.map(\.displayTitle) == ["Mine"])
 
-        let reloaded = TabStore(directory: dir).load(now: fixedNow)
+        let reloaded = loaded(dir, now: fixedNow)
         #expect(reloaded.outcome == .loaded)
         #expect(reloaded.tree == tree)
         #expect(reloaded.device == device)
@@ -65,7 +73,7 @@ struct TabStoreTests {
             store.save(tree, device)
         }
         store.flush()
-        let reloaded = TabStore(directory: dir).load(now: fixedNow)
+        let reloaded = loaded(dir, now: fixedNow)
         #expect(reloaded.tree == tree)
         f.tree = tree
         device.openFolders = []
@@ -84,7 +92,7 @@ struct TabStoreTests {
         let child = tree.items.values.first { $0.displayTitle == "pinned child" }!.id
         try tree.move(child, to: .tabs(spaceID: f.spaceA), after: nil, now: fixedNow)
         let oldDevice = try Data(contentsOf: dir.appendingPathComponent("device.json"))
-        let previous = Set(TabStore(directory: dir).load(now: fixedNow).tree.items.keys.filter { tree.scope(of: $0) == .synced || $0 == child })
+        let previous = Set(loaded(dir, now: fixedNow).tree.items.keys.filter { tree.scope(of: $0) == .synced || $0 == child })
         _ = try store.write(tree: tree, device: device, previousSynced: previous)
         let finalStructure = try Data(contentsOf: dir.appendingPathComponent("structure.json"))
 
@@ -94,7 +102,7 @@ struct TabStoreTests {
         let bridge = TabStore.StructureFile(spaces: Array(tree.spaces.values), items: bridgeItems)
         try JSONEncoder().encode(bridge).write(to: dir.appendingPathComponent("structure.json"))
         try oldDevice.write(to: dir.appendingPathComponent("device.json"))
-        let afterCrash = TabStore(directory: dir).load(now: fixedNow)
+        let afterCrash = loaded(dir, now: fixedNow)
         #expect(afterCrash.tree.item(child)?.parent == .tabs(spaceID: f.spaceA))
 
         // The completed write has the child only in device.json.
@@ -111,10 +119,10 @@ struct TabStoreTests {
         store.save(tree, device)
         store.flush()
         // A successful load makes today's backup.
-        #expect(TabStore(directory: dir).load(now: fixedNow).outcome == .loaded)
+        #expect(loaded(dir, now: fixedNow).outcome == .loaded)
 
         try Data("{ not json".utf8).write(to: dir.appendingPathComponent("structure.json"))
-        let restored = TabStore(directory: dir).load(now: fixedNow)
+        let restored = loaded(dir, now: fixedNow)
         guard case .restoredFromBackup = restored.outcome else {
             Issue.record("expected backup restore, got \(restored.outcome)")
             return
@@ -129,7 +137,7 @@ struct TabStoreTests {
         _ = store.load(now: fixedNow)
         store.save(tree, device)
         store.flush()
-        _ = TabStore(directory: dir).load(now: fixedNow)          // makes today's backup of `tree`
+        _ = loaded(dir, now: fixedNow)          // makes today's backup of `tree`
         let backupName = try #require(TabStore(directory: dir).backupSummaries().first?.id)
         #expect(TabStore(directory: dir).backupSummaries().first?.spaceNames.isEmpty == false)
 
@@ -193,7 +201,7 @@ struct TabStoreTests {
         store.save(tree, device)
         store.flush()
         for day in 0..<10 {
-            _ = TabStore(directory: dir).load(now: fixedNow.addingTimeInterval(Double(day) * 86_400))
+            _ = loaded(dir, now: fixedNow.addingTimeInterval(Double(day) * 86_400))
         }
         #expect(store.backupFolders().count == TabStore.backupDays)
     }
