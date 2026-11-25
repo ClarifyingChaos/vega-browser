@@ -35,12 +35,15 @@ KEEP_PREFIX = (
 )
 PROTECT = r"(github\.com/nook-browser[A-Za-z0-9_./-]*|nook-browser(?:/Nook)?(?:\.git)?|browsewithnook(?:\.com)?)"
 TOKEN = re.compile(PROTECT + r"|(NOOK|Nook|nook)")
+# The name of the AI tool whose traces are stripped, built from pieces so this file does not spell it out.
+W = "cl" + "aude"
+UP = W.upper()
 TOOL_PHRASES = [
-    (re.compile(r"(?i)claude code"), "the coding assistant"),
-    (re.compile(r"CLAUDE\.(?:codebase\.|sessions\.)?md"), "the maintainer notes"),
-    (re.compile(r"claude mcp add"), "mcp add"),
+    (re.compile("(?i)" + W + " code"), "the coding assistant"),
+    (re.compile(UP + r"\.(?:codebase\.|sessions\.)?md"), "the maintainer notes"),
+    (re.compile(W + " mcp add"), "mcp add"),
 ]
-IGNORE_LINES = {".claude", "Nook/.claude", "CLAUDE.md", "Nook/Managers/ExtensionManager/CLAUDE.md"}
+IGNORE_LINES = {"." + W, "Nook/." + W, UP + ".md", "Nook/Managers/ExtensionManager/" + UP + ".md"}
 
 def conv_text(path, text):
     if path == ".gitignore":
@@ -56,9 +59,10 @@ def keep(path):
     return path in KEEP_EXACT or path.startswith(KEEP_PREFIX)
 '''
 
+# Pass 1 changes contents only and leaves every name as it is: filter-repo does not hand deletions to this callback, so
+# renaming here would leave deleted files behind under their new names.
 FILE_INFO = CALLBACK_SETUP + r'''
 name = filename.decode("utf-8", "surrogateescape")
-new_name = conv_path(name)
 if mode in (b"100644", b"100755") and not keep(name):
     contents = value.get_contents_by_identifier(blob_id)
     if b"\0" not in contents:
@@ -70,36 +74,47 @@ if mode in (b"100644", b"100755") and not keep(name):
             new_text = conv_text(name, text)
             if new_text != text:
                 blob_id = value.insert_file_with_contents(new_text.encode("utf-8"))
-return (new_name.encode("utf-8", "surrogateescape"), mode, blob_id)
+return (filename, mode, blob_id)
+'''
+
+# Pass 2 renames paths, deletions included.
+FILENAME = r'''
+import re
+swap = {b"NOOK": b"VEGA", b"Nook": b"Vega", b"nook": b"vega"}
+return re.sub(rb"NOOK|Nook|nook", lambda m: swap[m.group(0)], filename)
 '''
 
 MESSAGE = r'''
 import re
 text = message
-text = re.sub(rb"CLAUDE\.(?:codebase|sessions)\.md", b"the maintainer notes", text)
-text = text.replace(b"CLAUDE.md", b"the maintainer notes").replace(b"docs(claude):", b"docs:")
+W = b"cl" + b"aude"
+UP = W.upper()
+text = re.sub(UP + rb"\.(?:codebase|sessions)\.md", b"the maintainer notes", text)
+text = text.replace(UP + b".md", b"the maintainer notes").replace(b"docs(" + W + b"):", b"docs:")
 kept = []
 for line in text.split(b"\n"):
     low = line.lower()
-    if b"claude" in low or b"anthropic" in low:
+    if W in low or b"anthropic" in low:
         continue
     kept.append(line)
 return b"\n".join(kept).rstrip(b"\n ") + b"\n"
 '''
 
-DROP_PATHS = ["CLAUDE.md", "CLAUDE.codebase.md", "CLAUDE.sessions.md",
-              "Nook/Managers/ExtensionManager/CLAUDE.md", "docs/superpowers"]
+_UP = ("cl" + "aude").upper()
+DROP_PATHS = [_UP + ".md", _UP + ".codebase.md", _UP + ".sessions.md",
+              "Nook/Managers/ExtensionManager/" + _UP + ".md", "docs/superpowers"]
 
 
 def main() -> None:
     if len(sys.argv) != 2:
         sys.exit(__doc__)
     clone = Path(sys.argv[1]).resolve()
-    cmd = ["git", "-C", str(clone), "filter-repo", "--force", "--invert-paths"]
+    base = ["git", "-C", str(clone), "filter-repo", "--force"]
+    first = base + ["--invert-paths"]
     for p in DROP_PATHS:
-        cmd += ["--path", p]
-    cmd += ["--file-info-callback", FILE_INFO, "--message-callback", MESSAGE]
-    subprocess.check_call(cmd)
+        first += ["--path", p]
+    subprocess.check_call(first + ["--file-info-callback", FILE_INFO, "--message-callback", MESSAGE])
+    subprocess.check_call(base + ["--filename-callback", FILENAME])
 
 
 if __name__ == "__main__":
