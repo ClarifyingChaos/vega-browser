@@ -15,6 +15,7 @@
 
 import Foundation
 import LocalAuthentication
+import NookWeb
 import os
 import Security
 import WebKit
@@ -54,7 +55,7 @@ final class BitwardenBiometricHandler: InternalNativePortHandler {
     // MARK: - Keychain constants
 
     /// Bitwarden stores biometric keys under this Keychain service name.
-    private static let keychainService = "Bitwarden_biometric"
+    private static let keychainService = KeychainVault.isolated("Bitwarden_biometric")
 
     /// Account name pattern: "{userId}_user_biometric"
     private static func keychainAccount(for userId: String) -> String {

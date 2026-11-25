@@ -10,6 +10,7 @@
 
 import Foundation
 import NookSettings
+import NookWeb
 
 #if canImport(Security)
 import Security
@@ -20,7 +21,7 @@ import Security
 final class AIKeychainStorage: @unchecked Sendable {
     static let shared = AIKeychainStorage()
 
-    private let service = "com.nook.aiProvider"
+    private let service = KeychainVault.isolated("com.nook.aiProvider")
     private let lock = NSLock()
 
     private init() {}

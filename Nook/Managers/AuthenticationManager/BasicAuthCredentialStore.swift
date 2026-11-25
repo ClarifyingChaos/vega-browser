@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import NookWeb
 
 #if canImport(Security)
 import Security
@@ -26,7 +27,7 @@ final class BasicAuthCredentialStore {
         case unhandled(OSStatus)
     }
 
-    private let service = "com.nook.basicAuth"
+    private let service = KeychainVault.isolated("com.nook.basicAuth")
 
     /// Keychain account for a protection space inside one space's data store. Scheme, port and
     /// realm are part of it so a password saved for https is never sent to http or another port.

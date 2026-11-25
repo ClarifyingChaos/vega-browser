@@ -32,7 +32,7 @@ public final class GoogleAccount {
 
     private let suffix: String
     private var emailKey: String { "fork.google.email" + suffix }
-    private var service: String { "com.vega.browser.google" + suffix }
+    private var service: String { KeychainVault.isolated("com.vega.browser.google" + suffix) }
 
     private init(profileID: UUID?) {
         suffix = ProfileScope.suffix(for: profileID)

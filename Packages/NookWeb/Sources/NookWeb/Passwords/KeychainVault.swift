@@ -20,9 +20,18 @@ public final class KeychainVault: PasswordVault {
     /// first time it is read (or when the same login is saved or imported again) and is not read again.
     private static let domain = "\(keychainPrefix).passwords.v2"
     private static let legacyDomain = "\(keychainPrefix).passwords"
-    /// `fork.keychain.testPrefix` gives a test copy of Vega Keychain items of its own, so a test never reads or
-    /// deletes the real passwords (the Keychain is shared by every app of this person).
-    static let keychainPrefix = UserDefaults.standard.string(forKey: "fork.keychain.testPrefix") ?? "com.vega.browser"
+    /// The shipping app's Keychain prefix. Any other build (a test copy under another bundle id) gets items of its
+    /// own, from `fork.keychain.testPrefix` or else its bundle id, so it never reads, overwrites or deletes the real
+    /// passwords, sync key, sign-ins or API keys (the Keychain is shared by every app of this person).
+    public static let keychainPrefix = KeychainIsolation.prefix(
+        testPrefix: UserDefaults.standard.string(forKey: "fork.keychain.testPrefix"),
+        bundleID: Bundle.main.bundleIdentifier
+    )
+
+    /// A Keychain service name as the shipping app uses it, or this build's own copy of it.
+    public static func isolated(_ service: String) -> String {
+        KeychainIsolation.service(service, prefix: keychainPrefix)
+    }
     /// Old items the person deleted. An old item cannot be removed without a dialog, so it is hidden instead.
     private static let hiddenKey = "fork.passwords.hiddenLegacy"
 
