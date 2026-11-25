@@ -6,6 +6,14 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.12 (2026-11-25)
+
+### Fixes
+- **Split view:** dragging a tab onto the page opens a split view again. The dragged tab pairs with the tab you used before it and lands on the side you drop it. A refused drop also no longer leaves the page ignoring clicks.
+
+### Privacy and security
+Reviewed before release; nothing changed. The fix touches only tab drag and drop inside the window: no new network destinations, files, Keychain items or settings.
+
 ## Vega 1.8.11 (2026-11-25)
 
 ### New
