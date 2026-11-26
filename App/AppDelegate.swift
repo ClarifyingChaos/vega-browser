@@ -71,6 +71,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         // FORK: create the updater now so its scheduled checks run; it was only made on demand.
         _ = updaterController
         OverlayScrollers.install()
+        FullscreenVideoClicks.install()
         CrashReporter.launch()
         setupURLEventHandling()
         setupMouseButtonHandling()
