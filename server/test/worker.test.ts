@@ -63,6 +63,16 @@ test("limits: size, count and path", async () => {
   const { account: a } = account();
   assert.equal((await a.fetch(req("/v1/blobs/devices%2Fbig.enc", { method: "PUT", body: new Uint8Array(LIMITS.maxBlobBytes + 1) }))).status, 413);
   assert.equal((await a.fetch(req("/v1/blobs/..%2Fescape", { method: "PUT", body: new Uint8Array(1) }))).status, 400);
+  const declared = req("/v1/blobs/devices%2Fbig.enc", { method: "PUT", body: new Uint8Array(1), headers: { "Content-Length": String(LIMITS.maxBlobBytes + 1) } });
+  assert.equal((await a.fetch(declared)).status, 413, "a declared size is enough to refuse");
+
+  // One account's total is capped, and rewriting a file counts its new size only.
+  const full = new Uint8Array(LIMITS.maxBlobBytes);
+  const fit = Math.floor(LIMITS.maxAccountBytes / LIMITS.maxBlobBytes);
+  const put = (name: string) => a.fetch(req(`/v1/blobs/devices%2F${name}.enc`, { method: "PUT", body: full }));
+  for (let i = 0; i < fit; i++) assert.equal((await put(`f${i}`)).status, 200);
+  assert.equal((await put("one-more")).status, 507, "account total");
+  assert.equal((await put("f0")).status, 200, "rewriting fits");
 });
 
 test("each account sees only its own files", async () => {
@@ -74,6 +84,7 @@ test("each account sees only its own files", async () => {
   const auth = { Authorization: "Bearer dev-secret" };
   assert.equal((await worker.fetch(req("/v1/list?dir=devices"), env)).status, 401, "no token");
   assert.equal((await worker.fetch(req("/v1/list?dir=devices", { headers: { Authorization: "Bearer wrong" } }), env)).status, 401, "wrong token");
+  assert.equal((await worker.fetch(req("/v1/list?dir=devices&token=dev-secret"), env)).status, 401, "a token in the address is ignored");
   await worker.fetch(req("/v1/blobs/devices%2FA.enc", { method: "PUT", body: new Uint8Array([1]), headers: auth }), env);
   const list = await (await worker.fetch(req("/v1/list?dir=devices", { headers: auth }), env)).json() as any;
   assert.equal(list.files.length, 1);
@@ -99,4 +110,21 @@ test("Google ID tokens: signature, audience and expiry are checked", async () =>
   const tampered = t.split(".").map((p, i) => (i === 1 ? enc({ ...good, sub: "999" }) : p)).join(".");
   assert.equal(await verifyGoogleIDToken(tampered, "client", now, [jwk]), undefined, "tampered claims");
   assert.equal(await verifyGoogleIDToken(await token(good, "unknown"), "client", now, [jwk]), undefined, "unknown key");
+});
+
+test("a bad answer from Google is not remembered", async () => {
+  const pair = await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" }, true, ["sign", "verify"]);
+  const jwk = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid: "k2", alg: "RS256" };
+  const enc = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const head = enc({ alg: "RS256", kid: "k2" }), body = enc({ iss: "accounts.google.com", aud: "client", sub: "7", exp: Date.now() / 1000 + 600 });
+  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", pair.privateKey, new TextEncoder().encode(`${head}.${body}`));
+  const token = `${head}.${body}.${Buffer.from(sig).toString("base64url")}`;
+  const real = globalThis.fetch;
+  const answers = [new Response("down", { status: 503 }), new Response("{}"), new Response(JSON.stringify({ keys: [jwk] }))];
+  globalThis.fetch = (async () => answers.shift()!) as typeof fetch;
+  try {
+    assert.equal(await verifyGoogleIDToken(token, "client"), undefined, "an error answer");
+    assert.equal(await verifyGoogleIDToken(token, "client"), undefined, "an answer without keys");
+    assert.deepEqual(await verifyGoogleIDToken(token, "client"), { sub: "7" }, "asked again, and it works");
+  } finally { globalThis.fetch = real; }
 });

@@ -3,9 +3,8 @@
 //  SealedSyncCheck.swift
 //  Nook
 //
-//  Spaces sealed with the sync passphrase: the files hold no names in plain text once every Mac reads sealed
-//  copies, a Mac that only reads plain files keeps getting them, the sealed copy wins when newer, and a wrong key
-//  reads only the plain copies. Compiles the shipped sources:
+//  Sync believes only files sealed with the sync passphrase: snapshots hold no names in plain text, a readable or
+//  wrongly keyed file is ignored, and only a sealed marker that names a Mac removes it. Compiles the shipped sources:
 //
 //    swiftc Packages/NookTabsCore/Sources/NookTabsCore/*.swift \
 //           Packages/NookWeb/Sources/NookWeb/Passwords/PasswordSync.swift \
@@ -23,47 +22,57 @@ struct SealedSyncCheck {
         defer { try? FileManager.default.removeItem(at: dir) }
         let store = FolderBlobStore(url: dir)
         let key = SymmetricKey(size: .bits256)
-        let macA = UUID(), macB = UUID(), oldMac = UUID()
+        let macA = UUID(), macB = UUID(), planted = UUID()
 
         var tree = TabTree()
-        let space = UUID()
-        tree.createSpace(id: space, name: "Secret Space", icon: "", accentHex: "#000000", after: nil, now: Date())
+        tree.createSpace(id: UUID(), name: "Secret Space", icon: "", accentHex: "#000000", after: nil, now: Date())
         let snapshotA = SyncMerge.snapshot(of: tree, deviceID: macA, deviceName: "A")
 
-        func plainFile(_ id: UUID) -> String { (try? String(contentsOf: dir.appendingPathComponent("devices/\(id.uuidString).json"), encoding: .utf8)) ?? "" }
+        try await SealedSync.write(snapshotA, to: store, key: key)
+        let seen = try await SealedSync.readOthers(store, excluding: macB, key: key)
+        precondition(seen.snapshots.map(\.deviceID) == [macA] && seen.snapshots[0].spaces.first?.name == "Secret Space", "B reads A")
+        for name in ["\(macA.uuidString).enc", "\(macA.uuidString).json"] {
+            let bytes = try Data(contentsOf: dir.appendingPathComponent("devices/\(name)"))
+            precondition(!String(decoding: bytes, as: UTF8.self).contains("Secret Space"), "no space names in plain text: \(name)")
+        }
 
-        // An older Mac that writes only plain files: A keeps a plain copy for it.
-        try await store.writeSnapshot(SyncSnapshot(deviceID: oldMac, deviceName: "Old", spaces: snapshotA.spaces, items: []))
-        let seenByA = try await SealedSync.readOthers(store, excluding: macA, key: key)
-        precondition(seenByA.plainOnly == [oldMac], "the older Mac is noticed")
-        try await SealedSync.write(snapshotA, to: store, key: key, plainNeeded: !seenByA.plainOnly.isEmpty)
-        precondition(plainFile(macA).contains("Secret Space"), "plain copy kept while a Mac needs it")
-        precondition(FileManager.default.fileExists(atPath: dir.appendingPathComponent("devices/\(macA.uuidString).enc").path))
-
-        // B (with the key) reads A's sealed copy; a wrong key still reads A's plain copy.
-        let seenByB = try await SealedSync.readOthers(store, excluding: macB, key: key)
-        precondition(seenByB.snapshots.contains { $0.deviceID == macA && $0.spaces.first?.name == "Secret Space" }, "B reads A")
+        // Readable files written by someone with the sync place, and a file sealed with another key, are ignored.
+        let fake = SyncSnapshot(deviceID: planted, deviceName: "Planted", spaces: snapshotA.spaces, items: [])
+        try await store.put("devices/\(planted.uuidString).json", fake.encoded())
+        try await store.put("devices/\(planted.uuidString).enc", fake.encoded())
+        let after = try await SealedSync.readOthers(store, excluding: macB, key: key)
+        precondition(after.snapshots.map(\.deviceID) == [macA], "nothing unsealed is believed")
         let wrong = try await SealedSync.readOthers(store, excluding: macB, key: SymmetricKey(size: .bits256))
-        precondition(wrong.snapshots.contains { $0.deviceID == macA }, "a wrong key falls back to the plain copy")
+        precondition(wrong.snapshots.isEmpty)
 
-        // The older Mac updates and writes sealed too: A drops its plain copy for an empty one.
-        try await SealedSync.write(SyncSnapshot(deviceID: oldMac, deviceName: "Old", spaces: snapshotA.spaces, items: []), to: store, key: key, plainNeeded: false)
-        let again = try await SealedSync.readOthers(store, excluding: macA, key: key)
-        precondition(again.plainOnly.isEmpty, "no Mac needs plain files any more")
-        try await SealedSync.write(snapshotA, to: store, key: key, plainNeeded: !again.plainOnly.isEmpty)
-        precondition(!plainFile(macA).contains("Secret Space"), "no space names in plain text")
-        let sealedBytes = try Data(contentsOf: dir.appendingPathComponent("devices/\(macA.uuidString).enc"))
-        precondition(!String(decoding: sealedBytes, as: UTF8.self).contains("Secret Space"), "the sealed copy is unreadable")
-
-        // A Mac reading both copies of A takes the newer: the sealed one with the space.
-        let both = try await SealedSync.readOthers(store, excluding: macB, key: key)
-        precondition(both.snapshots.first { $0.deviceID == macA }?.spaces.isEmpty == false, "sealed (newer or equal) copy wins over the empty plain one")
-
-        // The empty plain copy changes nothing for a Mac that reads it.
-        let empty = try await SealedSync.readOthers(store, excluding: macB, key: nil)
-        guard let stub = empty.snapshots.first(where: { $0.deviceID == macA }) else { fatalError("plain stub missing") }
-        precondition(SyncMerge.change(applying: stub, to: tree).isEmpty, "an empty snapshot changes nothing")
+        // Removal: only a marker sealed with this key, under the name it was sealed for.
+        let found1 = await SealedSync.removedDevices(store, key: key)
+        precondition(found1.isEmpty)
+        try await store.put("removed/\(macA.uuidString).json", Data(#"{"removed":true}"#.utf8))
+        try await store.put("removed/\(macA.uuidString).enc", Data(#"{"removed":true}"#.utf8))
+        let found2 = await SealedSync.removedDevices(store, key: key)
+        precondition(found2.isEmpty, "a planted marker removes nobody")
+        try await SealedSync.setRemoved(macA, true, in: store, key: SymmetricKey(size: .bits256))
+        let found3 = await SealedSync.removedDevices(store, key: key)
+        precondition(found3.isEmpty)
+        try await SealedSync.setRemoved(macA, true, in: store, key: key)
+        let found4 = await SealedSync.removedDevices(store, key: key)
+        precondition(found4 == [macA])
+        let marker = try await store.get("removed/\(macA.uuidString).enc")!
+        try await store.put("removed/\(macB.uuidString).enc", marker)
+        let found5 = await SealedSync.removedDevices(store, key: key)
+        precondition(found5 == [macA], "a copied marker removes nobody else")
+        try await SealedSync.setRemoved(macA, false, in: store, key: key)
+        let found6 = await SealedSync.removedDevices(store, key: key)
+        precondition(found6.isEmpty, "a Mac can join again")
+        // A Mac an older Vega removed stays left out, until a sealed marker says otherwise.
+        let former = UUID()
+        try await store.put("removed/\(former.uuidString).json", Data(#"{"removed":true}"#.utf8))
+        let left = await SealedSync.formerlyRemoved(store)
+        precondition(left.contains(former) && !left.contains(macA), "\(left)")
+        try await SealedSync.setRemoved(former, false, in: store, key: key)
+        let back = await SealedSync.formerlyRemoved(store)
+        precondition(!back.contains(former))
         print("SealedSyncCheck passed")
     }
 }
-

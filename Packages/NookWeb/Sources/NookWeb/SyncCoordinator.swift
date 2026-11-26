@@ -194,11 +194,6 @@ public final class SyncCoordinator {
     /// the background must still send and take changes within a round or two.
     @ObservationIgnored private var activity: NSObjectProtocol?
     @ObservationIgnored private var lastWritten: SyncSnapshot?
-    /// Whether some Mac in the chain still reads only plain files (an older Vega, or one without the passphrase):
-    /// then the plain copy is written beside the sealed one. Assumed until the first round has looked.
-    @ObservationIgnored var plainNeeded = true
-    /// How the last snapshot was written (sealed, plain too), so a change of either writes again.
-    @ObservationIgnored private var lastWrittenMode: (sealed: Bool, plain: Bool)?
     @ObservationIgnored private var observers: [Any] = []
 
     /// Where Automatic is syncing right now (the chosen place otherwise). Read by Settings to say "via iCloud Drive".
@@ -659,9 +654,9 @@ public final class SyncCoordinator {
 
     /// Takes another Mac out of the chain: the Macs stop reading it and it turns its own sync off at its next sync.
     public func removeDevice(_ id: UUID) {
-        guard let place = currentStore() else { return }
+        guard let place = currentStore(), let key = loadKey() else { return }
         devices.removeAll { $0.id == id }
-        Task { try? await place.store.setRemoved(id, true); await tick() }
+        Task { try? await SealedSync.setRemoved(id, true, in: place.store, key: key); await tick() }
     }
 
     var deviceName: String { Host.current().localizedName ?? "Mac" }
@@ -719,17 +714,17 @@ public final class SyncCoordinator {
             return
         }
         do {
-            if rejoining { try await store.setRemoved(own, false); rejoining = false }
-            removedIDs = await store.removedDevices()
-            if removedIDs.contains(own) {
+            if rejoining { try await SealedSync.setRemoved(own, false, in: store, key: key); rejoining = false }
+            let removed = await SealedSync.removedDevices(store, key: key)
+            removedIDs = removed.union(await SealedSync.formerlyRemoved(store)).subtracting(removed.contains(own) ? [] : [own])
+            if removed.contains(own) {
                 eraseSyncedData()
                 removedMessage = "Another Mac removed this Mac from the sync chain, and its synced spaces, favorites, tabs, passwords, settings, history and website sign-ins were removed from this Mac. Restart Vega to finish resetting settings. Turn on Sync my Macs to join again."
                 isEnabled = false
                 return
             }
             step(1, "Reading your other Macs")
-            let (all, pending, plainOnly) = try await SealedSync.readOthers(store, excluding: own, key: key)
-            plainNeeded = !plainOnly.subtracting(removedIDs).isEmpty
+            let (all, pending) = try await SealedSync.readOthers(store, excluding: own, key: key)
             // iCloud still bringing a file down: look again soon instead of backing off.
             if pending > 0 { found("files still downloading") }
             let snapshots = all.filter { !removedIDs.contains($0.deviceID) }
@@ -743,7 +738,7 @@ public final class SyncCoordinator {
             removePlaceholderIfFilled()
             step(3, "Sending this Mac's spaces")
             if try await writeOwn(store: store) { found("sent spaces") }
-            await writeProfileFile(store: store)
+            await writeProfileFile(store: store, key: key)
             step(4, "Syncing passwords")
             await syncPasswords(store: store)
             step(5, "Syncing settings")
@@ -784,9 +779,8 @@ public final class SyncCoordinator {
     /// Writes this Mac's open tabs (when shared, and only when they changed) and reads the others'.
     private func syncOpenTabs(store: any SyncBlobStore, tabs: TabsController, own: UUID) async {
         do {
-            // The passwords key seals the list, so full addresses can travel. Without it the list is plain text and cleaned.
-            let key = loadKey()
-            let entries = sharesOpenTabs ? ownOpenTabs(in: tabs, profile: scopeProfile, keepFullAddresses: key != nil) : []
+            guard let key = loadKey() else { return }
+            let entries = sharesOpenTabs ? ownOpenTabs(in: tabs, profile: scopeProfile) : []
             if entries != lastOpenTabs {
                 try await store.writeOpenTabs(OpenTabsSnapshot(deviceID: own, deviceName: deviceName, writtenAt: Date(), tabs: entries), key: key)
                 lastOpenTabs = entries
@@ -824,15 +818,25 @@ public final class SyncCoordinator {
     /// The profile the sync place holds (its `profile.json`), if any: used by a fresh Mac to take it as its first.
     func remoteProfile() async -> ProfileIdentity? {
         guard let place = currentStore() else { return nil }
-        return ProfileIdentity.decode(try? await place.store.get(ProfileIdentity.path))
+        return ProfileIdentity.decodePublic(try? await place.store.get(ProfileIdentity.path))
     }
 
-    /// Says in the account's folder which profile this is, so another Mac can bring the same one.
-    private func writeProfileFile(store: any SyncBlobStore) async {
-        guard let tabs, let id = scopeProfile, let name = tabs.profiles.first(where: { $0.id == id })?.name else { return }
+    /// Says in the account's folder which profile this is, so another Mac can bring the same one: its ID readable,
+    /// its name sealed. A profile brought here takes that sealed name first.
+    private func writeProfileFile(store: any SyncBlobStore, key: SymmetricKey) async {
+        guard let tabs, let id = scopeProfile, var name = tabs.profiles.first(where: { $0.id == id })?.name else { return }
+        if name == ProfileIdentity.unnamed {
+            let sealed = (try? await store.get(ProfileIdentity.sealedPath)).flatMap { PasswordCrypto.open($0, with: key) }
+            guard let taken = ProfileIdentity.nameToTake(sealed: ProfileIdentity.decode(sealed), profile: id, current: name) else { return }
+            tabs.renameProfile(id, to: taken)
+            name = taken
+        }
         let identity = ProfileIdentity(id: id, name: name)
-        guard identity != lastIdentity else { return }
-        if (try? await store.put(ProfileIdentity.path, identity.encoded())) != nil { lastIdentity = identity }
+        guard identity != lastIdentity, let sealed = try? PasswordCrypto.seal(identity.encoded(), with: key),
+              (try? await store.put(ProfileIdentity.sealedPath, sealed)) != nil,
+              (try? await store.put(ProfileIdentity.path, ProfileIdentity(id: id, name: ProfileIdentity.unnamed).encoded())) != nil
+        else { return }
+        lastIdentity = identity
     }
 
     private func writeOwn() {
@@ -856,13 +860,9 @@ public final class SyncCoordinator {
             if let last, last.spaces == snapshot.spaces, last.items == snapshot.items { return nil }
             return snapshot
         }.value
-        let mode = (sealed: true, plain: plainNeeded)
-        // The same snapshot written the same way is not news; a new way of writing it is.
-        let snapshot: SyncSnapshot
-        if let built { snapshot = built } else if let last, let previous = lastWrittenMode, previous != mode { snapshot = last } else { return false }
-        try await SealedSync.write(snapshot, to: store, key: key, plainNeeded: mode.plain)
+        guard let snapshot = built else { return false }
+        try await SealedSync.write(snapshot, to: store, key: key)
         lastWritten = snapshot
-        lastWrittenMode = mode
         return true
     }
 }

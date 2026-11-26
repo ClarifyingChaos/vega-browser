@@ -24,25 +24,31 @@ struct OpenTabsSyncCheck {
         func snap(_ id: UUID, _ name: String, _ tabs: [OpenTabsSnapshot.Entry], at date: Date = Date()) -> OpenTabsSnapshot {
             OpenTabsSnapshot(deviceID: id, deviceName: name, writtenAt: date, tabs: tabs)
         }
-        precondition(OpenTabsSnapshot.clean(URL(string: "https://u:p@bank.example/acct?token=SECRET&q=x#frag")!)?.absoluteString == "https://bank.example/acct", "query, fragment and login are dropped")
+        let key = SymmetricKey(size: .bits256), wrong = SymmetricKey(size: .bits256)
         let tab = { (t: String, u: String) in OpenTabsSnapshot.Entry(title: t, url: u, space: "Personal") }
-        try await store.writeOpenTabs(snap(a, "Studio", [tab("Apple", "https://apple.com"), tab("Swift", "https://swift.org")]))
-        try await store.writeOpenTabs(snap(b, "Laptop", [tab("Vega", "https://example.com")]))
-        try await store.writeOpenTabs(snap(stopped, "Old Mac", []))
-        try await store.writeOpenTabs(snap(stale, "Dusty", [tab("Gone", "https://gone.example")], at: Date().addingTimeInterval(-15 * 86_400)))
+        try await store.writeOpenTabs(snap(a, "Studio", [tab("Apple", "https://apple.com"), tab("Swift", "https://swift.org")]), key: key)
+        try await store.writeOpenTabs(snap(b, "Laptop", [tab("Vega", "https://example.com")]), key: key)
+        try await store.writeOpenTabs(snap(stopped, "Old Mac", []), key: key)
+        try await store.writeOpenTabs(snap(stale, "Dusty", [tab("Gone", "https://gone.example")], at: Date().addingTimeInterval(-15 * 86_400)), key: key)
 
-        let seenByB = try await store.readOtherOpenTabs(excluding: b)
+        let seenByB = try await store.readOtherOpenTabs(excluding: b, key: key)
         precondition(seenByB.count == 1 && seenByB[0].deviceName == "Studio", "B sees only the Mac that is sharing: \(seenByB.map(\.deviceName))")
         precondition(seenByB[0].tabs.map(\.title) == ["Apple", "Swift"] && seenByB[0].tabs[0].url == "https://apple.com", "tabs arrive whole and in order")
-        let seenByA = try await store.readOtherOpenTabs(excluding: a)
+        let seenByA = try await store.readOtherOpenTabs(excluding: a, key: key)
         precondition(seenByA.map(\.deviceName) == ["Laptop"], "A sees B, never itself, an empty list or a stale one")
 
-        try await store.writeOpenTabs(snap(a, "Studio", []))
-        let afterStop = try await store.readOtherOpenTabs(excluding: b)
+        try await store.writeOpenTabs(snap(a, "Studio", []), key: key)
+        let afterStop = try await store.readOtherOpenTabs(excluding: b, key: key)
         precondition(afterStop.isEmpty, "a Mac that stops sharing drops out")
 
+        // A readable list, which anyone with the sync place could write, is never shown.
+        let planted = UUID()
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .millisecondsSince1970
+        try await store.put("openTabs/\(planted.uuidString).json", encoder.encode(snap(planted, "Planted", [tab("Bank", "https://evil.example")])))
+        let noPlanted = try await store.readOtherOpenTabs(excluding: b, key: key)
+        precondition(noPlanted.isEmpty, "a readable list is ignored")
+
         // Sealed lists: the full address crosses, the folder holds no readable address, a Mac without the key sees nothing.
-        let key = SymmetricKey(size: .bits256), wrong = SymmetricKey(size: .bits256)
         let sealed = UUID(), reader = UUID()
         try await store.writeOpenTabs(snap(sealed, "Sealed", [tab("Doc", "https://docs.example/d/abc?token=SECRET")]), key: key)
         let files = try await store.list("openTabs").names

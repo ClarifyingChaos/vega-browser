@@ -28,7 +28,7 @@ public enum ProfileAdoption {
         let pending = GoogleAccount.pending
         try await pending.signIn()
         guard let store = pending.store() else { throw GoogleOAuth.OAuthError.cancelled }
-        let remote = ProfileIdentity.decode(try? await store.get(ProfileIdentity.path))
+        let remote = ProfileIdentity.decodePublic(try? await store.get(ProfileIdentity.path))
         let outcome: Outcome
         let profileID: UUID
         if let remote {

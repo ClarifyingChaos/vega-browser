@@ -186,24 +186,3 @@ public extension SyncBlobStore {
         return (snapshots, pending)
     }
 }
-
-/// A Mac taken out of the chain from another Mac. The files can't always be deleted (Google Drive), so removal is a
-/// small marker, "removed/<id>.json": the other Macs stop reading that Mac, and that Mac turns its own sync off.
-/// Writing `removed: false` over it lets the Mac join again.
-public extension SyncBlobStore {
-    func removedDevices() async -> Set<UUID> {
-        guard let names = try? await list("removed").names else { return [] }
-        var out: Set<UUID> = []
-        for name in names where name.hasSuffix(".json") {
-            guard let id = UUID(uuidString: String(name.dropLast(".json".count))),
-                  let data = try? await get("removed/\(name)"),
-                  let flag = try? JSONDecoder().decode([String: Bool].self, from: data), flag["removed"] == true else { continue }
-            out.insert(id)
-        }
-        return out
-    }
-
-    func setRemoved(_ id: UUID, _ removed: Bool) async throws {
-        try await put("removed/\(id.uuidString).json", JSONEncoder().encode(["removed": removed]))
-    }
-}

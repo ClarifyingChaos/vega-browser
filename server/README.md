@@ -8,7 +8,7 @@ Mac reaches the others in seconds) and keeps working for people who use neither.
 - **Accounts:** Google accounts. Each request carries the Google ID token Vega already gets when you sign in with
   Google; the server checks its signature against Google's keys and keeps files per account (the token's `sub`). No
   passwords or emails are stored.
-- **Limits:** 2 MB per file, 500 files per account.
+- **Limits:** 2 MB per file, 500 files and 50 MB per account.
 - **Runs on:** Cloudflare Workers with a SQLite-backed Durable Object per account. The free plan covers it
   (100,000 requests a day, 5 GB).
 - **No Apple Developer ID needed:** the Mac talks to it over HTTPS and WebSocket like any website.

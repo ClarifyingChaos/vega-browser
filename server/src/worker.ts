@@ -16,7 +16,8 @@ export interface Env {
   DEV_TOKEN?: string;
 }
 
-export const LIMITS = { maxBlobBytes: 2_000_000, maxBlobs: 500, maxPathLength: 200 };
+// Anyone with a Google account can sign in, so each account is held to far less than the shared free 5 GB.
+export const LIMITS = { maxBlobBytes: 2_000_000, maxBlobs: 500, maxAccountBytes: 50_000_000, maxPathLength: 200 };
 
 /** Paths look like "devices/<uuid>.enc": a known folder, then a plain file name. */
 export function validPath(path: string): boolean {
@@ -43,7 +44,8 @@ let googleKeys: { keys: JWK[]; until: number } | undefined;
 
 async function authenticate(request: Request, env: Env): Promise<string | undefined> {
   const header = request.headers.get("Authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : new URL(request.url).searchParams.get("token") ?? "";
+  // The header only: an address, with a token in it, ends up in logs.
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
   if (!token) return undefined;
   if (env.DEV_TOKEN && token === env.DEV_TOKEN) return "dev";
   const claims = await verifyGoogleIDToken(token, env.GOOGLE_CLIENT_ID);
@@ -79,7 +81,9 @@ export async function verifyGoogleIDToken(token: string, clientID: string, now =
 async function googleJWKS(): Promise<JWK[]> {
   if (googleKeys && googleKeys.until > Date.now()) return googleKeys.keys;
   const response = await fetch("https://www.googleapis.com/oauth2/v3/certs");
-  const body = (await response.json()) as { keys: JWK[] };
+  const body = response.ok ? ((await response.json().catch(() => undefined)) as { keys?: JWK[] } | undefined) : undefined;
+  // A bad answer is not remembered: the next request asks again, and the old keys stand until then.
+  if (!Array.isArray(body?.keys) || body.keys.length === 0) return googleKeys?.keys ?? [];
   googleKeys = { keys: body.keys, until: Date.now() + 60 * 60 * 1000 };
   return body.keys;
 }
@@ -139,11 +143,15 @@ export class Account {
   }
 
   private async put(path: string, request: Request): Promise<Response> {
+    // Refused before it is read into memory when the sender says it is too large.
+    if (Number(request.headers.get("Content-Length") ?? 0) > LIMITS.maxBlobBytes) return json({ error: "too large" }, 413);
     const data = new Uint8Array(await request.arrayBuffer());
     if (data.byteLength > LIMITS.maxBlobBytes) return json({ error: "too large" }, 413);
     const exists = this.sql.exec("SELECT 1 FROM blobs WHERE path = ?", path).toArray().length > 0;
     const count = this.sql.exec("SELECT COUNT(*) AS n FROM blobs").toArray()[0]?.n ?? 0;
     if (!exists && count >= LIMITS.maxBlobs) return json({ error: "too many files" }, 507);
+    const others = this.sql.exec("SELECT COALESCE(SUM(LENGTH(data)), 0) AS n FROM blobs WHERE path != ?", path).toArray()[0]?.n ?? 0;
+    if (others + data.byteLength > LIMITS.maxAccountBytes) return json({ error: "account full" }, 507);
     const stamp = await sha256Hex(data);
     const seq = this.nextSeq();
     this.sql.exec("INSERT INTO blobs (path, data, stamp, seq) VALUES (?, ?, ?, ?) ON CONFLICT(path) DO UPDATE SET data = excluded.data, stamp = excluded.stamp, seq = excluded.seq",

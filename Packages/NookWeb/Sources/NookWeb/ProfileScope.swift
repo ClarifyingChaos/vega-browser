@@ -32,13 +32,17 @@ public enum ProfileScope {
     public static func isPrimary(_ profileID: UUID?) -> Bool { suffix(for: profileID).isEmpty }
 }
 
-/// `profile.json` in a profile's sync folder: who the profile is, so another Mac that signs in to the same account
-/// can bring the same profile instead of making a new one.
+/// Who the profile in a sync folder is, so another Mac that signs in to the same account can bring the same profile
+/// instead of making a new one. `profile.json` is read before that Mac has the passphrase, so it carries only the
+/// profile's random ID; the name travels sealed in `profile.enc` and is taken once the key is there.
 public struct ProfileIdentity: Codable, Equatable, Sendable {
     public var id: UUID
     public var name: String
 
     public static let path = "profile.json"
+    public static let sealedPath = "profile.enc"
+    /// What a brought profile is called until the sealed name arrives.
+    public static let unnamed = "Synced Profile"
 
     public init(id: UUID, name: String) {
         self.id = id
@@ -48,5 +52,17 @@ public struct ProfileIdentity: Codable, Equatable, Sendable {
     public func encoded() -> Data { (try? JSONEncoder().encode(self)) ?? Data() }
     public static func decode(_ data: Data?) -> ProfileIdentity? {
         data.flatMap { try? JSONDecoder().decode(ProfileIdentity.self, from: $0) }
+    }
+
+    /// The readable file: the ID alone. A name written there, by an older Vega or anyone else, is not believed.
+    public static func decodePublic(_ data: Data?) -> ProfileIdentity? {
+        decode(data).map { ProfileIdentity(id: $0.id, name: unnamed) }
+    }
+
+    /// The name this profile should take: only a profile still unnamed, only from a sealed file about this very one.
+    public static func nameToTake(sealed: ProfileIdentity?, profile: UUID, current: String) -> String? {
+        guard current == unnamed, let sealed, sealed.id == profile, sealed.name != unnamed,
+              !sealed.name.isEmpty else { return nil }
+        return sealed.name
     }
 }

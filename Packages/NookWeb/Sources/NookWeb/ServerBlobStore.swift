@@ -122,8 +122,12 @@ public final class ServerLive: @unchecked Sendable {
             if let request = try? await store.liveRequest() {
                 let socket = URLSession.shared.webSocketTask(with: request)
                 socket.resume()
-                delay = 2
+                // The server answers "pong": proof the connection stands.
+                socket.send(.string("ping")) { _ in }
                 while !Task.isCancelled, let message = try? await socket.receive() {
+                    // Only a message from the server resets the wait. Resetting on every attempt had a refused sign-in
+                    // trying again every 2 s for good.
+                    delay = 2
                     if case .string(let text) = message, text != "pong" { changed() }
                 }
                 socket.cancel(with: .goingAway, reason: nil)

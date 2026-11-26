@@ -45,18 +45,16 @@ extension SyncCoordinator {
         let neverSynced = defaults.object(forKey: Self.settingsAppliedKey) == nil
 
         do {
-            // Sealed copies (".enc") open with the sync passphrase's key; plain ones (".plist") are read as before.
-            let key = loadKey()
+            // Only copies sealed with the sync passphrase's key: settings decide what sites may do and where searches
+            // go, so a readable file, which anyone with the sync place could write, is never applied.
+            guard let key = loadKey() else { return }
             let names = try await store.list("settings").names.filter { name in
-                (name.hasSuffix(".plist") || (key != nil && name.hasSuffix(".enc"))) && !name.hasPrefix(own.uuidString) && !removedIDs.contains { name.hasPrefix($0.uuidString) }
+                name.hasSuffix(".enc") && !name.hasPrefix(own.uuidString) && !removedIDs.contains { name.hasPrefix($0.uuidString) }
             }
             var newest: SettingsSnapshot.File?
             for name in names {
-                guard var data = try await store.get("settings/\(name)") else { continue }
-                if name.hasSuffix(".enc") {
-                    guard let key, let opened = PasswordCrypto.open(data, with: key) else { continue }
-                    data = opened
-                }
+                guard let sealed = try await store.get("settings/\(name)"),
+                      let data = PasswordCrypto.open(sealed, with: key) else { continue }
                 if let file = SettingsSnapshot.decode(data), !file.values.isEmpty, file.writtenAt > (newest?.writtenAt ?? .distantPast) { newest = file }
             }
             let appliedAt = defaults.object(forKey: Self.settingsAppliedKey) as? Date ?? .distantPast
@@ -72,13 +70,10 @@ extension SyncCoordinator {
             }
             // Ours: written when it changed, or the first time (so the other Macs have something to take).
             if neverSynced || changedAt > appliedAt, let data = SettingsSnapshot.encode(values: values, writtenAt: changedAt, device: deviceName) {
-                if let key {
-                    try await store.put("settings/\(own.uuidString).enc", PasswordCrypto.seal(data, with: key))
-                    // The plain copy only while a Mac reads nothing else; otherwise an empty one, which changes nothing.
-                    let plain = plainNeeded ? data : SettingsSnapshot.encode(values: [:], writtenAt: changedAt, device: deviceName)
-                    if let plain { try await store.put("settings/\(own.uuidString).plist", plain) }
-                } else {
-                    try await store.put("settings/\(own.uuidString).plist", data)
+                try await store.put("settings/\(own.uuidString).enc", PasswordCrypto.seal(data, with: key))
+                // An empty file over the readable copy an older Vega wrote.
+                if let empty = SettingsSnapshot.encode(values: [:], writtenAt: changedAt, device: deviceName) {
+                    try await store.put("settings/\(own.uuidString).plist", empty)
                 }
                 found("sent settings")
                 defaults.set(changedAt, forKey: Self.settingsAppliedKey)

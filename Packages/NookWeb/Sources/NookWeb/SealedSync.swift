@@ -3,10 +3,10 @@
 //  SealedSync.swift
 //  NookWeb
 //
-//  FORK: spaces, favorites and settings sealed with the sync passphrase, as passwords and open tabs already are, so
-//  iCloud Drive or Google Drive holds nothing it can read. Sync does not start without the key. A Mac writes "devices/<id>.enc" and "settings/<id>.enc"
-//  when it has the key. While a Mac that only reads plain files (an older Vega, or one without the passphrase) has
-//  written in the last 30 days, the plain copy is written too; after that the plain copy is replaced with an empty one.
+//  FORK: spaces, favorites and removals sealed with the sync passphrase, as passwords and open tabs already are, so
+//  iCloud Drive, Google Drive or the sync server holds nothing it can read, and nothing it writes itself is believed.
+//  Only files this key opens are read. A Mac writes "devices/<id>.enc", and an empty "devices/<id>.json" over the
+//  readable copy an older Vega wrote.
 //
 
 import CryptoKit
@@ -16,47 +16,65 @@ import NookTabsCore
 #endif
 
 public enum SealedSync {
-    static let recentDays: Double = 30
-
-    /// Other Macs' snapshots: the sealed copy when there is one this key opens, else the plain one. `plainOnly` lists
-    /// the Macs that wrote recently but never a sealed copy: while there are any, this Mac keeps a plain copy for them.
-    public static func readOthers(_ store: any SyncBlobStore, excluding own: UUID, key: SymmetricKey?,
-                                  now: Date = Date()) async throws -> (snapshots: [SyncSnapshot], pending: Int, plainOnly: Set<UUID>) {
+    /// Other Macs' snapshots that this key opens. A readable file is ignored: anyone who can write to the sync
+    /// place could have put it there.
+    public static func readOthers(_ store: any SyncBlobStore, excluding own: UUID,
+                                  key: SymmetricKey) async throws -> (snapshots: [SyncSnapshot], pending: Int) {
         let (names, pending) = try await store.list("devices")
-        var plain: [UUID: SyncSnapshot] = [:], sealed: [UUID: SyncSnapshot] = [:], hasSealedFile = Set<UUID>()
-        for name in names {
-            let isSealed = name.hasSuffix(".enc")
-            guard isSealed || name.hasSuffix(".json"), let id = UUID(uuidString: String(name.dropLast(isSealed ? 4 : 5))), id != own else { continue }
-            if isSealed { hasSealedFile.insert(id) }
-            if isSealed && key == nil { continue }
-            guard let data = try await store.get("devices/\(name)") else { continue }
-            if isSealed {
-                if let key, let opened = PasswordCrypto.open(data, with: key), let s = SyncSnapshot.decoded(opened), s.deviceID == id { sealed[id] = s }
-            } else if let s = SyncSnapshot.decoded(data), s.deviceID == id {
-                plain[id] = s
-            }
-        }
         var out: [SyncSnapshot] = []
-        for id in Set(plain.keys).union(sealed.keys) {
-            // A Mac that switched writes both for a while: the newer one counts.
-            let candidates = [sealed[id], plain[id]].compactMap { $0 }
-            if let best = candidates.max(by: { $0.writtenAt < $1.writtenAt }) { out.append(best) }
+        for name in names where name.hasSuffix(".enc") {
+            guard let id = UUID(uuidString: String(name.dropLast(4))), id != own,
+                  let data = try await store.get("devices/\(name)"), let opened = PasswordCrypto.open(data, with: key),
+                  let snapshot = SyncSnapshot.decoded(opened), snapshot.deviceID == id else { continue }
+            out.append(snapshot)
         }
-        let cutoff = now.addingTimeInterval(-recentDays * 86_400)
-        let plainOnly = Set(plain.filter { !hasSealedFile.contains($0.key) && $0.value.writtenAt > cutoff && !$0.value.spaces.isEmpty }.keys)
-        return (out, pending, plainOnly)
+        return (out, pending)
     }
 
-    /// This Mac's snapshot, always sealed: a key is required, so no readable copy can be written without one. The plain
-    /// copy is written too only while some Mac still reads only plain files.
-    public static func write(_ snapshot: SyncSnapshot, to store: any SyncBlobStore, key: SymmetricKey, plainNeeded: Bool) async throws {
+    /// This Mac's snapshot, sealed.
+    public static func write(_ snapshot: SyncSnapshot, to store: any SyncBlobStore, key: SymmetricKey) async throws {
         try await store.put("devices/\(snapshot.deviceID.uuidString).enc", PasswordCrypto.seal(snapshot.encoded(), with: key))
-        if plainNeeded {
-            try await store.writeSnapshot(snapshot)
-        } else {
-            // What the plain file held is replaced: an empty snapshot changes nothing on a Mac that reads it.
-            try await store.writeSnapshot(SyncSnapshot(deviceID: snapshot.deviceID, deviceName: snapshot.deviceName,
-                                                       writtenAt: snapshot.writtenAt, spaces: [], items: []))
+        // What a readable file held is replaced: an empty snapshot changes nothing on a Mac that reads it.
+        try await store.put("devices/\(snapshot.deviceID.uuidString).json",
+                            SyncSnapshot(deviceID: snapshot.deviceID, deviceName: snapshot.deviceName,
+                                         writtenAt: snapshot.writtenAt, spaces: [], items: []).encoded())
+    }
+
+    // MARK: - Removed Macs
+
+    /// The Mac is named inside the seal, so one Mac's marker copied under another's name removes nobody.
+    private struct Removal: Codable { var id: UUID; var removed: Bool }
+
+    /// A Mac taken out of the chain from another Mac, as "removed/<id>.enc": the others stop reading it, and it
+    /// turns its own sync off and erases what sync brought. Only a marker sealed with this key counts.
+    public static func removedDevices(_ store: any SyncBlobStore, key: SymmetricKey) async -> Set<UUID> {
+        guard let names = try? await store.list("removed").names else { return [] }
+        var out: Set<UUID> = []
+        for name in names where name.hasSuffix(".enc") {
+            guard let id = UUID(uuidString: String(name.dropLast(4))),
+                  let data = try? await store.get("removed/\(name)"), let opened = PasswordCrypto.open(data, with: key),
+                  let marker = try? JSONDecoder().decode(Removal.self, from: opened), marker.id == id, marker.removed else { continue }
+            out.insert(id)
         }
+        return out
+    }
+
+    /// Macs an older Vega removed, with a readable marker and no sealed one since. They are only left out, never
+    /// erased on that word: leaving a Mac out is no more than anyone with the sync place could do by deleting its files.
+    public static func formerlyRemoved(_ store: any SyncBlobStore) async -> Set<UUID> {
+        guard let names = try? await store.list("removed").names else { return [] }
+        var out: Set<UUID> = []
+        for name in names where name.hasSuffix(".json") && !names.contains(name.dropLast(5) + ".enc") {
+            guard let id = UUID(uuidString: String(name.dropLast(5))), let data = try? await store.get("removed/\(name)"),
+                  (try? JSONDecoder().decode([String: Bool].self, from: data))?["removed"] == true else { continue }
+            out.insert(id)
+        }
+        return out
+    }
+
+    /// Writing `removed: false` over a marker lets the Mac join again.
+    public static func setRemoved(_ id: UUID, _ removed: Bool, in store: any SyncBlobStore, key: SymmetricKey) async throws {
+        try await store.put("removed/\(id.uuidString).enc",
+                            PasswordCrypto.seal(JSONEncoder().encode(Removal(id: id, removed: removed)), with: key))
     }
 }

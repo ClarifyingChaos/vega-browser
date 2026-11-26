@@ -36,6 +36,15 @@ struct ProfileScopeCheck {
         let identity = ProfileIdentity(id: adopted, name: "Bosch")
         precondition(ProfileIdentity.decode(identity.encoded()) == identity, "profile.json round trips")
         precondition(ProfileIdentity.decode(nil) == nil && ProfileIdentity.decode(Data("not json".utf8)) == nil, "no file or a bad one is no profile")
+        // The readable file gives the ID only; a name comes from the sealed file, for that profile, while unnamed.
+        let readable = ProfileIdentity.decodePublic(identity.encoded())
+        precondition(readable?.id == adopted && readable?.name == ProfileIdentity.unnamed, "a readable name is not believed")
+        let unnamed = ProfileIdentity.unnamed
+        precondition(ProfileIdentity.nameToTake(sealed: identity, profile: adopted, current: unnamed) == "Bosch")
+        precondition(ProfileIdentity.nameToTake(sealed: identity, profile: UUID(), current: unnamed) == nil, "another profile's name")
+        precondition(ProfileIdentity.nameToTake(sealed: identity, profile: adopted, current: "Mine") == nil, "a name already chosen stays")
+        precondition(ProfileIdentity.nameToTake(sealed: nil, profile: adopted, current: unnamed) == nil)
+        precondition(ProfileIdentity.nameToTake(sealed: ProfileIdentity(id: adopted, name: unnamed), profile: adopted, current: unnamed) == nil)
         print("ProfileScopeCheck ok")
     }
 }
