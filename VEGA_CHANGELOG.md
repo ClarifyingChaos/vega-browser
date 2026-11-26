@@ -2,6 +2,24 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.14 (2026-11-27)
+
+**Update all your Macs.** Sync now believes only files sealed with your sync passphrase, so a Mac on a version that writes only readable files stops syncing, and removing a Mac erases it only once that Mac runs 1.8.14.
+
+### Fixes
+- **Site icons stay after a restart.** They were kept in the Mac's caches folder, which can be emptied, and Vega then stopped saving new ones until it was reopened. Icons are now kept with Vega's data. Any already lost come back once each page has loaded.
+- **Fullscreen video:** Play works again after pausing, and right-click no longer offers only Save and Copy Image.
+- **Large imports** from another browser no longer freeze Vega. An import is one Undo step.
+- **Import from Another Browser** shows each browser's icon in colour, and Safari import from the menu has the same steps as at first launch.
+- **Sync:** after a refused sign-in, Vega no longer retries every 2 seconds.
+
+### Privacy and security
+Reviewed before release.
+- **Spaces, tabs, settings and removed-Mac markers** are read only from files sealed with your sync passphrase. A readable file, which anyone able to write to the sync place could add, is ignored.
+- **Profile names** in the sync place are sealed. The readable file holds only a random ID.
+- **Vega Sync server:** each account is limited to 50 MB, oversized uploads are refused early, and sign-in tokens are no longer accepted in web addresses.
+- **Site icons** now stay on disk longer than before and are included in backups. Private pages still save none.
+
 ## Vega 1.8.13 (2026-11-26)
 
 ### New
