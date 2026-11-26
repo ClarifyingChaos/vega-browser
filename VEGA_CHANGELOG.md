@@ -2,6 +2,27 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.13 (2026-11-26)
+
+### New
+- **Import from Chrome:** bookmarks (into their own "Chrome" space), the last 90 days of history and your extensions, from the profile you pick. Passwords come over through the file Chrome exports.
+- **Import from Another Browser** now offers Chrome, Safari, Arc and Dia, in the menu and at first launch.
+- **Search engines:** Settings › General lists them all to pick from. Adding one offers Startpage, Qwant, Mojeek, Swisscows, Wikipedia, YouTube and GitHub in one click.
+- **Site Permissions** is redesigned: a searchable list, a page per site and Reset All.
+
+### Fixes
+- **Site Controls:** Auto-Play showed twice, and the second one and "Keep videos playing in the sidebar" did nothing. Choices made there now apply.
+- **Searches** containing &, =, +, # or ; are sent whole.
+
+### Privacy and security
+Reviewed before release.
+- **Extensions are signature-checked:** a Chrome Web Store or Edge Add-ons install or update must be signed by the key its ID comes from. A .crx file you pick from disk is not checked.
+- **Search suggestions are off** until you turn them on in Settings › General. They were on whenever Google was the search engine.
+- **New installs start private:** DuckDuckGo, HTTPS-Only Mode on, and enhanced fingerprinting protection in all windows. Existing settings are unchanged.
+- **Custom search engines** must use https and keep the search words out of the site's name.
+- **Downloaded file names** are no longer printed to the console.
+- **Chrome import** reads only on this Mac and opens no cookies, saved passwords or cards. A passwords file moves to the Trash only after every login in it is saved.
+
 ## Vega 1.8.12 (2026-11-25)
 
 ### Fixes
