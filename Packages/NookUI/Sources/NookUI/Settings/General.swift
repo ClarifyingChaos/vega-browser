@@ -31,61 +31,17 @@ public struct SettingsGeneralTab: View {
 
     public init() {}
 
-    /// The provider list, shared by both platforms' spellings of the row.
-    @ViewBuilder
-    private func searchEnginePicker(_ settings: NookSettingsService) -> some View {
-        @Bindable var settings = settings
-        Picker("Default search engine", selection: $settings.searchEngineId) {
-            ForEach(SearchProvider.allCases) { provider in
-                Text(provider.displayName).tag(provider.rawValue)
-            }
-            ForEach(nookSettings.customSearchEngines) { engine in
-                Text(engine.name).tag(engine.id.uuidString)
-            }
-        }
-    }
-
     public var body: some View {
         @Bindable var settings = nookSettings
         Form {
             SettingsHero(symbol: "gearshape", title: "General", detail: "Search engine, tabs, startup and how Vega performs.")
 
             Section {
-                #if os(macOS)
-                LabeledContent("Default search engine") {
-                    HStack(spacing: NookDesign.Spacing.md) {
-                        searchEnginePicker(settings)
-                            .labelsHidden()
-
-                        Button {
-                            showingAddEngine = true
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                }
-                #else
-                // A picker inside a LabeledContent's trailing slot gets squeezed
-                // to "G...gle" at phone width. The Form's own picker row does not,
-                // so the add button takes a row of its own.
-                searchEnginePicker(settings)
-                Button("Add Search Engine…") { showingAddEngine = true }
-                #endif
-
-                if let selected = nookSettings.customSearchEngines.first(where: { $0.id.uuidString == nookSettings.searchEngineId }) {
-                    LabeledContent {
-                        Button("Remove") {
-                            nookSettings.customSearchEngines.removeAll { $0.id == selected.id }
-                            nookSettings.searchEngineId = SearchProvider.google.rawValue
-                        }
-                        .foregroundStyle(.red)
-                        .buttonStyle(.plain)
-                    } label: {
-                        Text(selected.name)
-                            .foregroundStyle(.secondary)
-                    }
+                SearchEngineList()
+                Button("Add Search Engine\u{2026}", nookIcon: "plus") { showingAddEngine = true }
+                Toggle(isOn: $settings.searchSuggestionsEnabled) {
+                    Text("Search suggestions")
+                    Text("Sends what you type to the engine. Never in private windows. Google only for now.")
                 }
             } header: {
                 Text("Search")
@@ -241,49 +197,6 @@ public struct SettingsGeneralTab: View {
                 nookSettings.customSearchEngines.append(newEngine)
             }
         }
-    }
-}
-
-// MARK: - Custom Search Engine Editor
-
-struct CustomSearchEngineEditor: View {
-    let onSave: (CustomSearchEngine) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var name: String = ""
-    @State private var urlTemplate: String = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: NookDesign.Spacing.xl) {
-            Text("Add Custom Search Engine")
-                .font(NookDesign.Font.heading)
-
-            Form {
-                Section {
-                    TextField("Name (e.g. Startpage)", text: $name)
-                    TextField("URL Template (use %@ for query)", text: $urlTemplate)
-                }
-            }
-            .formStyle(.grouped)
-
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .buttonStyle(.bordered)
-                Button("Save") {
-                    let engine = CustomSearchEngine(
-                        name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-                        urlTemplate: urlTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
-                    )
-                    onSave(engine)
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(name.isEmpty || urlTemplate.isEmpty)
-            }
-        }
-        .padding(NookDesign.Spacing.xxl)
-        .frame(width: NookDesign.Size.sheetSmallWidth)
     }
 }
 

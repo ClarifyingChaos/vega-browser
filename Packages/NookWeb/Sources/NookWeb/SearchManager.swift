@@ -333,7 +333,7 @@ public class SearchManager {
         // Every keystroke goes to the endpoint, so a private window sends none, and Google
         // only hears from people who chose Google. Unknown window or settings: send nothing.
         // ponytail: Google's endpoint only. Add per-engine endpoints if other engines want suggestions.
-        guard let window, !window.isIncognito,
+        guard let window, !window.isIncognito, tabs?.settings.searchSuggestionsEnabled == true,
               tabs?.settings.searchEngineId == SearchProvider.google.rawValue else { return [] }
         var components = URLComponents(string: "https://suggestqueries.google.com/complete/search")!
         components.queryItems = [URLQueryItem(name: "client", value: "firefox"), URLQueryItem(name: "q", value: query)]

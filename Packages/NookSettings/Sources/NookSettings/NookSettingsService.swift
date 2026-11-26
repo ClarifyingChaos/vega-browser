@@ -61,6 +61,7 @@ public final class NookSettingsService {
     private let didFinishOnboardingKey = "settings.didFinishOnboarding"
     private let tabLayoutKey = "settings.tabLayout"
     private let customSearchEnginesKey = "settings.customSearchEngines"
+    private let searchSuggestionsKey = "settings.searchSuggestions"
     private let appearanceModeKey = "settings.appearanceMode"
     private let pinnedExtensionIDsKey = "settings.pinnedExtensionIDs"
     private let developerSitesKey = "settings.developerSites"
@@ -95,6 +96,11 @@ public final class NookSettingsService {
         }
     }
 
+    /// Sends what is typed to the search engine for suggestions. Off until the person turns it on.
+    public var searchSuggestionsEnabled: Bool {
+        didSet { userDefaults.set(searchSuggestionsEnabled, forKey: searchSuggestionsKey) }
+    }
+
     public var customSearchEngines: [CustomSearchEngine] {
         didSet {
             if let data = try? JSONEncoder().encode(customSearchEngines) {
@@ -103,7 +109,7 @@ public final class NookSettingsService {
         }
     }
 
-    /// Stored per-site choices (camera, microphone, Auto-Play, sidebar video), keyed by `SitePermissionRecord.key(for:)`.
+    /// Stored per-site camera and microphone answers, keyed by `SitePermissionRecord.key(for:)`.
     public var sitePermissions: [String: SitePermissionRecord] = [:] {
         didSet {
             if let data = try? JSONEncoder().encode(sitePermissions) {
@@ -119,22 +125,6 @@ public final class NookSettingsService {
 
     public func setPermission(_ permission: SitePermission, to policy: SitePermissionPolicy, for host: String) {
         sitePermissions.update(host) { $0.policies[permission] = policy == .ask ? nil : policy }
-    }
-
-    public func autoplay(for host: String?) -> SiteAutoplay { sitePermissions.autoplay(for: host) }
-
-    public func setAutoplay(_ choice: SiteAutoplay, for host: String) {
-        sitePermissions.update(host) { $0.autoplay = choice == .allowAll ? nil : choice }
-    }
-
-    /// Whether leaving a tab on `host` moves its playing video to the sidebar.
-    public func autoPictureInPicture(for host: String?) -> Bool {
-        sitePermissions.autoPictureInPicture(for: host, fallback: autoPictureInPicture)
-    }
-
-    /// Kept only while it differs from the switch in Settings, so the site follows that again.
-    public func setAutoPictureInPicture(_ on: Bool, for host: String) {
-        sitePermissions.update(host) { $0.autoPictureInPicture = on == autoPictureInPicture ? nil : on }
     }
 
     /// Empty until `waitForBoosts()` returns on a launch: the file loads off the main thread.
@@ -196,7 +186,7 @@ public final class NookSettingsService {
         if let custom = customSearchEngines.first(where: { $0.id.uuidString == searchEngineId }) {
             return custom.urlTemplate
         }
-        return SearchProvider.google.queryTemplate
+        return SearchProvider.duckDuckGo.queryTemplate
     }
     
     public var tabManagementMode: TabManagementMode {
@@ -645,6 +635,14 @@ public final class NookSettingsService {
            userDefaults.object(forKey: adBlockerEnabledKey) == nil {
             userDefaults.set(true, forKey: adBlockerEnabledKey)
         }
+        // A new install also starts with the private choices; anyone who has run Vega keeps theirs.
+        if userDefaults.object(forKey: didFinishOnboardingKey) == nil {
+            for (key, value) in [(searchEngineKey, SearchProvider.duckDuckGo.rawValue as Any), (warnBeforeHTTPKey, true),
+                                 (enhancedFingerprintingProtectionKey, ProtectionScope.allWindows.rawValue)]
+            where userDefaults.object(forKey: key) == nil {
+                userDefaults.set(value, forKey: key)
+            }
+        }
 
         // Register default values
         userDefaults.register(defaults: [
@@ -693,6 +691,8 @@ public final class NookSettingsService {
 
         // Initialize properties from UserDefaults
         // This will use the registered defaults if no value is set
+
+        self.searchSuggestionsEnabled = userDefaults.bool(forKey: searchSuggestionsKey)
 
         // searchEngineId: backward compatible — existing "google" string still works
         self.searchEngineId = userDefaults.string(forKey: searchEngineKey) ?? SearchProvider.google.rawValue

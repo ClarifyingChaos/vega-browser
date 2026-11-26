@@ -87,8 +87,8 @@ struct WebStoreDownloader {
                 guard (response as? HTTPURLResponse)?.statusCode == 200 else {
                     throw WebStoreError.noData
                 }
-                guard let zipData = convertCRXtoZIP(data) else {
-                    throw WebStoreError.conversionFailed
+                guard let zipData = CRXVerifier.verifiedZip(data, extensionID: extensionId) else {
+                    throw WebStoreError.signatureInvalid
                 }
                 let tempFile = FileManager.default.temporaryDirectory
                     .appendingPathComponent("\(extensionId)-\(UUID().uuidString).zip")
@@ -188,7 +188,7 @@ struct WebStoreDownloader {
         return version
     }
 
-    /// Convert CRX file to ZIP by stripping the CRX header
+    /// Convert CRX file to ZIP by stripping the CRX header. For a file the person picked; store downloads go through `CRXVerifier`.
     static func convertCRXtoZIP(_ crxData: Data) -> Data? {
         guard crxData.count > 16 else { return nil }
 
@@ -217,7 +217,6 @@ struct WebStoreDownloader {
             return nil
         }
 
-        // ponytail: CRX signature is not verified; integrity rests on HTTPS to the store's update host.
         return crxData.subdata(in: zipStartOffset..<crxData.count)
     }
 }
@@ -227,6 +226,7 @@ enum WebStoreError: LocalizedError {
     case noData
     case conversionFailed
     case invalidCRX
+    case signatureInvalid
 
     var errorDescription: String? {
         switch self {
@@ -238,6 +238,8 @@ enum WebStoreError: LocalizedError {
             return "Failed to convert CRX to ZIP format"
         case .invalidCRX:
             return "Invalid CRX file format"
+        case .signatureInvalid:
+            return "The package's signature does not match this extension, so it was not installed"
         }
     }
 }

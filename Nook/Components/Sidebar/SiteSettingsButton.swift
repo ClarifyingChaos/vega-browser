@@ -74,8 +74,6 @@ private struct SiteSettingsPopover: View {
     @State private var coveringRule: String?
     @State private var camera = SitePermissionPolicy.ask
     @State private var microphone = SitePermissionPolicy.ask
-    @State private var autoplay = SiteAutoplay.allowAll
-    @State private var keepsVideo = false
 
     private let width: CGFloat = 280
 
@@ -118,18 +116,11 @@ private struct SiteSettingsPopover: View {
                                                     set: { v in SitePreferences.shared.update(host) { $0.autoplay = v == .allowAll ? nil : v } })) {
                 ForEach(SiteAutoplay.allCases, id: \.self) { Text($0.label).tag($0) }
             }
-
-            Picker("Auto-Play", selection: Binding(get: { autoplay }, set: {
-                autoplay = $0
-                nookSettings.setAutoplay($0, for: host)
-            })) {
-                ForEach(SiteAutoplay.allCases, id: \.self) { Text($0.label).tag($0) }
-            }
             .pickerStyle(.menu)
 
-            Toggle("Keep videos playing in the sidebar", isOn: Binding(get: { sidebarVideoAllowed && keepsVideo }, set: {
-                keepsVideo = $0
-                nookSettings.setAutoPictureInPicture($0, for: host)
+            Toggle("Keep videos playing in the sidebar", isOn: Binding(get: { sidebarVideoAllowed && keepsVideo }, set: { on in
+                // Kept only while it differs from the switch in Settings, so the site follows that again.
+                SitePreferences.shared.update(host) { $0.autoPiP = on == nookSettings.autoPictureInPicture ? nil : on }
             }))
             .disabled(!sidebarVideoAllowed)
 
@@ -143,10 +134,10 @@ private struct SiteSettingsPopover: View {
             coveringRule = AllowlistRule.covering(host, in: nookSettings.adBlockerWhitelist)
             camera = nookSettings.permission(.camera, for: host)
             microphone = nookSettings.permission(.microphone, for: host)
-            autoplay = nookSettings.autoplay(for: host)
-            keepsVideo = nookSettings.autoPictureInPicture(for: host)
         }
     }
+
+    private var keepsVideo: Bool { SitePreferences.shared.prefs(for: host).autoPiP ?? nookSettings.autoPictureInPicture }
 
     private func setBlocksAds(_ on: Bool) {
         browserManager.contentBlockerManager.allowDomain(coveringRule ?? host.lowercased(), allowed: !on)

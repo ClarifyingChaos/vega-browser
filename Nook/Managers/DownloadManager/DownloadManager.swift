@@ -169,21 +169,11 @@ public class Download: Identifiable {
             return
         }
 
-        #if DEBUG
-        print("Loading thumbnail for: \(destinationURL.lastPathComponent)")
-        #endif
-
         if shouldGenerateThumbnail(for: destinationURL) {
             if let thumbnail = await getQuickLookThumbnail(for: destinationURL, size: size) {
                 downloadThumbnail = thumbnail
-                #if DEBUG
-                print("QuickLook thumbnail loaded for: \(destinationURL.lastPathComponent)")
-                #endif
                 return
             }
-            #if DEBUG
-            print("QuickLook thumbnail failed, falling back to Finder icon for: \(destinationURL.lastPathComponent)")
-            #endif
         }
 
         let finderIcon = NSWorkspace.shared.icon(forFile: destinationURL.path)
@@ -199,9 +189,6 @@ public class Download: Identifiable {
         highResIcon.unlockFocus()
 
         downloadThumbnail = highResIcon
-        #if DEBUG
-        print("Finder icon loaded for: \(destinationURL.lastPathComponent)")
-        #endif
     }
 
     private func shouldGenerateThumbnail(for fileURL: URL) -> Bool {
@@ -417,10 +404,6 @@ public class DownloadManager: NSObject {
             downloadModel.launchPoint = page.contains(pointer) ? pointer : NSPoint(x: page.midX, y: page.midY)
         }
 
-        #if DEBUG
-        print("Added download: \(suggestedFilename) with ID: \(downloadModel.id)")
-        print("Download delegate set: \(download.delegate != nil)")
-        #endif
         return downloadModel
     }
 
@@ -496,9 +479,6 @@ public class DownloadManager: NSObject {
         updateDownloadState(id, state: .cancelled)
         download.resumeData = nil
         download.download?.cancel()
-        #if DEBUG
-        print("Cancelled download: \(download.suggestedFilename)")
-        #endif
     }
 
     // MARK: - Download Updates
@@ -524,15 +504,8 @@ public class DownloadManager: NSObject {
 
     func updateDownloadState(_ id: UUID, state: Download.DownloadState, error: Error? = nil) {
         guard let download = downloads[id] else {
-            #if DEBUG
-            print("Download not found for ID: \(id)")
-            #endif
             return
         }
-
-        #if DEBUG
-        print("Updating download state to \(state.description) for \(download.suggestedFilename)")
-        #endif
 
         guard download.state == .pending || download.state == .downloading else { return }
         let started = download.state == .pending && state == .downloading
@@ -559,13 +532,6 @@ public class DownloadManager: NSObject {
             download.estimatedTimeRemaining = 0
         }
 
-        #if DEBUG
-        if state == .completed {
-            print("Download completed: \(download.suggestedFilename)")
-        } else if state == .failed {
-            print("Download failed: \(download.suggestedFilename) - \(error?.localizedDescription ?? "Unknown error")")
-        }
-        #endif
     }
 
     /// Writes bytes Nook already holds into Downloads and lists them as a finished download, with
@@ -823,9 +789,6 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
                     self.configureDownload(for: url, response: response)
                     completion(.proceed(url))
                 } else {
-                    #if DEBUG
-                    print("Download cancelled by user")
-                    #endif
                     self.downloadManager?.updateDownloadState(self.download.id, state: .cancelled)
                     completion(.cancel)
                 }
@@ -835,9 +798,6 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
 
     private func configureDownload(for destination: URL, response: URLResponse) {
         let fileSize = response.expectedContentLength
-        #if DEBUG
-        print("Download destination set: \(destination.path) with fileSize: \(fileSize) bytes")
-        #endif
         downloadManager?.updateDownloadProgress(download.id, progress: 0.0, downloadedBytes: 0, fileSize: fileSize > 0 ? fileSize : nil)
         downloadManager?.updateDownloadState(download.id, state: .downloading)
         downloadManager?.setDownloadDestination(download.id, destination: destination)
@@ -902,10 +862,6 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
     }
 
     func downloadDidFinish(_: WKDownload) {
-        #if DEBUG
-        print("Download finished: \(download.suggestedFilename)")
-        #endif
-
         publishProgress()
 
         // Set quarantine attribute so Gatekeeper warns about downloaded executables
@@ -919,9 +875,6 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
     func download(_: WKDownload, didFailWithError error: Error, resumeData _: Data?) {
         // FORK: pausing cancels the WKDownload; that is not a failure.
         guard download.state != .paused else { return }
-        #if DEBUG
-        print("Download failed: \(download.suggestedFilename) - \(error.localizedDescription)")
-        #endif
         downloadManager?.updateDownloadState(download.id, state: .failed, error: error)
     }
 

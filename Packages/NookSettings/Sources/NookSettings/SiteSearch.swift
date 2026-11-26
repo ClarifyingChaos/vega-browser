@@ -20,6 +20,37 @@ public struct CustomSearchEngine: Codable, Identifiable, Equatable, Sendable {
         self.name = name
         self.urlTemplate = urlTemplate
     }
+
+    public enum TemplateError: String, Error {
+        case notHTTPS = "Only https:// addresses are allowed, so searches stay encrypted."
+        case noPlaceholder = "Add %s where the search words go."
+        case invalid = "That is not a valid address."
+    }
+
+    /// The stored spelling (`%@`) of a typed search address. Search words must travel encrypted.
+    public static func template(from input: String) -> Result<String, TemplateError> {
+        let typed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard typed.lowercased().hasPrefix("https://") else { return .failure(.notHTTPS) }
+        let template = typed.replacingOccurrences(of: "%s", with: "%@")
+        guard template.contains("%@") else { return .failure(.noPlaceholder) }
+        let sample = template.replacingOccurrences(of: "%@", with: "x")
+        // The words may not choose the site: a placeholder in the host would send each search somewhere else.
+        guard !typed.contains(where: \.isWhitespace), let url = URLComponents(string: sample), let host = url.host, !host.isEmpty,
+              url.user == nil, URLComponents(string: template.replacingOccurrences(of: "%@", with: "y"))?.host == host
+        else { return .failure(.invalid) }
+        return .success(template)
+    }
+
+    /// One-click choices offered in the Add Search Engine sheet.
+    public static let popular: [(name: String, template: String)] = [
+        ("Startpage", "https://www.startpage.com/sp/search?query=%s"),
+        ("Qwant", "https://www.qwant.com/?q=%s"),
+        ("Mojeek", "https://www.mojeek.com/search?q=%s"),
+        ("Swisscows", "https://swisscows.com/en/web?query=%s"),
+        ("Wikipedia", "https://en.wikipedia.org/w/index.php?search=%s"),
+        ("YouTube", "https://www.youtube.com/results?search_query=%s"),
+        ("GitHub", "https://github.com/search?q=%s"),
+    ]
 }
 
 // MARK: - Site Search Entry

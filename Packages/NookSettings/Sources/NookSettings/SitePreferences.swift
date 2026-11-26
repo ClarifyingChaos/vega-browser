@@ -78,6 +78,21 @@ public final class SitePreferences {
         save()
     }
 
+    /// Moves Auto-Play and sidebar video choices out of the permission records, where playback never read them.
+    /// A choice already made here wins.
+    public func adopt(_ records: inout [String: SitePermissionRecord]) {
+        for (host, record) in records where record.autoplay != nil || record.autoPictureInPicture != nil {
+            update(host) {
+                $0.autoplay = $0.autoplay ?? record.autoplay
+                $0.autoPiP = $0.autoPiP ?? record.autoPictureInPicture
+            }
+            records.update(host) {
+                $0.autoplay = nil
+                $0.autoPictureInPicture = nil
+            }
+        }
+    }
+
     /// Forgets everything stored for the site.
     public func reset(_ host: String?) {
         guard let key = Self.key(for: host), sites[key] != nil else { return }

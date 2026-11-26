@@ -514,6 +514,7 @@ class BrowserManager: ObservableObject {
         // about 190 ms later. NookApp's own call then finds it already under way.
         self.contentBlockerManager.setEnabled(settings.adBlockerEnabled)
         self.contentBlockerManager.prepareLinkCleaning()
+        SitePreferences.shared.adopt(&settings.sitePermissions)
         self.siteRoutingManager.host = self
         SocialImageTweaks.downloader = self
         // Note: tracking protection will be configured after settingsManager injection

@@ -54,9 +54,8 @@ public enum SiteAutoplay: String, Codable, CaseIterable, Sendable {
 public struct SitePermissionRecord: Codable, Equatable, Sendable {
     public var host: String
     public var policies: [SitePermission: SitePermissionPolicy]
-    /// Nil is `.allowAll`. An older build ignores this and the next field, and drops them on save.
+    /// 1.8.x saved this and the next field here, where nothing read them. `SitePreferences.adopt` moves them out.
     public var autoplay: SiteAutoplay?
-    /// Whether leaving a tab moves its playing video to the sidebar. Nil follows Settings.
     public var autoPictureInPicture: Bool?
 
     public init(host: String, policies: [SitePermission: SitePermissionPolicy] = [:]) {
@@ -74,15 +73,6 @@ public struct SitePermissionRecord: Codable, Equatable, Sendable {
 }
 
 extension Dictionary where Key == String, Value == SitePermissionRecord {
-    public func autoplay(for host: String?) -> SiteAutoplay {
-        host.flatMap { self[SitePermissionRecord.key(for: $0)]?.autoplay } ?? .allowAll
-    }
-
-    /// The site's own choice, else `fallback`, the switch in Settings.
-    public func autoPictureInPicture(for host: String?, fallback: Bool) -> Bool {
-        host.flatMap { self[SitePermissionRecord.key(for: $0)]?.autoPictureInPicture } ?? fallback
-    }
-
     /// Changes one site's record, and drops it once it holds nothing so the store does not grow forever.
     public mutating func update(_ host: String, _ change: (inout SitePermissionRecord) -> Void) {
         let key = SitePermissionRecord.key(for: host)
