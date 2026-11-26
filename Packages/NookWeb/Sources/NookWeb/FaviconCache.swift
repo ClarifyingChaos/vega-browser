@@ -4,9 +4,9 @@
 //  Nook
 //
 //  Global favicon cache, shared across profiles by design to raise the hit rate and avoid
-//  duplicate downloads. Memory LRU of 200 entries plus a disk cache at
-//  ~/Library/Caches/FaviconCache/{key}.png that survives relaunch. Disk I/O runs on a
-//  background queue.
+//  duplicate downloads. Memory LRU of 200 entries plus icons on disk at
+//  ~/Library/Application Support/{bundle ID}/Favicons/{key}.png that survive relaunch. Disk I/O
+//  runs on a background queue.
 //
 
 import CryptoKit
@@ -30,17 +30,29 @@ public final class FaviconCache: @unchecked Sendable {
     private let queue = DispatchQueue(label: "favicon.cache", attributes: .concurrent)
 
     public let directory: URL = {
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        // FORK: Vega's own folder. "FaviconCache" was shared with Nook's builds and held icons saved by older rules (a
-        // favorite could keep another site's icon), so every icon is fetched once more under the current ones.
-        let base = caches.appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.vega.browser", isDirectory: true)
-        // "FaviconCache" held icons saved one per site, some from another page of it or a page it went on to (Google
-        // showing Meet's icon). Page-keyed icons start in a new folder and the old one goes.
-        try? FileManager.default.removeItem(at: base.appendingPathComponent("FaviconCache", isDirectory: true))
-        let dir = base.appendingPathComponent("Favicons", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir
+        let files = FileManager.default
+        // A command-line check has no bundle ID and must not touch the real app's folders.
+        guard let id = Bundle.main.bundleIdentifier else {
+            return files.temporaryDirectory.appendingPathComponent("vega-favicon-check", isDirectory: true)
+        }
+        return prepare(support: files.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent(id, isDirectory: true),
+                       caches: files.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent(id, isDirectory: true))
     }()
+
+    /// FORK: icons live in Application Support, not Caches: macOS and cleaner apps may empty Caches, and every favorite
+    /// and tab then showed a globe until its page loaded again. Icons an older Vega saved in Caches move over once.
+    static func prepare(support: URL, caches: URL) -> URL {
+        let files = FileManager.default
+        // "FaviconCache" held icons saved one per site, some from another page of it or a page it went on to (Google
+        // showing Meet's icon). Page-keyed icons have their own folder and the old one goes.
+        try? files.removeItem(at: caches.appendingPathComponent("FaviconCache", isDirectory: true))
+        let dir = support.appendingPathComponent("Favicons", isDirectory: true)
+        try? files.createDirectory(at: support, withIntermediateDirectories: true)
+        // Fails, harmlessly, when there is nothing to move or the new folder is already there.
+        try? files.moveItem(at: caches.appendingPathComponent("Favicons", isDirectory: true), to: dir)
+        try? files.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
 
     private init() {}
 
@@ -221,6 +233,8 @@ public final class FaviconCache: @unchecked Sendable {
         guard let png = image.pngData() else { return }
         let url = fileURL(key)
         queue.async(flags: .barrier) {
+            // The folder can be removed while Vega runs; without this every later write failed unseen.
+            try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
             // Atomic, so a crash mid-write cannot leave a cut-off PNG.
             try? png.write(to: url, options: .atomic)
             self.storesSinceTrim += 1

@@ -940,7 +940,7 @@ public final class PageSession: NSObject, Identifiable {
         // Last resort: the root /favicon.ico (for sites whose <link> targets return 403).
         if let rootFaviconURL = URL(string: "/favicon.ico", relativeTo: url)?.absoluteURL,
            let nsImage = await Self.downloadImage(from: rootFaviconURL, isPrivate: isPrivate) {
-            // A private page's host must not reach ~/Library/Caches/FaviconCache.
+            // A private page's host must not reach the favicon folder.
             let key = FaviconCache.shared.store(nsImage, forPage: url, toDisk: !isPrivate)
             show(key.flatMap { FaviconCache.shared.image(for: $0) } ?? nsImage, for: url)
             return

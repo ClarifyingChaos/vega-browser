@@ -65,7 +65,7 @@ extension PageSession {
             return true
         }
         // Kept for this page (and its site, when it is the site's first or its root). A private page's host must not
-        // reach ~/Library/Caches/FaviconCache.
+        // reach the favicon folder.
         let key = FaviconCache.shared.store(icon, forPage: pageURL, toDisk: !isPrivate)
         show(key.flatMap { FaviconCache.shared.image(for: $0) } ?? icon, for: pageURL)
         return true

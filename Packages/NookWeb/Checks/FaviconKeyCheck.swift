@@ -95,6 +95,29 @@ struct FaviconKeyCheck {
         // The root setting a new site icon unsettles the pages that shared the old one.
         cache.store(dot(.purple), forPage: u("https://d.check/"), toDisk: false)
         precondition(!cache.isSettled("d.check", for: u("https://d.check/other")))
+
+        // Icons are kept outside Caches; what an older Vega saved there moves over.
+        let files = FileManager.default
+        let root = files.temporaryDirectory.appendingPathComponent("vega-favicon-move-\(UUID().uuidString)")
+        defer { try? files.removeItem(at: root) }
+        let support = root.appendingPathComponent("support"), caches = root.appendingPathComponent("caches")
+        let old = caches.appendingPathComponent("Favicons")
+        try! files.createDirectory(at: old, withIntermediateDirectories: true)
+        try! Data("icon".utf8).write(to: old.appendingPathComponent("kept.png"))
+        let moved = FaviconCache.prepare(support: support, caches: caches)
+        precondition(moved.path == support.appendingPathComponent("Favicons").path)
+        precondition(files.fileExists(atPath: moved.appendingPathComponent("kept.png").path), "old icons move over")
+        precondition(FaviconCache.prepare(support: support, caches: caches) == moved)
+        precondition(files.fileExists(atPath: moved.appendingPathComponent("kept.png").path), "a second launch keeps them")
+
+        // The folder removed while Vega runs: the next icon still reaches the disk.
+        precondition(!cache.directory.path.contains("com.vega.browser"), "a check never touches the real folder")
+        try? files.removeItem(at: cache.directory)
+        cache.store(dot(.red), for: "after.check")
+        let written = cache.directory.appendingPathComponent(cache.fileName("after.check")).path
+        for _ in 0..<100 where !files.fileExists(atPath: written) { Thread.sleep(forTimeInterval: 0.02) }
+        precondition(files.fileExists(atPath: written), "written after the folder was removed")
+        try? files.removeItem(at: cache.directory)
         print("FaviconKeyCheck ok")
     }
 }
