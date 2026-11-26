@@ -2,6 +2,15 @@
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.15 (2026-11-27)
+
+### Changes
+- **Live Folders are removed** (GitHub pull requests, issues and notifications, Asana tasks and feed folders). A folder you made this way stays, as an ordinary folder with its tabs, and no longer updates. Hover previews are unchanged.
+
+### Privacy and security
+Reviewed before release.
+- Vega no longer reads your GitHub or Asana sign-in to fill folders, or fetches feeds in the background. The pull request card on a github.com favorite still uses your GitHub sign-in when you rest the pointer on it; turn it off in Settings › Appearance.
+
 ## Vega 1.8.14 (2026-11-27)
 
 **Update all your Macs.** Sync now believes only files sealed with your sync passphrase, so a Mac on a version that writes only readable files stops syncing, and removing a Mac erases it only once that Mac runs 1.8.14.
