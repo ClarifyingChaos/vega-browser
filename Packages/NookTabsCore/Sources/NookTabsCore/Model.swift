@@ -61,28 +61,11 @@ public enum ItemKind: Codable, Hashable, Sendable {
     case folder
 }
 
-/// What fills a live folder. A struct, so a source a newer build adds still decodes here.
+/// What filled a live folder, a feature Vega no longer has. Kept so a folder that carries it keeps it through
+/// saving and sync with a Mac that still has the feature.
 public struct LiveSource: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
-
-    /// The person's open pull requests on github.com.
-    public static let githubPulls = LiveSource(rawValue: "githubPulls")
-    /// Open issues assigned to the person on github.com.
-    public static let githubIssues = LiveSource(rawValue: "githubIssues")
-    /// Unread github.com notification threads.
-    public static let githubNotifications = LiveSource(rawValue: "githubNotifications")
-    /// The person's incomplete Asana tasks.
-    public static let asanaTasks = LiveSource(rawValue: "asanaTasks")
-
-    /// An RSS or Atom feed, stored as "feed:<absolute url>".
-    public static func feed(_ url: URL) -> LiveSource { LiveSource(rawValue: "feed:" + url.absoluteString) }
-
-    public var feedURL: URL? {
-        guard rawValue.hasPrefix("feed:"), let url = URL(string: String(rawValue.dropFirst(5))),
-              url.scheme == "http" || url.scheme == "https", url.host != nil else { return nil }
-        return url
-    }
 }
 
 public struct Item: Identifiable, Codable, Hashable, Sendable {
@@ -93,7 +76,7 @@ public struct Item: Identifiable, Codable, Hashable, Sendable {
     public var customTitle: String?
     public var modifiedAt: Date
     public var deletedAt: Date?
-    /// Set on a folder whose tabs follow a source (`reconcileLive`).
+    /// Unused here; see `LiveSource`.
     public var live: LiveSource?
 
     public init(id: UUID = UUID(), parent: Parent, order: OrderKey, kind: ItemKind, customTitle: String? = nil, modifiedAt: Date = Date(), deletedAt: Date? = nil, live: LiveSource? = nil) {

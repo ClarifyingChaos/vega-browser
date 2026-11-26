@@ -116,23 +116,6 @@ struct SidebarBottomBar: View {
                 }
             }
 
-            Menu {
-                ForEach(LiveFolderMenuItem.all, id: \.title) { entry in
-                    Button(entry.title, systemImage: entry.symbol) {
-                        if let spaceID = windowState.spaceID {
-                            tabs.createLiveFolder(entry.source, in: spaceID)
-                        }
-                    }
-                }
-                Button("New Feed Folder…", systemImage: "dot.radiowaves.up.forward") {
-                    if let spaceID = windowState.spaceID {
-                        browserManager.presentFeedFolderPrompt(in: spaceID)
-                    }
-                }
-            } label: {
-                Label("New Live Folder", systemImage: "folder.badge.gearshape")
-            }
-
             Divider()
 
             Button("New Boost", nookIcon: "wand.and.stars") {
@@ -177,20 +160,6 @@ struct SidebarBottomBar: View {
         guard let url = tabs.selectedSession(in: windowState)?.url else { return false }
         return url.scheme == "http" || url.scheme == "https"
     }
-}
-
-/// The live folder sources the sidebar's create menus offer, besides feeds.
-struct LiveFolderMenuItem {
-    let title: String
-    let symbol: String
-    let source: LiveSource
-
-    static let all = [
-        LiveFolderMenuItem(title: "New Pull Requests Folder", symbol: "arrow.triangle.pull", source: .githubPulls),
-        LiveFolderMenuItem(title: "New Issues Folder", symbol: "smallcircle.filled.circle", source: .githubIssues),
-        LiveFolderMenuItem(title: "New Notifications Folder", symbol: "bell", source: .githubNotifications),
-        LiveFolderMenuItem(title: "New Asana Tasks Folder", symbol: "checkmark.circle", source: .asanaTasks),
-    ]
 }
 
 /// Vega's AI mark from the brand sheet: four pixels around an empty centre, on a 3 x 3 grid.

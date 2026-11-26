@@ -350,25 +350,6 @@ struct SpacesSideBarView: View {
                 Label("New Folder", nookIcon: "folder.badge.plus")
             }
 
-            if !windowState.isIncognito {
-                ForEach(LiveFolderMenuItem.all, id: \.title) { entry in
-                    Button {
-                        if let spaceID = windowState.spaceID {
-                            tabs.createLiveFolder(entry.source, in: spaceID)
-                        }
-                    } label: {
-                        Label(entry.title, systemImage: entry.symbol)
-                    }
-                }
-                Button {
-                    if let spaceID = windowState.spaceID {
-                        browserManager.presentFeedFolderPrompt(in: spaceID)
-                    }
-                } label: {
-                    Label("New Feed Folder…", systemImage: "dot.radiowaves.up.forward")
-                }
-            }
-
             // FORK: features that otherwise live only in the menu bar.
             Divider()
             Button { EaselManager.shared.newEasel() } label: { Label("New Easel", nookIcon: "scribble.variable") }

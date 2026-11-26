@@ -48,10 +48,6 @@ public final class TabsController {
     /// Open folders of private windows, kept apart so their ids never reach device.json.
     private var privateOpenFolders: Set<UUID> = []
     private var privateCollapsedPinned: Set<UUID> = []
-    /// Live folders whose last refresh failed, and why. No entry when it worked.
-    public internal(set) var liveStatus: [UUID: LiveFolderStatus] = [:]
-    @ObservationIgnored var liveRefreshed: [UUID: Date] = [:]
-    @ObservationIgnored var liveRefreshing: Set<UUID> = []
     /// Tabs Air Traffic Control opened from a page, and that page's tab: Back returns there.
     public var routedFrom: [UUID: UUID] = [:]
     /// The tab DevMCP page tools act on, in the Agent space (see `TabsController+Agent.swift`).
@@ -180,7 +176,6 @@ public final class TabsController {
         }
         NotificationCenter.default.addObserver(forName: appDidBecomeActive, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.refreshLiveFolders()
                 self?.archiveIdleTabs()
             }
         }
@@ -673,7 +668,6 @@ public final class TabsController {
 
     private func applyPageCommitted(itemID: UUID, url: URL) {
         guard let owner = owner(ofItem: itemID) else { return }
-        if case .main = owner { livePageCommitted(url, itemID: itemID) }
         guard tree(owner).scope(of: itemID) == .synced else {
             // didCommit, didFinish and SPA reports repeat the same URL; an unchanged one must not republish the tree.
             if case .tab(let current, _) = tree(owner).item(itemID)?.kind, current == url { return }
@@ -715,7 +709,6 @@ public final class TabsController {
         case .main:
             if open { device.openFolders.insert(folderID) } else { device.openFolders.remove(folderID) }
             save()
-            if open { refreshLiveFolder(folderID) }
         case .privateWindow:
             if open { privateOpenFolders.insert(folderID) } else { privateOpenFolders.remove(folderID) }
         }
@@ -733,14 +726,6 @@ public final class TabsController {
         case .privateWindow:
             if collapsed { privateCollapsedPinned.insert(spaceID) } else { privateCollapsedPinned.remove(spaceID) }
         }
-    }
-
-    func setLiveDismissed(_ folderID: UUID, _ urls: Set<URL>) {
-        guard (device.liveDismissed?[folderID] ?? []) != urls else { return }
-        var all = device.liveDismissed ?? [:]
-        all[folderID] = urls.isEmpty ? nil : urls
-        device.liveDismissed = all
-        save()
     }
 
     func recordClosed(_ entry: ClosedEntry) {
@@ -798,7 +783,6 @@ public final class TabsController {
         if window.spaceID == nil {
             window.spaceID = tree.orderedSpaces.first?.id
         }
-        refreshLiveFolders()
         if let spaceID = window.spaceID, window.selectedItemBySpace[spaceID] == nil,
            let first = displayOrder(in: window).first {
             window.selectedItemBySpace[spaceID] = first

@@ -48,19 +48,6 @@ extension BrowserManager: TabActions {
         )
     }
 
-    /// Asks for a feed URL and adds a live feed folder to the space's pinned section.
-    func presentFeedFolderPrompt(in spaceID: UUID) {
-        dialogManager.showDialog(
-            FeedFolderDialog(
-                onAdd: { [weak self] url in
-                    self?.tabs.createLiveFolder(.feed(url), in: spaceID)
-                    self?.dialogManager.closeDialog()
-                },
-                onCancel: { [weak self] in self?.dialogManager.closeDialog() }
-            )
-        )
-    }
-
     func presentSpaceCreation(onCreate:@escaping (String, String) -> Void) {
         dialogManager.showDialog(
             SpaceCreationDialog(
