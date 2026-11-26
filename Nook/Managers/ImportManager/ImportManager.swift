@@ -72,6 +72,21 @@ class ImportManager: ObservableObject {
         return nil
     }
 
+    func chromeProfiles() -> [ChromeProfile] { readChromeProfiles(in: chromeDirectory) }
+
+    /// Web Store extensions enabled in one Chrome profile, described from the copy Chrome keeps of each.
+    func chromeExtensions(_ profile: ChromeProfile) -> [ExtensionOffer] {
+        let preferences = ["Secure Preferences", "Preferences"].compactMap { try? Data(contentsOf: profile.directory.appendingPathComponent($0)) }
+        return parseChromiumExtensionIDs(preferences).map { id in
+            Self.chromiumExtension(id, in: profile.directory)
+                ?? ExtensionOffer(id: id, name: id, version: "", icon: nil, package: .store(.chrome))
+        }
+    }
+
+    private var chromeDirectory: URL {
+        URL(fileURLWithPath: NSString(string: "~/Library/Application Support/Google/Chrome").expandingTildeInPath)
+    }
+
     /// Arc's member card, with the person's Arc name added, as a JSON object.
     func arcMembershipCard() -> Data? {
         guard let data = try? Data(contentsOf: arcDirectory.appendingPathComponent("StorableMembershipCard.json")),

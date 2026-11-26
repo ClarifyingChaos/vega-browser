@@ -16,9 +16,12 @@ struct OnboardingView: View {
     @ObservedObject private var extensionManager = ExtensionManager.shared
 
     @State private var currentStage: Int = 0
-    @State private var selectedBrowser: Browsers = .arc
+    @State private var selectedBrowser = ImportSource.firstAvailable
     @State private var isLoading: Bool = false
     @State private var showSafariImportFlow: Bool = false
+    @State private var showChromeImport = false
+    /// What Chrome brought over, while its finished card shows.
+    @State private var chromeSummary: String?
     @State private var extensionChoices: [ExtensionChoice] = []
     @State private var isFindingExtensions = false
 
@@ -69,7 +72,7 @@ struct OnboardingView: View {
     }
 
     private var showsOwnButtons: Bool {
-        showSafariImportFlow || currentStage == 3
+        showSafariImportFlow || showChromeImport || currentStage == 3
     }
 
     private var isInstallingExtensions: Bool {
@@ -78,7 +81,22 @@ struct OnboardingView: View {
 
     @ViewBuilder
     private var stageView: some View {
-        if showSafariImportFlow {
+        if showChromeImport {
+            DialogCard {
+                ImportScroll {
+                    if let chromeSummary {
+                        ImportFinishedPanel(source: .chrome, summary: chromeSummary, hasExtensions: !extensionChoices.isEmpty,
+                                            onDone: { closeChromeImport(review: false) }, onReview: { closeChromeImport(review: true) })
+                    } else {
+                        ChromeImportPanel(onBack: { withAnimation(.easeInOut(duration: 0.25)) { showChromeImport = false } }) { summary, choices in
+                            extensionChoices = choices
+                            chromeSummary = summary
+                        }
+                    }
+                }
+            }
+            .environmentObject(browserManager.gradientColorManager)
+        } else if showSafariImportFlow {
             SafariImportFlow(
                 isLoading: $isLoading,
                 onBack: {
@@ -115,7 +133,12 @@ struct OnboardingView: View {
             return
         }
 
-        if currentStage == 2 && selectedBrowser == .safari {
+        if currentStage == 2 && selectedBrowser == .chrome {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                chromeSummary = nil
+                showChromeImport = true
+            }
+        } else if currentStage == 2 && selectedBrowser == .safari {
             withAnimation(.easeInOut(duration: 0.25)) {
                 showSafariImportFlow = true
             }
@@ -146,6 +169,13 @@ struct OnboardingView: View {
             await MainActor.run {
                 completion()
             }
+        }
+    }
+
+    private func closeChromeImport(review: Bool) {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showChromeImport = false
+            currentStage = review ? 3 : 4
         }
     }
 

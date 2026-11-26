@@ -9,75 +9,132 @@
 
 import AppKit
 import NookDesign
+import NookUI
 import SwiftUI
 
-struct BrowserImportDialog: DialogPresentable {
+struct BrowserImportDialog: View {
     @EnvironmentObject private var browserManager: BrowserManager
     let onCancel: () -> Void
 
-    init(
-        onCancel: @escaping () -> Void
-    ) {
-        self.onCancel = onCancel
+    private enum Step {
+        case pick, chrome, working
+        case finished(ImportSource, String, [ExtensionChoice])
     }
 
-    func dialogHeader() -> DialogHeader {
-        DialogHeader(
-            icon: "square.and.arrow.down.on.square",
-            title: "Import your essentials",
-            subtitle: "We can import your spaces, tabs and folders from Arc."
-        )
+    @State private var step = Step.pick
+    @State private var source = ImportSource.firstAvailable
+
+    var body: some View {
+        DialogCard {
+            ImportScroll {
+                switch step {
+                case .pick: picker
+                case .chrome:
+                    ChromeImportPanel(onBack: { step = .pick }) { step = .finished(.chrome, $0, $1) }
+                case .working:
+                    ProgressView("Importing\u{2026}").frame(maxWidth: .infinity).padding(NookDesign.Spacing.xxl)
+                case .finished(let source, let summary, let choices):
+                    ImportFinishedPanel(source: source, summary: summary, hasExtensions: !choices.isEmpty,
+                                        onDone: onCancel) { review(choices) }
+                }
+            }
+            .padding(NookDesign.Spacing.xs)
+        }
+        .padding(.vertical, NookDesign.Spacing.lg)
+        .environmentObject(browserManager.gradientColorManager)
     }
 
-    @ViewBuilder
-    func dialogContent() -> some View {
-        Text("Brings over spaces, tabs, folders, favorites, extensions, Air Traffic Control rules and the last 30 days of archived tabs. Passwords and history stay in Arc.")
-            .font(NookDesign.Font.body)
+    private var picker: some View {
+        VStack(alignment: .leading, spacing: NookDesign.Spacing.xl) {
+            HStack(spacing: NookDesign.Spacing.xl) {
+                NookSymbol("square.and.arrow.down", size: 22)
+                    .frame(width: 44, height: 44)
+                    .background(NookDesign.Radius.shape(NookDesign.Radius.lg).fill(NookDesign.Surface.fillPressed))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
+                    Text("Import your essentials").font(NookDesign.Font.heading)
+                    Text("Choose the browser you are coming from.").font(NookDesign.Font.secondary).foregroundStyle(.secondary)
+                }
+            }
+            BrowserPicker(selection: $source)
+            HStack(spacing: NookDesign.Spacing.md) {
+                NookSymbol("shield.lefthalf.filled", size: 16).accessibilityHidden(true)
+                Text("Everything is read on this Mac. Nothing is uploaded.")
+            }
+            .font(NookDesign.Font.caption)
             .foregroundStyle(.secondary)
+            HStack(spacing: NookDesign.Spacing.md) {
+                Button("Maybe later", action: onCancel)
+                    .buttonStyle(DialogButtonStyle(variant: .secondary))
+                    .keyboardShortcut(.cancelAction)
+                Button("Continue", action: start)
+                    .buttonStyle(DialogButtonStyle(variant: .primary))
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!source.isAvailable)
+            }
+            .frame(maxWidth: .infinity)
+        }
     }
 
-    func dialogFooter() -> DialogFooter {
-        DialogFooter(
-            rightButtons: [
-                DialogButton(
-                    text: "Maybe later",
-                    variant: .secondary,
-                    keyboardShortcut: .escape,
-                    action: onCancel
-                ),
-                DialogButton(
-                    text: "Import from Arc",
-                    variant: .primary,
-                    keyboardShortcut: .return,
-                    action: handleCreate
-                )
-            ]
-        )
+    private func start() {
+        switch source {
+        case .chrome:
+            step = .chrome
+        case .safari:
+            // Safari has no readable data folder: the person exports it, then picks that folder.
+            let panel = NSOpenPanel()
+            panel.canChooseFiles = false
+            panel.canChooseDirectories = true
+            panel.message = "In Safari, choose File \u{203A} Export Browsing Data\u{2026}, unzip the file, then select that folder."
+            panel.prompt = "Import"
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            guard let contents = browserManager.importManager.checkSafariExport(at: url) else {
+                return fail("Vega didn't find a Safari export in that folder.")
+            }
+            run(.safari) {
+                await browserManager.importSafariData(from: url, importBookmarks: true, importHistory: true)
+                return "\(contents.bookmarkCount) bookmarks \u{00B7} \(contents.historyCount) history entries"
+            }
+        case .arc:
+            if browserManager.nookSettings?.didImportFromArc == true {
+                let again = NSAlert()
+                again.messageText = "Import from Arc again?"
+                again.informativeText = "Spaces from your last import stay, so you'll end up with two of each."
+                again.addButton(withTitle: "Import Again")
+                again.addButton(withTitle: "Cancel")
+                guard again.runModal() == .alertFirstButtonReturn else { return }
+            }
+            run(.arc) { await browserManager.importArcData() }
+        case .dia:
+            run(.dia) { await browserManager.importDiaData() }
+        }
     }
 
-    private func handleCreate() {
+    /// `work` returns what came in as a sentence, or nil when nothing did.
+    private func run(_ source: ImportSource, _ work: @escaping @MainActor () async -> String?) {
+        step = .working
+        Task {
+            guard let summary = await work() else {
+                step = .pick
+                return fail("Vega didn't find anything to import from \(source.name).")
+            }
+            let choices = source == .dia ? [] : await browserManager.extensionChoices(includingArc: source == .arc)
+            step = .finished(source, summary, choices)
+        }
+    }
+
+    private func fail(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = "Couldn't import"
+        alert.informativeText = message
+        alert.runModal()
+    }
+
+    private func review(_ choices: [ExtensionChoice]) {
         let manager = browserManager
         onCancel()
-        if manager.nookSettings?.didImportFromArc == true {
-            let again = NSAlert()
-            again.messageText = "Import from Arc again?"
-            again.informativeText = "Spaces from your last import stay, so you'll end up with two of each."
-            again.addButton(withTitle: "Import Again")
-            again.addButton(withTitle: "Cancel")
-            guard again.runModal() == .alertFirstButtonReturn else { return }
-        }
-        Task {
-            let alert = NSAlert()
-            if let summary = await manager.importArcData() {
-                alert.messageText = "Imported from Arc"
-                alert.informativeText = summary
-            } else {
-                alert.messageText = "Couldn't import from Arc"
-                alert.informativeText = "Vega didn't find any Arc spaces on this Mac."
-            }
-            alert.runModal()
-            let choices = await manager.extensionChoices(includingArc: true)
-            guard !choices.isEmpty else { return }
+        // The dialog showing now has to finish closing before the next one replaces it.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             manager.dialogManager.showDialog(
                 ExtensionImportDialog(
                     choices: choices,

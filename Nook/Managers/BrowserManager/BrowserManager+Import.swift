@@ -4,8 +4,10 @@
 //  Nook
 //
 
+import AppKit
 import Foundation
 import OSLog
+import UniformTypeIdentifiers
 import NookTabsCore
 import NookWeb
 import SwiftUI
@@ -67,12 +69,93 @@ extension BrowserManager {
         return arcImportSummary(spaces: arcSpaceIDs.count, tabs: tabCount, folders: folderCount, rules: routes.rules.count, archived: archived)
     }
 
-    func importDiaData() async {
+    /// Returns what came in as a sentence, or nil when nothing did.
+    @discardableResult
+    func importDiaData() async -> String? {
         let result = await importManager.importDiaData()
-        guard let window = importWindow, let spaceID = importSpaceID(window) else { return }
+        let count = result.favoriteTabs.count + result.windowTabs.count
+        guard count > 0, let window = importWindow, let spaceID = importSpaceID(window) else { return nil }
 
         importTabs(result.favoriteTabs.map(\.url), into: .favorites(spaceID: spaceID), window: window)
         importTabs(result.windowTabs.map(\.url), into: .tabs(spaceID: spaceID), window: window)
+        return "\(count) \(count == 1 ? "tab" : "tabs")"
+    }
+
+    // MARK: - Chrome
+
+    /// Bookmarks go into a space of their own, signed in as the space in front, so one delete undoes them.
+    /// History is read off the main thread. Returns what came in, as a sentence.
+    func importChrome(_ profile: ChromeProfile, bookmarks: Bool, history: Bool) async -> String {
+        var parts: [String] = []
+        if bookmarks {
+            let file = profile.directory.appendingPathComponent("Bookmarks")
+            let tree = await Task.detached { (try? Data(contentsOf: file)).map(parseChromeBookmarks) ?? [] }.value
+            if !tree.isEmpty, let window = importWindow,
+               let spaceID = tabs.createSpace(name: "Chrome", icon: "", accentHex: "#7C7C7C", after: tabs.orderedSpaces.last?.id,
+                                              sharingLoginsWith: importSpaceID(window)) {
+                var tabCount = 0, folderCount = 0
+                importArc(tree.map(Self.node), into: .pinned(spaceID: spaceID), window: window, tabs: &tabCount, folders: &folderCount)
+                tabs.setAllFolders(open: false, space: spaceID)
+                tabs.setSpace(spaceID, in: window)
+                parts.append("\(tabCount.formatted()) \(tabCount == 1 ? "bookmark" : "bookmarks") in \(folderCount.formatted()) \(folderCount == 1 ? "folder" : "folders")")
+            } else {
+                parts.append("no bookmarks found")
+            }
+        }
+        if history {
+            let directory = profile.directory
+            if let visits = await Task.detached(operation: { chromeHistory(profile: directory) }).value {
+                let profileID = historyManager.currentProfileId
+                historyManager.importVisits(visits.map {
+                    HistoryVisit(url: $0.url, title: $0.title, timestamp: $0.date, tabId: nil, profileId: profileID)
+                })
+                parts.append("\(visits.count.formatted()) history \(visits.count == 1 ? "entry" : "entries")")
+            } else {
+                parts.append("history couldn\u{2019}t be read")
+            }
+        }
+        return parts.isEmpty ? "Choose your extensions next." : parts.joined(separator: " \u{00B7} ")
+    }
+
+    private static func node(_ node: ChromeNode) -> ArcNode {
+        switch node {
+        case let .bookmark(url, title): .tab(url: url, title: title.isEmpty ? nil : title, customTitle: title.isEmpty ? nil : title)
+        case let .folder(title, children): .folder(title: title, children: children.map(Self.node))
+        }
+    }
+
+    func chromeExtensionChoices(_ profile: ChromeProfile) async -> [ExtensionChoice] {
+        guard let manager = extensionManager, manager.isExtensionSupportAvailable else { return [] }
+        return manager.choices(from: importManager.chromeExtensions(profile))
+    }
+
+    /// Asks for a passwords file exported from another browser and saves its logins to the front window's
+    /// profile. Returns what happened, or nil when the person chose no file.
+    func importPasswordFile(trashAfter: Bool) -> String? {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.commaSeparatedText, .plainText]
+        panel.message = "Choose the passwords file you exported."
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return "Vega couldn\u{2019}t read that file." }
+        let result = PasswordCSV.parse(text)
+        guard !result.rows.isEmpty else { return "No passwords found in that file, so it was left where it is." }
+        let vault = KeychainVault.forProfile(windowRegistry?.mostRecentRegularWindow.flatMap { tabs.profileID(of: $0) })
+        for row in result.rows { vault.save(host: row.host, username: row.username, password: row.password) }
+        // The vault reports no failure, so each login is read back before the file may go. A later row wins.
+        let wanted = Dictionary(result.rows.map { ([$0.host, $0.username], $0.password) }, uniquingKeysWith: { $1 })
+        let lost = wanted.filter { vault.password(host: $0.key[0], username: $0.key[1]) != $0.value }.count
+        guard lost == 0 else {
+            return "\(lost) of \(wanted.count) passwords couldn\u{2019}t be saved, so the file was left where it is."
+        }
+        var message = "Imported \(result.rows.count) \(result.rows.count == 1 ? "password" : "passwords")"
+        if result.skipped > 0 { message += ", skipped \(result.skipped) without a site, user or password" }
+        guard trashAfter else { return message + ". Delete the file: it holds your passwords as plain text." }
+        do {
+            try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+            return message + ". The file is in the Trash."
+        } catch {
+            return message + ". The file couldn\u{2019}t be moved to the Trash, so delete it yourself."
+        }
     }
 
     func importSafariData(from directoryURL: URL, importBookmarks: Bool, importHistory: Bool) async {
