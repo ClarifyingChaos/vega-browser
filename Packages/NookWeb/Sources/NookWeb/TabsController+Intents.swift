@@ -652,6 +652,25 @@ extension TabsController {
         perform(owner, "setHome") { try $0.setURL(itemID, url) }
     }
 
+    /// An import: a whole tree at the top of `parent` as one edit and one undo step, loading no page and leaving the
+    /// selection alone. New folders arrive closed.
+    @discardableResult
+    public func importItems(_ nodes: [NewItem], in parent: Parent) -> (tabs: Int, folders: Int) {
+        let owner: TabsController.Owner?
+        switch parent {
+        case .favorites(let spaceID), .pinned(let spaceID), .tabs(let spaceID): owner = self.owner(ofSpace: spaceID)
+        case .folder(let folderID): owner = self.owner(ofItem: folderID)
+        }
+        var counts = (tabs: 0, folders: 0)
+        guard let owner else { return counts }
+        perform(owner, "import") {
+            let result = try $0.insert(nodes, in: parent)
+            counts = (result.tabs, result.folders)
+            return result.change
+        }
+        return counts
+    }
+
     // MARK: - Folders
 
     @discardableResult

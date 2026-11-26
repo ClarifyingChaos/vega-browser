@@ -51,10 +51,9 @@ extension BrowserManager {
             if profileSpaces[space.profile] == nil { profileSpaces[space.profile] = spaceID }
 
             // Arc shows a profile's favorites in each of its spaces; a Nook space has its own.
-            importArc(result.favorites[space.profile] ?? [], into: .favorites(spaceID: spaceID), window: window, tabs: &tabCount, folders: &folderCount)
-            importArc(space.pinned, into: .pinned(spaceID: spaceID), window: window, tabs: &tabCount, folders: &folderCount)
-            importArc(space.unpinned, into: .tabs(spaceID: spaceID), window: window, tabs: &tabCount, folders: &folderCount)
-            tabs.setAllFolders(open: false, space: spaceID)
+            importArc(result.favorites[space.profile] ?? [], into: .favorites(spaceID: spaceID), tabs: &tabCount, folders: &folderCount)
+            importArc(space.pinned, into: .pinned(spaceID: spaceID), tabs: &tabCount, folders: &folderCount)
+            importArc(space.unpinned, into: .tabs(spaceID: spaceID), tabs: &tabCount, folders: &folderCount)
         }
 
         guard let firstImported else { return nil }
@@ -76,8 +75,8 @@ extension BrowserManager {
         let count = result.favoriteTabs.count + result.windowTabs.count
         guard count > 0, let window = importWindow, let spaceID = importSpaceID(window) else { return nil }
 
-        importTabs(result.favoriteTabs.map(\.url), into: .favorites(spaceID: spaceID), window: window)
-        importTabs(result.windowTabs.map(\.url), into: .tabs(spaceID: spaceID), window: window)
+        importTabs(result.favoriteTabs.map(\.url), into: .favorites(spaceID: spaceID))
+        importTabs(result.windowTabs.map(\.url), into: .tabs(spaceID: spaceID))
         return "\(count) \(count == 1 ? "tab" : "tabs")"
     }
 
@@ -94,8 +93,7 @@ extension BrowserManager {
                let spaceID = tabs.createSpace(name: "Chrome", icon: "", accentHex: "#7C7C7C", after: tabs.orderedSpaces.last?.id,
                                               sharingLoginsWith: importSpaceID(window)) {
                 var tabCount = 0, folderCount = 0
-                importArc(tree.map(Self.node), into: .pinned(spaceID: spaceID), window: window, tabs: &tabCount, folders: &folderCount)
-                tabs.setAllFolders(open: false, space: spaceID)
+                importArc(tree.map(Self.node), into: .pinned(spaceID: spaceID), tabs: &tabCount, folders: &folderCount)
                 tabs.setSpace(spaceID, in: window)
                 parts.append("\(tabCount.formatted()) \(tabCount == 1 ? "bookmark" : "bookmarks") in \(folderCount.formatted()) \(folderCount == 1 ? "folder" : "folders")")
             } else {
@@ -169,7 +167,7 @@ extension BrowserManager {
             let favoritesBookmarks = result.bookmarks.filter { $0.folder == "Favorites" }
             let otherBookmarks = result.bookmarks.filter { $0.folder != "Favorites" }
 
-            importTabs(favoritesBookmarks.map(\.url), into: .favorites(spaceID: spaceID), window: window)
+            importTabs(favoritesBookmarks.map(\.url), into: .favorites(spaceID: spaceID))
 
             var folderGroups: [String: [SafariBookmark]] = [:]
             var unfolderedBookmarks: [SafariBookmark] = []
@@ -181,10 +179,10 @@ extension BrowserManager {
                 }
             }
 
-            importTabs(unfolderedBookmarks.map(\.url), into: .tabs(spaceID: spaceID), window: window)
+            importTabs(unfolderedBookmarks.map(\.url), into: .tabs(spaceID: spaceID))
             for (folderName, bookmarks) in folderGroups.sorted(by: { $0.key > $1.key }) {
                 guard let folderID = tabs.createFolder(title: folderName, in: .pinned(spaceID: spaceID), after: nil) else { continue }
-                importTabs(bookmarks.map(\.url), into: .folder(itemID: folderID), window: window)
+                importTabs(bookmarks.map(\.url), into: .folder(itemID: folderID))
             }
         }
 
@@ -222,35 +220,29 @@ extension BrowserManager {
         window.spaceID ?? tabs.orderedSpaces.first?.id
     }
 
-    /// Adds Arc's tree under `parent` in source order. A folder Nook cannot hold there (in
-    /// favorites, or past the depth limit) gives its tabs to the parent instead.
-    private func importArc(_ nodes: [ArcNode], into parent: Parent, window: BrowserWindowState,
+    /// Adds Arc's tree under `parent` in source order.
+    private func importArc(_ nodes: [ArcNode], into parent: Parent,
                            tabs tabCount: inout Int, folders folderCount: inout Int) {
-        for node in nodes.reversed() {
-            switch node {
-            case let .tab(string, title, customTitle):
-                guard let url = URL(string: string), ["http", "https", "file"].contains(url.scheme?.lowercased()),
-                      let id = tabs.open(url: url, in: window, placement: .background, parent: parent, title: title)
-                else { continue }
-                tabCount += 1
-                if let customTitle { tabs.rename(id, customTitle) }
-            case let .folder(title, children):
-                if let folderID = tabs.createFolder(title: title, in: parent, after: nil) {
-                    folderCount += 1
-                    importArc(children, into: .folder(itemID: folderID), window: window, tabs: &tabCount, folders: &folderCount)
-                } else {
-                    importArc(children, into: parent, window: window, tabs: &tabCount, folders: &folderCount)
-                }
-            }
+        let added = tabs.importItems(nodes.compactMap(Self.item), in: parent)
+        tabCount += added.tabs
+        folderCount += added.folders
+    }
+
+    private static func item(_ node: ArcNode) -> NewItem? {
+        switch node {
+        case let .tab(string, title, customTitle):
+            guard let url = URL(string: string), ["http", "https", "file"].contains(url.scheme?.lowercased()) else { return nil }
+            return .tab(url: url, title: title ?? url.host ?? url.absoluteString, customTitle: customTitle)
+        case let .folder(title, children):
+            return .folder(title: title, children: children.compactMap(item))
         }
     }
 
     /// Adds tabs under `parent` in source order without loading pages or changing selection.
-    /// `open` inserts at the top, so the list goes in reversed.
-    private func importTabs(_ urls: [String], into parent: Parent, window: BrowserWindowState) {
-        for string in urls.reversed() {
-            guard let url = URL(string: string), url.scheme != nil else { continue }
-            tabs.open(url: url, in: window, placement: .background, parent: parent)
-        }
+    private func importTabs(_ urls: [String], into parent: Parent) {
+        tabs.importItems(urls.compactMap { string in
+            guard let url = URL(string: string), url.scheme != nil else { return nil }
+            return .tab(url: url, title: url.host ?? url.absoluteString, customTitle: nil)
+        }, in: parent)
     }
 }

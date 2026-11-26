@@ -41,6 +41,46 @@ extension TabTree {
         return change
     }
 
+    /// Adds a whole tree at the top of `parent`, in order, as one change. Adding thousands one at a time sorts the
+    /// siblings and copies the tree for each, which froze Vega for minutes on a large import. A folder that cannot be
+    /// held where it falls (in favorites, or past the depth limit) gives its contents to the folder around it.
+    public mutating func insert(_ nodes: [NewItem], in parent: Parent, now: Date = Date()) throws -> (change: Change, tabs: Int, folders: Int) {
+        try validate(parent: parent, placing: nil, isFolder: false)
+        var change = Change(), tabs = 0, folders = 0
+
+        func flatten(_ nodes: [NewItem], in parent: Parent) -> [NewItem] {
+            nodes.flatMap { node -> [NewItem] in
+                guard case .folder(_, let children) = node,
+                      (try? validate(parent: parent, placing: nil, isFolder: true)) == nil else { return [node] }
+                return flatten(children, in: parent)
+            }
+        }
+        /// `keys` for the nodes, in order.
+        func add(_ nodes: [NewItem], in parent: Parent, keys: [OrderKey]) {
+            for (node, order) in zip(nodes, keys) {
+                let id = UUID()
+                switch node {
+                case let .tab(url, title, customTitle):
+                    record(&change, item: Item(id: id, parent: parent, order: order, kind: .tab(url: url, pageTitle: title),
+                                               customTitle: customTitle, modifiedAt: now))
+                    tabs += 1
+                case let .folder(title, children):
+                    record(&change, item: Item(id: id, parent: parent, order: order, kind: .folder, customTitle: title, modifiedAt: now))
+                    folders += 1
+                    let inside = flatten(children, in: .folder(itemID: id))
+                    add(inside, in: .folder(itemID: id), keys: OrderKey.spread(count: inside.count, below: nil))
+                }
+            }
+        }
+
+        let top = flatten(nodes, in: parent)
+        guard !top.isEmpty else { return (change, 0, 0) }
+        // The last new item goes just above what is there; the others spread above it.
+        let last = placeKey(in: parent, after: nil, excluding: UUID(), change: &change, now: now)
+        add(top, in: parent, keys: OrderKey.spread(count: top.count - 1, below: last) + [last])
+        return (change, tabs, folders)
+    }
+
     /// Moves an item (and its subtree) under `parent`, directly after `after` (nil = first).
     ///
     /// `currentURL` is the page a tab currently shows. Moving a tab from the device scope into the

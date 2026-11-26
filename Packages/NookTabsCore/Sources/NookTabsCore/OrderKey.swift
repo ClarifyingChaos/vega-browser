@@ -33,6 +33,21 @@ public struct OrderKey: Codable, Hashable, Comparable, Sendable, CustomStringCon
         return OrderKey(String(result.map { alphabet[$0] }))
     }
 
+    /// `count` ascending keys below `upper` (nil = the open end), halving the range so they stay short however many.
+    public static func spread(count: Int, below upper: OrderKey?) -> [OrderKey] {
+        var keys = [OrderKey](repeating: OrderKey(""), count: max(count, 0))
+        func fill(_ range: Range<Int>, _ lower: OrderKey?, _ upper: OrderKey?) {
+            guard !range.isEmpty else { return }
+            let middle = range.lowerBound + range.count / 2
+            let key = between(lower, upper)!
+            keys[middle] = key
+            fill(range.lowerBound..<middle, lower, key)
+            fill((middle + 1)..<range.upperBound, key, upper)
+        }
+        fill(0..<keys.count, nil, upper)
+        return keys
+    }
+
     /// `count` evenly spread keys, used when siblings must be renumbered.
     public static func sequence(count: Int) -> [OrderKey] {
         var keys: [OrderKey] = []

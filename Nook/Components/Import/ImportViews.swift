@@ -36,10 +36,24 @@ enum ImportSource: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The browser's own icon, from the copy on this Mac.
-    var appIcon: NSImage? {
-        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID).map { NSWorkspace.shared.icon(forFile: $0.path) }
+    /// The browser's own icon in its colours: the icon file in the copy on this Mac, since the system's
+    /// rendering turns grey with the dark icon style. Chrome has a drawing for when only its data is here.
+    var logo: NSImage? {
+        if let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            let name = Bundle(url: app)?.object(forInfoDictionaryKey: "CFBundleIconFile") as? String
+            let file = name.map { app.appendingPathComponent("Contents/Resources/\($0.replacingOccurrences(of: ".icns", with: "")).icns") }
+            return file.flatMap(NSImage.init(contentsOf:)) ?? NSWorkspace.shared.icon(forFile: app.path)
+        }
+        return self == .chrome ? NSImage(data: Data(Self.chromeDrawing.utf8)) : nil
     }
+
+    private static let chromeDrawing = """
+    <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#fff"/>\
+    <path fill="#ea4335" d="M24 2a22 22 0 0 1 19.05 11H24a11 11 0 0 0-10.6 8.07L4.95 13A22 22 0 0 1 24 2z"/>\
+    <path fill="#34a853" d="M4.95 13l9.52 16.5A11 11 0 0 0 26.9 34.6L19.1 45.5A22 22 0 0 1 4.95 13z"/>\
+    <path fill="#fbbc05" d="M43.05 13A22 22 0 0 1 19.1 45.5L33.53 29.5A11 11 0 0 0 32.5 16.5l-.7-.7z"/>\
+    <circle cx="24" cy="24" r="8.8" fill="#4285f4"/></svg>
+    """
 
     /// True when there is something to import: its data is here, or for Safari, which exports a folder, always.
     var isAvailable: Bool {
@@ -65,7 +79,7 @@ private struct BrowserIcon: View {
 
     var body: some View {
         Group {
-            if let image = source.appIcon {
+            if let image = source.logo {
                 Image(nsImage: image).resizable().scaledToFit()
             } else {
                 NookSymbol("globe", size: size * 0.7)

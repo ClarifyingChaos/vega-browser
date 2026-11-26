@@ -158,6 +158,12 @@ public struct Row: Hashable, Sendable, Identifiable {
     public var id: UUID { item.id }
 }
 
+/// An item to be added, with what goes inside it. See `TabTree.insert`.
+public indirect enum NewItem: Equatable, Sendable {
+    case tab(url: URL, title: String, customTitle: String?)
+    case folder(title: String, children: [NewItem])
+}
+
 public enum TreeError: Error, Equatable, Sendable {
     case missingItem
     case missingParent

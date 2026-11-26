@@ -17,12 +17,13 @@ struct BrowserImportDialog: View {
     let onCancel: () -> Void
 
     private enum Step {
-        case pick, chrome, working
+        case pick, chrome, safari, working
         case finished(ImportSource, String, [ExtensionChoice])
     }
 
     @State private var step = Step.pick
     @State private var source = ImportSource.firstAvailable
+    @State private var safariBusy = false
 
     var body: some View {
         DialogCard {
@@ -31,6 +32,13 @@ struct BrowserImportDialog: View {
                 case .pick: picker
                 case .chrome:
                     ChromeImportPanel(onBack: { step = .pick }) { step = .finished(.chrome, $0, $1) }
+                case .safari:
+                    // Its text is drawn for the dark first-launch backdrop.
+                    VStack(spacing: NookDesign.Spacing.xl) {
+                        SafariImportFlow(isLoading: $safariBusy, onBack: { step = .pick }, onComplete: offerSafariExtensions)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .environment(\.colorScheme, .dark)
                 case .working:
                     ProgressView("Importing\u{2026}").frame(maxWidth: .infinity).padding(NookDesign.Spacing.xxl)
                 case .finished(let source, let summary, let choices):
@@ -41,7 +49,18 @@ struct BrowserImportDialog: View {
             .padding(NookDesign.Spacing.xs)
         }
         .padding(.vertical, NookDesign.Spacing.lg)
+        .environment(\.colorScheme, isSafari ? .dark : colorScheme)
         .environmentObject(browserManager.gradientColorManager)
+    }
+
+    @Environment(\.colorScheme) private var colorScheme
+    private var isSafari: Bool { if case .safari = step { true } else { false } }
+
+    private func offerSafariExtensions() {
+        Task {
+            let choices = await browserManager.extensionChoices(includingArc: false)
+            if choices.isEmpty { onCancel() } else { review(choices) }
+        }
     }
 
     private var picker: some View {
@@ -81,20 +100,8 @@ struct BrowserImportDialog: View {
         case .chrome:
             step = .chrome
         case .safari:
-            // Safari has no readable data folder: the person exports it, then picks that folder.
-            let panel = NSOpenPanel()
-            panel.canChooseFiles = false
-            panel.canChooseDirectories = true
-            panel.message = "In Safari, choose File \u{203A} Export Browsing Data\u{2026}, unzip the file, then select that folder."
-            panel.prompt = "Import"
-            guard panel.runModal() == .OK, let url = panel.url else { return }
-            guard let contents = browserManager.importManager.checkSafariExport(at: url) else {
-                return fail("Vega didn't find a Safari export in that folder.")
-            }
-            run(.safari) {
-                await browserManager.importSafariData(from: url, importBookmarks: true, importHistory: true)
-                return "\(contents.bookmarkCount) bookmarks \u{00B7} \(contents.historyCount) history entries"
-            }
+            // The first launch's screens: the export steps, then a choice of bookmarks and history.
+            step = .safari
         case .arc:
             if browserManager.nookSettings?.didImportFromArc == true {
                 let again = NSAlert()
