@@ -116,7 +116,7 @@ public struct FolderBlobStore: SyncBlobStore {
     public init(url: URL) { self.url = url }
 
     /// iCloud Drive's folder for apps without an iCloud container, if iCloud Drive is on.
-    public static func iCloudDrive(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL? {
+    public static func iCloudDrive(home: URL = URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)) -> URL? {
         let drive = home.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs", isDirectory: true)
         return FileManager.default.fileExists(atPath: drive.path) ? drive.appendingPathComponent("Vega Sync", isDirectory: true) : nil
     }

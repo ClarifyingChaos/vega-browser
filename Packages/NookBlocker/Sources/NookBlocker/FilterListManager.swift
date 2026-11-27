@@ -293,11 +293,13 @@ public final class FilterListManager {
 
         var request = URLRequest(url: list.url)
 
-        // Conditional GET
-        if let etag = try? String(contentsOf: etagFile, encoding: .utf8) {
+        // Conditional GET, only while the copy it is about is there: asking "changed since?" for a file that is gone
+        // got "no" every time, and the list was never fetched again.
+        let hasCopy = FileManager.default.fileExists(atPath: destFile.path)
+        if hasCopy, let etag = try? String(contentsOf: etagFile, encoding: .utf8) {
             request.setValue(etag, forHTTPHeaderField: "If-None-Match")
         }
-        if FileManager.default.fileExists(atPath: destFile.path),
+        if hasCopy,
            let attrs = try? FileManager.default.attributesOfItem(atPath: destFile.path),
            let modDate = attrs[.modificationDate] as? Date {
             let formatter = DateFormatter()
