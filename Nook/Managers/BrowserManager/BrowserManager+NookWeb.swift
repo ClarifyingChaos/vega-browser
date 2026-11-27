@@ -54,9 +54,26 @@ extension BrowserManager: PageSessionDelegate {
     }
 
     func saveFile(_ data: Data, suggestedFilename: String, originalURL: URL, from webView: WKWebView) {
-        downloadManager.saveCompletedFile(
-            data, suggestedFilename: suggestedFilename, originalURL: originalURL, from: webView.window,
-            origin: DownloadOrigin(session: (webView as? FocusableWKWebView)?.owningSession))
+        let window = webView.window
+        let origin = DownloadOrigin(session: (webView as? FocusableWKWebView)?.owningSession)
+        let write: (URL?) -> Void = { [weak self] destination in
+            guard let self else { return }
+            if self.downloadManager.saveCompletedFile(data, suggestedFilename: suggestedFilename, originalURL: originalURL,
+                                                      from: window, origin: origin, to: destination) == nil {
+                Self.saveFailed("Couldn't save the file", nil)
+            }
+        }
+        // "Ask where to save" covers these saves too (the PDF viewer's Save), not only network downloads.
+        guard DownloadLocation.asksEachTime else { return write(nil) }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = DownloadManager.sanitizedFilename(suggestedFilename)
+        panel.directoryURL = DownloadLocation.folder
+        panel.canCreateDirectories = true
+        panel.isExtensionHidden = false
+        let chosen: (NSApplication.ModalResponse) -> Void = { response in
+            if response == .OK, let url = panel.url { write(url) }
+        }
+        if let window { panel.beginSheetModal(for: window, completionHandler: chosen) } else { panel.begin(completionHandler: chosen) }
     }
 
     func toggleFullScreen(for webView: WKWebView) -> Bool {

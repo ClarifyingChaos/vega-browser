@@ -206,6 +206,11 @@ class AIConfigService {
         if let loaded = AIConfigService.load(from: configURL) {
             self.config = loaded
         } else {
+            // A file that is there but does not decode is kept aside: the next save would write the defaults over it.
+            if FileManager.default.fileExists(atPath: configURL.path) {
+                try? FileManager.default.moveItem(at: configURL, to: nookDir.appendingPathComponent(
+                    "ai_config-unreadable-\(Int(Date().timeIntervalSince1970)).json"))
+            }
             self.config = AIConfigService.createDefaultConfig()
         }
 

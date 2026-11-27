@@ -262,7 +262,8 @@ extension BrowserManager {
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = source.lastPathComponent
         panel.beginSheetModal(for: window) { response in
-            guard response == .OK, let url = panel.url else { return }
+            // Saving a capture over itself would delete it before the copy.
+            guard response == .OK, let url = panel.url, url.standardizedFileURL != source.standardizedFileURL else { return }
             do {
                 if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
                 try FileManager.default.copyItem(at: source, to: url)

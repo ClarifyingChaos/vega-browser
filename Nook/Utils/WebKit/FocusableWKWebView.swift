@@ -308,13 +308,16 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
         savePanel.begin { [weak self] result in
             if result == .OK, let destinationURL = savePanel.url {
                 do {
+                    // "Replace" in the panel: a move onto a file that is there fails, so the old one goes to the Trash.
+                    try? FileManager.default.trashItem(at: destinationURL, resultingItemURL: nil)
                     // Move the downloaded file to the chosen location
                     try FileManager.default.moveItem(at: localURL, to: destinationURL)
 
                     // Show a success notification
                     self?.showSaveSuccessNotification(for: destinationURL)
                 } catch {
-                    self?.showSaveErrorNotification(error: error)
+                    try? FileManager.default.removeItem(at: localURL)
+                    self?.showSaveError(error)
                 }
             } else {
                 // User cancelled, clean up the temporary file
@@ -330,11 +333,9 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
         )
     }
 
-    private func showSaveErrorNotification(error: Error) {
-        postUserNotification(
-            title: "Save Failed",
-            message: error.localizedDescription
-        )
+    /// An alert, not a notification: without notification permission a failed save said nothing at all.
+    private func showSaveError(_ error: Error) {
+        SystemAlert.present(SystemAlert.make("Couldn't save the image", error.localizedDescription, style: .warning, buttons: ["OK"])) { _ in }
     }
 
     private func postUserNotification(title: String, message: String) {
@@ -536,6 +537,7 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
                 }
             }
         } catch {
+            showSaveError(error)
         }
     }
 
@@ -556,6 +558,8 @@ final class FocusableWKWebView: WKWebView, SessionWebView {
             try FileManager.default.moveItem(at: tempURL, to: destination)
             showSaveSuccessNotification(for: destination)
         } catch {
+            try? FileManager.default.removeItem(at: tempURL)
+            showSaveError(error)
         }
     }
 

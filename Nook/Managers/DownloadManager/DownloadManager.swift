@@ -542,10 +542,13 @@ public class DownloadManager: NSObject {
         suggestedFilename: String,
         originalURL: URL,
         from window: NSWindow?,
-        origin: DownloadOrigin
+        origin: DownloadOrigin,
+        to chosen: URL? = nil
     ) -> Download? {
         let name = Self.sanitizedFilename(suggestedFilename)
-        let destination = Self.uniqueDestination(for: name, in: DownloadLocation.folder)
+        let destination = chosen ?? Self.uniqueDestination(for: name, in: DownloadLocation.folder)
+        // A place picked in the Save panel may hold a file the person agreed to replace.
+        if let chosen { try? FileManager.default.trashItem(at: chosen, resultingItemURL: nil) }
         do {
             try data.write(to: destination, options: .withoutOverwriting)
         } catch {
@@ -786,6 +789,9 @@ private class DownloadDelegate: NSObject, WKDownloadDelegate {
                     return
                 }
                 if result == .OK, let url = savePanel.url {
+                    // "Replace" in the panel: WebKit writes no file over one that is there, so the old one goes to the
+                    // Trash first, where it can be taken back if the download then fails.
+                    try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
                     self.configureDownload(for: url, response: response)
                     completion(.proceed(url))
                 } else {

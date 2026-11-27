@@ -157,16 +157,19 @@ struct OnboardingView: View {
     }
 
     private func performImport(completion: @escaping () -> Void) {
+        let browser = selectedBrowser
         Task {
-            switch selectedBrowser {
-            case .arc:
-                await browserManager.importArcData()
-            case .dia:
-                await browserManager.importDiaData()
-            default:
-                break
+            let summary: String? = switch browser {
+            case .arc: await browserManager.importArcData()
+            case .dia: await browserManager.importDiaData()
+            default: ""
             }
             await MainActor.run {
+                // The menu's import says this; the first launch moved on as if it had worked.
+                if summary == nil {
+                    SystemAlert.present(SystemAlert.make("Couldn't import", "Vega didn't find anything to import from \(browser.name).",
+                                                         style: .warning, buttons: ["OK"])) { _ in }
+                }
                 completion()
             }
         }

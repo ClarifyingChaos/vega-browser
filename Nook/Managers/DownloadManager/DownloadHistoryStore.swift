@@ -71,11 +71,17 @@ enum DownloadHistoryStore {
         let url = fileURL
         queue.async {
             var kept: [DownloadRecord] = []
-            if let data = try? Data(contentsOf: url),
-               let records = try? JSONDecoder().decode([DownloadRecord].self, from: data) {
-                // Older files stored the query; drop it on the way in.
-                kept = records.filter { FileManager.default.fileExists(atPath: $0.path) }
-                    .map { var r = $0; r.originalURL = strippingQuery(r.originalURL); return r }
+            if let data = try? Data(contentsOf: url) {
+                if let records = try? JSONDecoder().decode([DownloadRecord].self, from: data) {
+                    // Older files stored the query; drop it on the way in.
+                    kept = records.filter { FileManager.default.fileExists(atPath: $0.path) }
+                        .map { var r = $0; r.originalURL = strippingQuery(r.originalURL); return r }
+                } else {
+                    // Kept aside: the next save would write an empty list over it.
+                    let aside = url.deletingPathExtension().appendingPathExtension("unreadable.json")
+                    try? FileManager.default.removeItem(at: aside)
+                    try? FileManager.default.moveItem(at: url, to: aside)
+                }
             }
             DispatchQueue.main.async { completion(kept) }
         }

@@ -48,7 +48,7 @@ extension BrowserManager {
         guard let window = windowRegistry?.activeWindow, let spaceID = window.spaceID, let file = spaceFileData(for: spaceID),
               let view = (window.window as? NSWindow)?.contentView else { return }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(file.name).vegaspace")
-        guard (try? file.data.write(to: url, options: .atomic)) != nil else { return }
+        do { try file.data.write(to: url, options: .atomic) } catch { return Self.saveFailed("Couldn't share the space", error) }
         let picker = NSSharingServicePicker(items: [url])
         picker.show(relativeTo: NSRect(x: view.bounds.midX - 1, y: view.bounds.maxY - 40, width: 2, height: 2), of: view, preferredEdge: .minY)
     }
@@ -61,8 +61,13 @@ extension BrowserManager {
         panel.nameFieldStringValue = "\(file.name).vegaspace"
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
-            try? file.data.write(to: url, options: .atomic)
+            do { try file.data.write(to: url, options: .atomic) } catch { Self.saveFailed("Couldn't export the space", error) }
         }
+    }
+
+    static func saveFailed(_ title: String, _ error: Error?) {
+        let detail = error?.localizedDescription ?? "Check the folder and the free space on this Mac."
+        SystemAlert.present(SystemAlert.make(title, detail, style: .warning, buttons: ["OK"])) { _ in }
     }
 
     /// Picks a `.vegaspace` file and opens it.
