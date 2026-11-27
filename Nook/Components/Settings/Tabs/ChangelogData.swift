@@ -6,6 +6,16 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.16 (2026-11-27)
+
+### Fixes
+- **Import from Chrome** no longer stops at a greyed Import button when Vega cannot read a Chrome profile. It also looks for Chrome Beta, Dev, Canary and Chromium, and finds profiles when Chrome's own list is missing or damaged. If it still cannot, it says why and offers **Choose Chrome Folder…**.
+- **Dialog buttons:** the main button is bright when it can be pressed and faded when it cannot. With a grey space colour, a working button looked switched off.
+
+### Privacy and security
+Reviewed before release.
+- A folder you choose for Chrome import is read for the same things as before: bookmarks, history and extensions. Cookies, saved passwords and cards are never opened.
+
 ## Vega 1.8.15 (2026-11-27)
 
 ### Changes
