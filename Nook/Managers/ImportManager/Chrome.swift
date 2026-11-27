@@ -44,6 +44,63 @@ func readChromeProfiles(in userData: URL) -> [ChromeProfile] {
     .sorted { $0.id == "Default" || ($1.id != "Default" && $0.id.localizedStandardCompare($1.id) == .orderedAscending) }
 }
 
+/// What looking for Chrome's data came to.
+enum ChromeLookup: Equatable {
+    case found([ChromeProfile])
+    /// The data is there but macOS or the file's permissions refuse it.
+    case unreadable
+    case notFound
+}
+
+/// Where Chrome and its other channels keep their data, inside Application Support.
+let chromeDataFolders = ["Google/Chrome", "Google/Chrome Beta", "Google/Chrome Dev", "Google/Chrome Canary", "Chromium"]
+
+/// The first of Chrome's usual folders in `support` that holds a readable profile.
+func findChromeProfiles(support: URL) -> ChromeLookup {
+    var result = ChromeLookup.notFound
+    for folder in chromeDataFolders {
+        switch findChromeProfiles(in: support.appendingPathComponent(folder)) {
+        case .found(let profiles): return .found(profiles)
+        case .unreadable: result = .unreadable
+        case .notFound: break
+        }
+    }
+    return result
+}
+
+/// The profiles in `folder`: Chrome's data folder, the "Google" folder around it, or one profile's own folder. When
+/// Chrome's list of profiles is missing or damaged, the folders named as Chrome names profiles are taken instead.
+func findChromeProfiles(in folder: URL) -> ChromeLookup {
+    let files = FileManager.default
+    var refused = false
+    func attempt<T>(_ read: () throws -> T) -> T? {
+        do { return try read() } catch {
+            if (error as? CocoaError)?.code == .fileReadNoPermission { refused = true }
+            return nil
+        }
+    }
+    func names(_ url: URL) -> [String]? { attempt { try files.contentsOfDirectory(atPath: url.path) } }
+    func holdsData(_ names: [String]?) -> Bool { names?.contains { ["Bookmarks", "History"].contains($0) } == true }
+
+    for data in [folder, folder.appendingPathComponent("Chrome")] {
+        _ = attempt { try Data(contentsOf: data.appendingPathComponent("Local State")) }
+        let listed = readChromeProfiles(in: data).filter { names($0.directory) != nil }
+        if !listed.isEmpty { return .found(listed) }
+        let scanned = (names(data) ?? []).filter { $0 == "Default" || $0.hasPrefix("Profile ") }
+            .sorted { $0 == "Default" || ($1 != "Default" && $0.localizedStandardCompare($1) == .orderedAscending) }
+            .compactMap { name -> ChromeProfile? in
+                let directory = data.appendingPathComponent(name)
+                return holdsData(names(directory)) ? ChromeProfile(id: name, name: name, directory: directory) : nil
+            }
+        if !scanned.isEmpty { return .found(scanned) }
+    }
+    if holdsData(names(folder)) {
+        let name = folder.lastPathComponent
+        return .found([ChromeProfile(id: name, name: name, directory: folder)])
+    }
+    return refused ? .unreadable : .notFound
+}
+
 /// The `Bookmarks` file as a tree: the bookmarks bar's entries first, then the other two roots as
 /// folders. Only web addresses come over, so a `javascript:` bookmarklet or a Chrome page stays behind.
 func parseChromeBookmarks(_ data: Data) -> [ChromeNode] {

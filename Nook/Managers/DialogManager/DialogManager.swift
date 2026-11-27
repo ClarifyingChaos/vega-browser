@@ -387,7 +387,7 @@ enum DialogButtonStyleVariant {
 }
 
 struct DialogButtonStyle: ButtonStyle {
-    @EnvironmentObject var gradientColorManager: GradientColorManager
+    @Environment(\.isEnabled) private var isEnabled
     var variant: DialogButtonStyleVariant = .primary
     var icon: AnyView?
     var iconPosition: IconPosition = .trailing
@@ -404,11 +404,11 @@ struct DialogButtonStyle: ButtonStyle {
     )
     private let cornerRadius: CGFloat = NookDesign.Radius.md
 
+    // The main action is the brightest thing in the dialog, and a button that cannot be pressed is plainly faded.
+    // The space's accent did neither: a grey one made a working button look switched off.
     private var backgroundColor: Color {
         switch variant {
-        // A fixed light fill with black text read as white on white in dark mode. The accent
-        // carries the primary action, and the secondary sits on the same fill rows use.
-        case .primary: return gradientColorManager.accentColor
+        case .primary: return isEnabled ? .primary : NookDesign.Surface.fill
         case .secondary: return NookDesign.Surface.fill
         case .danger: return NookDesign.Surface.danger
         }
@@ -416,7 +416,7 @@ struct DialogButtonStyle: ButtonStyle {
 
     private var foregroundColor: Color {
         switch variant {
-        case .primary: return Garnish.contrastingShade(of: gradientColorManager.accentColor, targetRatio: 4.5, blendStyle: .strong) ?? .white
+        case .primary: return isEnabled ? Color(nsColor: .windowBackgroundColor) : .primary
         case .secondary: return .primary
         case .danger: return .white
         }
@@ -439,6 +439,7 @@ struct DialogButtonStyle: ButtonStyle {
         .background(backgroundColor)
         .foregroundColor(foregroundColor)
         .clipShape(NookDesign.Radius.shape(cornerRadius))
+        .opacity(isEnabled ? 1 : 0.4)
         .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
         .opacity(configuration.isPressed ? 0.8 : 1.0)
         .animation(NookDesign.Motion.quick, value: configuration.isPressed)

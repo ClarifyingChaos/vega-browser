@@ -18,6 +18,37 @@ struct ChromeImportCheck {
         precondition(readChromeProfiles(in: root).map(\.name) == ["Person 1", "Work"])
         precondition(readChromeProfiles(in: root.appendingPathComponent("missing")).isEmpty)
 
+        func found(_ lookup: ChromeLookup) -> [String] { if case .found(let p) = lookup { p.map(\.id) } else { [] } }
+        let support = root.appendingPathComponent("support"), data = support.appendingPathComponent("Google/Chrome")
+        precondition(findChromeProfiles(support: support) == .notFound)
+        for folder in ["Default", "Profile 2", "Profile 10", "Crashpad"] {
+            try files.createDirectory(at: data.appendingPathComponent(folder), withIntermediateDirectories: true)
+        }
+        precondition(findChromeProfiles(support: support) == .notFound, "empty folders are not profiles")
+        for folder in ["Default", "Profile 2", "Profile 10", "Crashpad"] {
+            try Data("{}".utf8).write(to: data.appendingPathComponent("\(folder)/Bookmarks"))
+        }
+        // No list, a damaged one, and one that names nothing that is there.
+        let state = data.appendingPathComponent("Local State")
+        for text in [nil, "not json", #"{"profile":{"info_cache":{"Gone":{"name":"x"}}}}"#] as [String?] {
+            try? files.removeItem(at: state)
+            if let text { try Data(text.utf8).write(to: state) }
+            precondition(found(findChromeProfiles(support: support)) == ["Default", "Profile 2", "Profile 10"], "\(text ?? "no list")")
+        }
+        // The folder the person picks: the one around Chrome's, or a profile's own.
+        precondition(found(findChromeProfiles(in: support.appendingPathComponent("Google"))).count == 3)
+        precondition(found(findChromeProfiles(in: data.appendingPathComponent("Profile 2"))) == ["Profile 2"])
+        // Another channel is found when it is the only one.
+        let beta = root.appendingPathComponent("beta/Google/Chrome Beta/Default")
+        try files.createDirectory(at: beta, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(to: beta.appendingPathComponent("History"))
+        precondition(found(findChromeProfiles(support: root.appendingPathComponent("beta"))) == ["Default"])
+        // Refused is said as refused, not as nothing there.
+        try files.setAttributes([.posixPermissions: 0], ofItemAtPath: data.path)
+        defer { try? files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: data.path) }
+        precondition(findChromeProfiles(support: support) == .unreadable)
+        precondition(findChromeProfiles(in: data) == .unreadable)
+
         let bookmarks = parseChromeBookmarks(Data(#"""
         {"roots":{"bookmark_bar":{"children":[
             {"type":"url","name":"A","url":"https://a.test/"},

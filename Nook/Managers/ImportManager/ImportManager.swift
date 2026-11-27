@@ -72,7 +72,11 @@ class ImportManager: ObservableObject {
         return nil
     }
 
-    func chromeProfiles() -> [ChromeProfile] { readChromeProfiles(in: chromeDirectory) }
+    /// `chosen` is a folder the person picked; without one, Chrome's usual places are tried.
+    func chromeLookup(in chosen: URL? = nil) -> ChromeLookup {
+        if let chosen { return findChromeProfiles(in: chosen) }
+        return findChromeProfiles(support: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0])
+    }
 
     /// Web Store extensions enabled in one Chrome profile, described from the copy Chrome keeps of each.
     func chromeExtensions(_ profile: ChromeProfile) -> [ExtensionOffer] {
@@ -81,10 +85,6 @@ class ImportManager: ObservableObject {
             Self.chromiumExtension(id, in: profile.directory)
                 ?? ExtensionOffer(id: id, name: id, version: "", icon: nil, package: .store(.chrome))
         }
-    }
-
-    private var chromeDirectory: URL {
-        URL(fileURLWithPath: NSString(string: "~/Library/Application Support/Google/Chrome").expandingTildeInPath)
     }
 
     /// Arc's member card, with the person's Arc name added, as a JSON object.

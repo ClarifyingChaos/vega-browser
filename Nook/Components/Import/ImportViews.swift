@@ -55,20 +55,25 @@ enum ImportSource: String, CaseIterable, Identifiable {
     <circle cx="24" cy="24" r="8.8" fill="#4285f4"/></svg>
     """
 
-    /// True when there is something to import: its data is here, or for Safari, which exports a folder, always.
-    var isAvailable: Bool {
+    /// True when it can be picked: its data is here, or the person can point at it (Safari exports a folder, and
+    /// Chrome's screen asks for its folder when Vega cannot find it).
+    var isAvailable: Bool { self == .safari || self == .chrome || isDetected }
+
+    /// True when its data is in the usual place.
+    private var isDetected: Bool {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let file: String
         switch self {
-        case .chrome: file = "Google/Chrome/Local State"
-        case .safari: return true
+        case .chrome:
+            return chromeDataFolders.contains { FileManager.default.fileExists(atPath: support.appendingPathComponent($0).path) }
+        case .safari: return false
         case .arc: file = "Arc/StorableSidebar.json"
         case .dia: file = "Dia/StorableProfileContainers.json"
         }
         return FileManager.default.fileExists(atPath: support.appendingPathComponent(file).path)
     }
 
-    static var firstAvailable: ImportSource { allCases.first(where: \.isAvailable) ?? .safari }
+    static var firstAvailable: ImportSource { allCases.first(where: \.isDetected) ?? .safari }
 }
 
 // MARK: - Pieces
@@ -222,7 +227,8 @@ struct ChromeImportPanel: View {
     /// The sentence saying what came in, and the extensions to offer.
     let onImported: (String, [ExtensionChoice]) -> Void
 
-    @State private var profiles: [ChromeProfile] = []
+    /// Nil until looked for.
+    @State private var lookup: ChromeLookup?
     @State private var profileID = "Default"
     @State private var bookmarks = true
     @State private var history = true
@@ -232,15 +238,73 @@ struct ChromeImportPanel: View {
     @State private var passwordResult: String?
     @State private var working = false
 
+    private var profiles: [ChromeProfile] { if case .found(let found) = lookup { found } else { [] } }
     private var profile: ChromeProfile? { profiles.first { $0.id == profileID } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: NookDesign.Spacing.xl) {
-            if showingPasswords { passwords } else { options }
+            if showingPasswords {
+                passwords
+            } else {
+                switch lookup {
+                case .found: options
+                case .unreadable:
+                    problem(subtitle: "Vega could not open your Chrome data.", title: "Vega can\u{2019}t read Chrome\u{2019}s folder",
+                            detail: "Choose the folder yourself to allow it. It is at Library \u{203A} Application Support \u{203A} Google \u{203A} Chrome. Vega still never reads cookies, saved passwords or cards.",
+                            offersPasswords: true)
+                case .notFound:
+                    problem(subtitle: "Vega found no Chrome profile.", title: "Nothing to import here",
+                            detail: "Open Chrome once, quit it, then try again. If your Chrome data is somewhere else, choose that folder.",
+                            offersPasswords: false)
+                case nil: EmptyView()
+                }
+            }
         }
-        .onAppear {
-            profiles = browserManager.importManager.chromeProfiles()
-            profileID = profiles.first?.id ?? profileID
+        .onAppear { if lookup == nil { show(browserManager.importManager.chromeLookup()) } }
+    }
+
+    private func show(_ result: ChromeLookup) {
+        lookup = result
+        profileID = profiles.first?.id ?? profileID
+    }
+
+    private func chooseFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.showsHiddenFiles = true
+        panel.directoryURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Google/Chrome")
+        panel.message = "Choose Chrome\u{2019}s folder: Library \u{203A} Application Support \u{203A} Google \u{203A} Chrome."
+        panel.prompt = "Choose"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        show(browserManager.importManager.chromeLookup(in: url))
+    }
+
+    @ViewBuilder private func problem(subtitle: String, title: String, detail: String, offersPasswords: Bool) -> some View {
+        ImportHeader(title: "Import from Chrome", subtitle: subtitle) {
+            BrowserIcon(source: .chrome, size: 30)
+        }
+        VStack(alignment: .leading, spacing: NookDesign.Spacing.xs) {
+            Text(title).font(NookDesign.Font.body).fontWeight(.semibold)
+            Text(detail).font(NookDesign.Font.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(NookDesign.Spacing.lg)
+        .background(NookDesign.Radius.shape(NookDesign.Radius.lg).fill(Color.orange.opacity(0.12)))
+        .overlay(NookDesign.Radius.shape(NookDesign.Radius.lg).strokeBorder(Color.orange.opacity(0.4)))
+        .accessibilityElement(children: .combine)
+        if offersPasswords { ImportGroup { passwordsRow } }
+        HStack {
+            ImportButton(title: "Back", key: .cancelAction, action: onBack)
+            Spacer()
+            ImportButton(title: "Choose Chrome Folder\u{2026}", primary: true, key: .defaultAction, action: chooseFolder)
+        }
+    }
+
+    private var passwordsRow: some View {
+        ImportRow(symbol: "key", title: "Passwords", detail: "Through a file you export from Chrome") {
+            ImportButton(title: "Show Steps") { showingPasswords = true }
         }
     }
 
@@ -266,9 +330,7 @@ struct ChromeImportPanel: View {
             Divider()
             ImportSwitch(symbol: "puzzlepiece.extension", title: "Extensions", detail: "You review each one before it installs", isOn: $extensions)
             Divider()
-            ImportRow(symbol: "key", title: "Passwords", detail: "Through a file you export from Chrome") {
-                ImportButton(title: "Show Steps") { showingPasswords = true }
-            }
+            passwordsRow
         }
         HStack(spacing: NookDesign.Spacing.md) {
             NookSymbol("shield.lefthalf.filled", size: 16).accessibilityHidden(true)
