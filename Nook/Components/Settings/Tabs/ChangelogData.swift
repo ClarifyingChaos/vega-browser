@@ -6,6 +6,28 @@ let vegaChangelogMarkdown = #"""
 
 What Vega changes on top of [Nook](https://github.com/nook-browser/Nook). Nook's own changes reach Vega when they are ported; they're in [CHANGELOG.md](CHANGELOG.md) and [Nook's releases](https://github.com/nook-browser/Nook/releases).
 
+## Vega 1.8.17 (2026-11-27)
+
+### New
+- **Blocked pop-ups say so.** When a pop-up you clicked for is blocked, an icon with an orange dot appears in the address field. Site Controls shows which address, with **Open** to let it through once, or click the row to allow the site.
+
+### Fixes
+- **Google Drive and Docs downloads** show the Save dialog again. The pop-up guard was silently refusing the window they come in.
+- **Replace** in the Save dialog now saves the new file, for downloads and saved images. The old file goes to the Trash.
+- **PDF viewer Save** follows "ask where to save".
+- **Failed saves say so:** images, PDFs, and shared or exported spaces.
+- **Saving a screenshot over itself** no longer deletes it.
+- A tab opened only for a download closes itself.
+- **Site Controls:** rows underneath no longer light up as the pointer crosses the panel, or take its clicks.
+- **Ad blocker:** a filter list whose saved copy was lost is downloaded again.
+- Damaged AI settings or download list files are kept aside instead of being overwritten.
+- **First launch:** a failed import from Arc or Dia says so.
+
+### Privacy and security
+Reviewed before release.
+- **Updater:** Sparkle is updated from 2.8.1 to 2.10.1, which fixes its published security advisories.
+- **Pop-ups:** the only loosening is that Google Drive and Docs may open Google's own file download addresses over https. A blocked address is shown, never opened unless you choose to.
+
 ## Vega 1.8.16 (2026-11-27)
 
 ### Fixes
