@@ -253,6 +253,12 @@ struct URLBarView: View {
                     .contentTransition(.symbolEffect(.replace))
                 }
 
+                // At the right edge, hovered or not, until the page changes. While the pointer is away it is also what
+                // the panel hangs from.
+                if !isEditing, session?.blockedPopup != nil {
+                    BlockedPopupButton(anchorsPanel: !(isHovering || windowState.isExtensionLibraryVisible))
+                }
+
                 // Pinned extension buttons + library button
                 // FORK: as in Arc, extensions and site controls show while the pointer is over the field
                 // (or while the library panel they open is up), not at rest.

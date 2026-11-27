@@ -150,7 +150,9 @@ public class BrowserConfiguration {
                     // The tab's own choice for its site. A frame inside the page cannot see the main frame's flag, so each frame
                     // asks the tab once as it starts; the answer is about the page the tab shows, not the frame's own site.
                     let siteAllows = false;
-                    try { const ask = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.vegaPopupPolicy;
+                    // Kept from the start, before the page can put its own in its place.
+                    let ask = null;
+                    try { ask = (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.vegaPopupPolicy) || null;
                           if (ask) ask.postMessage(null).then(v => { siteAllows = v === true; }, () => {}); } catch (e) {}
                     const bare = h => h.replace(/^www\\./, '');
                     const sameSite = url => {
@@ -186,30 +188,39 @@ public class BrowserConfiguration {
                     // A site's own link-out page (behance.net/…?url=https://their.site) carries the real address in its query.
                     const carriedBy = (href, url) => { try { const h = new URL(url, location.href).hostname;
                         return [...new URL(href, location.href).searchParams.values()].some(v => { try { return new URL(v).hostname === h; } catch (e) { return false; } }); } catch (e) { return false; } };
-                    const mayOpen = url => siteAllows || window.__vegaAllowPopups === true || sameSite(url) || signIn(url) || share(url) || (Date.now() - trusted.at < 1500 && trusted.href && (sameHost(url, trusted.href) || carriedBy(trusted.href, url)));
+                    // Drive and Docs hand a file over in a window on another Google host, from a menu rather than a link.
+                    // Without this the window was silently refused, and no download or Save dialog ever came.
+                    const googleFile = url => { try { const t = new URL(url, location.href);
+                        return t.protocol === 'https:' && /^(drive|docs)\\.google\\.com$/.test(location.hostname)
+                            && /^((drive|docs|drive\\.usercontent)\\.google\\.com|([a-z0-9-]+\\.)+googleusercontent\\.com)$/.test(t.hostname); } catch (e) { return false; } };
+                    const mayOpen = url => siteAllows || window.__vegaAllowPopups === true || sameSite(url) || signIn(url) || share(url) || googleFile(url) || (Date.now() - trusted.at < 1500 && trusted.href && (sameHost(url, trusted.href) || carriedBy(trusted.href, url)));
+                    // A window refused just after your own click is one you may have wanted, so the tab is told and shows
+                    // it in the address field. One nobody clicked for says nothing.
+                    const refused = url => { try { if (ask && Date.now() - trusted.at < 1500)
+                        ask.postMessage({ blocked: new URL(String(url), location.href).href }).catch(() => {}); } catch (e) {} };
                     const opensNewWindow = a => { const t = (a.target || '').toLowerCase(); return t && t !== '_self' && t !== '_top' && t !== '_parent'; };
 
                     // A link clicked or "dispatched" by script, to another site, in a new window.
                     const click = HTMLAnchorElement.prototype.click;
                     HTMLAnchorElement.prototype.click = function() {
-                        if (opensNewWindow(this) && !mayOpen(this.href)) return;
+                        if (opensNewWindow(this) && !mayOpen(this.href)) { refused(this.href); return; }
                         return click.apply(this, arguments);
                     };
                     const dispatch = HTMLAnchorElement.prototype.dispatchEvent;
                     HTMLAnchorElement.prototype.dispatchEvent = function(e) {
-                        if (e && e.type === 'click' && !e.isTrusted && opensNewWindow(this) && !mayOpen(this.href)) return false;
+                        if (e && e.type === 'click' && !e.isTrusted && opensNewWindow(this) && !mayOpen(this.href)) { refused(this.href); return false; }
                         return dispatch.apply(this, arguments);
                     };
                     document.addEventListener('click', e => {
                         if (e.isTrusted) return;
                         const a = e.target && e.target.closest && e.target.closest('a[href]');
-                        if (a && opensNewWindow(a) && !mayOpen(a.href)) { e.preventDefault(); e.stopImmediatePropagation(); }
+                        if (a && opensNewWindow(a) && !mayOpen(a.href)) { e.preventDefault(); e.stopImmediatePropagation(); refused(a.href); }
                     }, true);
 
                     // window.open to another site, unless it is the link you clicked or a sign-in or payment window.
                     const open = window.open;
                     window.open = function(url) {
-                        if (url && !mayOpen(String(url))) return null;
+                        if (url && !mayOpen(String(url))) { refused(url); return null; }
                         return open.apply(this, arguments);
                     };
                 })();

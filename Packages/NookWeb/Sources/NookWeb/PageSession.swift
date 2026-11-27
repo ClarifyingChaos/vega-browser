@@ -237,10 +237,15 @@ public final class PageSession: NSObject, Identifiable {
 
     /// Back and forward history kept across an unload, so the next view comes back with it.
     @ObservationIgnored var savedHistory: Any?
+    /// The address the pop-up guard refused after a click on this page; cleared when another page loads.
+    public internal(set) var blockedPopup: URL?
     /// Counts back and forward swipes, so a late snapshot cleanup never touches a newer swipe.
     @ObservationIgnored var navigationGestureCount = 0
     /// One-shot initial-navigation suppression for a WebKit-created popup.
     @ObservationIgnored var isPopupHost: Bool = false
+    /// A tab a page opened as a new window. Unlike `isPopupHost` this lasts: it says the tab is the page's, not one
+    /// the person made, so it may close when all it held was a download.
+    @ObservationIgnored var openedByPage = false
     /// The extension whose pages this view was built to show (`scheme://host`), nil for a web view.
     @ObservationIgnored public internal(set) var viewExtensionOrigin: String?
     @ObservationIgnored private var isReplacingView = false
@@ -757,7 +762,7 @@ public final class PageSession: NSObject, Identifiable {
         if hasCommittedPage { loadError = nil } else { closeUncommittedPage() }
     }
 
-    private func closeUncommittedPage() {
+    func closeUncommittedPage() {
         if isDetached {
             onClose?()
         } else {

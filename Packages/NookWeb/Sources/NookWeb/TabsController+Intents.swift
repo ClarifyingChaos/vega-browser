@@ -185,6 +185,7 @@ extension TabsController {
             itemID: id, url: pageURL, title: "New Tab", isPrivate: window.privateTree != nil,
             controller: self)
         session.isPopupHost = true
+        session.openedByPage = true
         register(session, in: window)
         session.installPopupWebView(webView)
         if let url, url.scheme != nil, url.absoluteString != "about:blank" {

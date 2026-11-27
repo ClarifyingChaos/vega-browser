@@ -8,6 +8,7 @@
 
 import SwiftUI
 import NookDesign
+import NookUI
 import NookWeb
 
 /// Where the URL bar's overflow button sits, reported so the overlay can hang off it.
@@ -84,11 +85,14 @@ struct ExtensionLibraryOverlay: View {
                         }
                     }
                     .fixedSize()
+                    .environment(\.nookAboveHoverCover, true)
                     .offset(x: originX(buttonFrame: buttonFrame, container: proxy.size),
                             y: buttonFrame.maxY + 2)
                 }
                 .animation(NookDesign.Motion.quick, value: isShowingMoreMenu)
                 .transition(.opacity)
+                .onAppear { HoverCover.set(true, in: windowState.window as? NSWindow) }
+                .onDisappear { HoverCover.set(false, in: windowState.window as? NSWindow) }
                 .onExitCommand { close() }
                 .onChange(of: windowState.selectedItemID) { _, _ in close() }
             }

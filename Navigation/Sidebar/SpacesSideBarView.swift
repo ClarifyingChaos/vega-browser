@@ -38,7 +38,8 @@ struct SpacesSideBarView: View {
     var body: some View {
         sidebarContent
             .contentShape(Rectangle())
-            .onHoverTracking { state in
+            // Through a panel's cover: a hidden sidebar is held open by this.
+            .onHoverTracking(throughCover: true) { state in
                 guard state != isSidebarHovered else { return }
                 isSidebarHovered = state
                 windowState.sidebarHoverCount += state ? 1 : -1
@@ -117,10 +118,14 @@ struct SpacesSideBarView: View {
                     .frame(minHeight: NookDesign.Size.bottomBar)
                     .zIndex(0)
             }
+            // Site Controls floats over the sidebar, and a click on it also reached the list underneath ("New Tab"
+            // opened). While it is up, what it can cover takes no clicks.
+            .allowsHitTesting(!windowState.isExtensionLibraryVisible)
 
             // FORK: the space's notes (Arc-style).
             NotesSection()
                 .environment(windowState)
+                .allowsHitTesting(!windowState.isExtensionLibraryVisible)
 
             // Downloads menu hover overlay
             if showDownloadsMenu, !browserManager.downloadManager.recentDownloads.isEmpty {
@@ -168,6 +173,7 @@ struct SpacesSideBarView: View {
             MediaControlsView()
                 .environmentObject(browserManager)
                 .environment(windowState)
+                .allowsHitTesting(!windowState.isExtensionLibraryVisible)
 
             // Bottom bar (menu, spaces indicators, new space)
             SidebarBottomBar(
@@ -178,6 +184,7 @@ struct SpacesSideBarView: View {
             )
             .environmentObject(browserManager)
             .environment(windowState)
+            .allowsHitTesting(!windowState.isExtensionLibraryVisible)
         }
         // Extra top padding when sidebar is on the left to avoid overlapping native traffic light buttons
         .padding(.top, nookSettings.sidebarPosition == .left ? NookDesign.Spacing.sidebarTop : NookDesign.Spacing.sidebarInset)

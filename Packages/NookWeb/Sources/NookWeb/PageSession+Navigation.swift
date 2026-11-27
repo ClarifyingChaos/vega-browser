@@ -72,6 +72,7 @@ extension PageSession: WKNavigationDelegate {
         jsDialogsSuppressed = false
         downloadsThisPage = 0
         moreDownloadsAllowed = nil
+        blockedPopup = nil
         resetTranslation()
         isReaderActive = false
 
@@ -639,6 +640,17 @@ extension PageSession: WKNavigationDelegate {
 
         controller?.sessionDelegate?.addDownload(
             download, originalURL: originalURL, suggestedFilename: suggestedFilename)
+        closeIfOnlyADownload()
+    }
+
+    /// A tab a page opened just to hand over a file has nothing to show once the download has it.
+    private func closeIfOnlyADownload() {
+        guard openedByPage else { return }
+        // After WebKit's own callback returns, and only if nothing was ever shown.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.hasCommittedPage else { return }
+            self.closeUncommittedPage()
+        }
     }
 
     public func webView(
@@ -652,6 +664,7 @@ extension PageSession: WKNavigationDelegate {
 
         controller?.sessionDelegate?.addDownload(
             download, originalURL: originalURL, suggestedFilename: suggestedFilename)
+        closeIfOnlyADownload()
     }
 }
 

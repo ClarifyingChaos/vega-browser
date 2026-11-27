@@ -16,18 +16,41 @@ import AppKit
 
 // MARK: - NSViewRepresentable
 
+/// A tracking area follows the pointer's position whatever is drawn on top, so rows under a floating panel lit up
+/// as the pointer crossed it. The panel says when it covers a window; only its own views, and those that ask, hover then.
+@MainActor
+public enum HoverCover {
+    private static let windows = NSHashTable<NSWindow>.weakObjects()
+
+    public static func set(_ covered: Bool, in window: NSWindow?) {
+        guard let window else { return }
+        if covered { windows.add(window) } else { windows.remove(window) }
+        HoverResync.request(after: 0)
+    }
+
+    static func covers(_ window: NSWindow?) -> Bool { window.map { windows.contains($0) } ?? false }
+}
+
+public extension EnvironmentValues {
+    /// Set on the covering panel: its hover keeps working.
+    @Entry var nookAboveHoverCover: Bool = false
+}
+
 struct HoverTrackingView: NSViewRepresentable {
     var always = false
+    var throughCover = false
     let onHover: (Bool) -> Void
 
     func makeNSView(context: Context) -> HoverTrackingNSView {
         let view = HoverTrackingNSView()
         view.always = always
+        view.ignoresCover = throughCover || context.environment.nookAboveHoverCover
         view.onHover = onHover
         return view
     }
 
     func updateNSView(_ nsView: HoverTrackingNSView, context: Context) {
+        nsView.ignoresCover = throughCover || context.environment.nookAboveHoverCover
         nsView.onHover = onHover
     }
 }
@@ -36,6 +59,7 @@ final class HoverTrackingNSView: NSView {
     var onHover: ((Bool) -> Void)?
     /// Tracks in a window that is not key, and while another app is in front.
     var always = false
+    var ignoresCover = false
     private var trackingArea: NSTrackingArea?
     private var isHovered = false
 
@@ -87,6 +111,7 @@ final class HoverTrackingNSView: NSView {
     /// `deferred` keeps a resync out of the layout pass that triggered it; real enter and exit
     /// events stay synchronous so hover never lags a frame behind the pointer.
     private func setHover(_ value: Bool, deferred: Bool = false) {
+        let value = value && (ignoresCover || !HoverCover.covers(window))
         guard value != isHovered else { return }
         isHovered = value
         guard deferred else {
@@ -127,11 +152,12 @@ public enum HoverResync {
 
 struct HoverTrackingModifier: ViewModifier {
     var always = false
+    var throughCover = false
     let onHover: (Bool) -> Void
 
     func body(content: Content) -> some View {
         content.background(
-            HoverTrackingView(always: always, onHover: onHover)
+            HoverTrackingView(always: always, throughCover: throughCover, onHover: onHover)
         )
     }
 }
@@ -147,6 +173,7 @@ public enum HoverResync {
 /// with a connected pointer.
 private struct HoverTrackingModifier: ViewModifier {
     var always = false
+    var throughCover = false
     let onHover: (Bool) -> Void
 
     func body(content: Content) -> some View {
@@ -160,7 +187,9 @@ extension View {
     /// Drop-in replacement for `.onHover` that uses `NSTrackingArea` instead of
     /// SwiftUI's built-in hover hit-testing, avoiding expensive view-tree traversal.
     /// `always` keeps tracking while the window is not key, for controls used from another app.
-    public func onHoverTracking(always: Bool = false, perform action: @escaping (Bool) -> Void) -> some View {
-        modifier(HoverTrackingModifier(always: always, onHover: action))
+    /// `throughCover` for a view that holds a floating panel up and must keep hearing the pointer under it.
+    public func onHoverTracking(always: Bool = false, throughCover: Bool = false,
+                                perform action: @escaping (Bool) -> Void) -> some View {
+        modifier(HoverTrackingModifier(always: always, throughCover: throughCover, onHover: action))
     }
 }

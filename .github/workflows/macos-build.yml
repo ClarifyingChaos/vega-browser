@@ -32,6 +32,9 @@ jobs:
       - name: Check scripts
         run: SKIP_GUI_CHECKS=1 python3 scripts/run-checks.py
 
+      - name: Pop-up guard
+        run: node scripts/check-popup-guard.mjs
+
   build:
     name: Build on macOS 26
     # Same runner and default Xcode as the release workflow.

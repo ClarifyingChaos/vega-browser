@@ -211,6 +211,10 @@ struct TopBarView: View {
                             .environmentObject(browserManager)
                     }
 
+                    if browserManager.tabs.selectedSession(in: windowState)?.blockedPopup != nil {
+                        BlockedPopupButton()
+                    }
+
                     ExtensionLibraryButton()
                         .environmentObject(browserManager)
                         .onAppear {

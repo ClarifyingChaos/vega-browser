@@ -78,7 +78,8 @@ extension PageSession {
 
 /// FORK: answers the pop-up guard (BrowserConfig) in every frame of a tab with the tab's choice for the site it shows.
 /// Frames embedded in a page cannot read the flag the main frame gets, so an allowed site's embedded player stayed blocked.
-/// A page can ask too; it only learns its own tab's setting.
+/// A page can ask too; it only learns its own tab's setting. The guard also reports a window it refused here; a page
+/// could make that up, which only offers an address that opens if the person presses Open.
 final class PopupPolicyReply: NSObject, WKScriptMessageHandlerWithReply {
     static let name = "vegaPopupPolicy"
     private weak var session: PageSession?
@@ -86,6 +87,10 @@ final class PopupPolicyReply: NSObject, WKScriptMessageHandlerWithReply {
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage,
                                replyHandler: @escaping @MainActor @Sendable (Any?, String?) -> Void) {
+        if let report = message.body as? [String: Any] {
+            if let address = report["blocked"] as? String { session?.noteBlockedPopup(address) }
+            return replyHandler(nil, nil)
+        }
         replyHandler(session.map { !$0.blocksPopups } ?? false, nil)
     }
 }

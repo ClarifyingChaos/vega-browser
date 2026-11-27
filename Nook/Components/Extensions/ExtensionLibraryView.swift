@@ -143,6 +143,39 @@ struct ExtensionLibraryView: View {
                 .padding(.bottom, NookDesign.Spacing.xxs)
 
             if let host = currentHost {
+                // First while there is one: the row turns pop-ups on for the site, Open lets this one through.
+                if let tab = currentTab, let blocked = tab.blockedPopup {
+                    SiteSettingRow(
+                        icon: "macwindow.badge.plus",
+                        title: "Pop-up blocked",
+                        subtitle: blocked.host ?? blocked.absoluteString,
+                        isOn: false,
+                        action: {
+                            SitePreferences.shared.update(host) { $0.allowsPopups = true }
+                            tab.popupChoiceChanged()
+                        }
+                    ) {
+                        Button("Open") {
+                            tab.openBlockedPopup()
+                            onDismiss()
+                        }
+                        .buttonStyle(.plain)
+                        .font(NookDesign.Font.label)
+                        // The panel is always dark, so these are fixed colors, not the appearance's.
+                        .foregroundStyle(Color.black.opacity(0.85))
+                        .padding(.horizontal, NookDesign.Spacing.sm)
+                        .padding(.vertical, NookDesign.Spacing.xs)
+                        .background(Color.white.opacity(0.94), in: NookDesign.Radius.shape(NookDesign.Radius.md))
+                        .help(blocked.absoluteString)
+                    }
+                    .background(Color.black.opacity(0.22), in: NookDesign.Radius.shape(NookDesign.Radius.lg))
+                    // The row's tap is not reachable by VoiceOver beside the Open button, so it is named as an action.
+                    .accessibilityAction(named: "Always Allow Pop-ups") {
+                        SitePreferences.shared.update(host) { $0.allowsPopups = true }
+                        tab.popupChoiceChanged()
+                    }
+                }
+
                 SiteSettingRow(
                     icon: "shield.lefthalf.filled",
                     title: "Content Blocker",
@@ -194,13 +227,16 @@ struct ExtensionLibraryView: View {
                 }
 
                 let popupsAllowed = site.allowsPopups ?? !settings.blockScriptedPopups
-                SiteSettingRow(
-                    icon: "macwindow.badge.plus",
-                    title: "Pop-ups",
-                    subtitle: popupsAllowed ? "Allowed for this site" : "Blocked",
-                    isOn: popupsAllowed
-                ) {
-                    SitePreferences.shared.update(host) { $0.allowsPopups = !popupsAllowed }
+                if currentTab?.blockedPopup == nil {
+                    SiteSettingRow(
+                        icon: "macwindow.badge.plus",
+                        title: "Pop-ups",
+                        subtitle: popupsAllowed ? "Allowed for this site" : "Blocked",
+                        isOn: popupsAllowed
+                    ) {
+                        SitePreferences.shared.update(host) { $0.allowsPopups = !popupsAllowed }
+                        currentTab?.popupChoiceChanged()
+                    }
                 }
 
                 let developer = settings.isDeveloperSite(host)
@@ -479,6 +515,7 @@ private struct SiteSettingRow<Trailing: View>: View {
                 Text(title)
                     .font(NookDesign.Font.label)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 Text(subtitle)
                     .font(NookDesign.Font.secondary)
                     .foregroundStyle(.secondary)
